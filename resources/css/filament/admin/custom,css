@@ -1,0 +1,4 @@
+/* Reduce el espacio entre los grupos del menú lateral */
+.fi-sidebar-nav-groups {
+    gap: 0.5rem !important;
+}

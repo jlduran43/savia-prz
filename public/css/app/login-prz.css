@@ -1,0 +1,10 @@
+/* SAVIA PRZ - Botón de inicio de sesión */
+
+.fi-simple-layout .fi-btn[type="submit"] {
+    background-color: #176B45 !important;
+    color: #ffffff !important;
+}
+
+.fi-simple-layout .fi-btn[type="submit"]:hover {
+    background-color: #125537 !important;
+}
