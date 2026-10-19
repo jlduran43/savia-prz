@@ -90,7 +90,6 @@ class EditProfile extends BaseEditProfile
                     if (
                         $nombre !== '' &&
                         mb_strlen($nombre) <= 255 &&
-                        auth()->user()?->rol === 'ADMIN' &&
                         ! Cargo::query()
                             ->whereRaw(
                                 'LOWER(nombre) = ?',
@@ -126,12 +125,6 @@ class EditProfile extends BaseEditProfile
                         ! str_starts_with($state, 'nuevo:')
                     ) {
                         return;
-                    }
-
-                    if (auth()->user()?->rol !== 'ADMIN') {
-                        $set('cargo_id', null);
-
-                        abort(403, 'No tiene permiso para crear cargos.');
                     }
 
                     $nombre = trim(
