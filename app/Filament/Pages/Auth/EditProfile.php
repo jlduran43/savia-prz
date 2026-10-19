@@ -50,9 +50,15 @@ class EditProfile extends BaseEditProfile
 
             Select::make('departamento_id')
                 ->label('Departamento')
-                ->relationship('departamento', 'nombre')
+                ->relationship(
+                    name: 'departamento',
+                    titleAttribute: 'nombre',
+                    modifyQueryUsing: fn($query) => $query
+                        ->where('activo', true)
+                )
                 ->searchable()
-                ->preload(),
+                ->preload()
+                ->native(false),
 
             // CARGO: seleccionar o crear desde el buscador
 
