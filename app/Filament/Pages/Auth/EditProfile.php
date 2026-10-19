@@ -55,6 +55,7 @@ class EditProfile extends BaseEditProfile
                 ->preload(),
 
             // CARGO: seleccionar o crear desde el buscador
+
             Select::make('cargo_id')
                 ->label('Cargo')
                 ->required()
@@ -64,28 +65,69 @@ class EditProfile extends BaseEditProfile
                 ->native(false)
                 ->live()
 
-                // Solo administradores pueden crear cargos
-                ->createOptionForm(
-                    fn(): array =>
-                    auth()->user()?->rol === 'ADMIN'
-                        ? [
-                            TextInput::make('nombre')
-                                ->label('Nombre del nuevo cargo')
-                                ->required()
-                                ->maxLength(255)
-                                ->unique(
-                                    table: 'cargos',
-                                    column: 'nombre'
-                                )
-                                ->validationMessages([
-                                    'required' => 'Debe ingresar el nombre del cargo.',
-                                    'unique' => 'Este cargo ya se encuentra registrado.',
-                                ]),
-                        ]
-                        : []
-                )
+                // Buscar cargos y ofrecer crear uno nuevo
+                ->getSearchResultsUsing(function (string $search): array {
 
-                ->createOptionUsing(function (array $data): int {
+                    $nombre = trim(
+                        preg_replace('/\s+/u', ' ', $search)
+                    );
+
+                    $resultados = Cargo::query()
+                        ->when(
+                            $nombre !== '',
+                            fn($query) => $query->where(
+                                'nombre',
+                                'like',
+                                '%' . $nombre . '%'
+                            )
+                        )
+                        ->orderBy('nombre')
+                        ->limit(50)
+                        ->pluck('nombre', 'id')
+                        ->all();
+
+                    // Mostrar opción de creación si no existe
+                    if (
+                        $nombre !== '' &&
+                        mb_strlen($nombre) <= 255 &&
+                        auth()->user()?->rol === 'ADMIN' &&
+                        ! Cargo::query()
+                            ->whereRaw(
+                                'LOWER(nombre) = ?',
+                                [mb_strtolower($nombre)]
+                            )
+                            ->exists()
+                    ) {
+                        $resultados['nuevo:' . $nombre] =
+                            '➕ Crear nuevo cargo: ' . $nombre;
+                    }
+
+                    return $resultados;
+                })
+
+                // Mostrar correctamente el cargo seleccionado
+                ->getOptionLabelUsing(function ($value): ?string {
+
+                    if (
+                        is_string($value) &&
+                        str_starts_with($value, 'nuevo:')
+                    ) {
+                        return '➕ Crear nuevo cargo: ' .
+                            substr($value, 6);
+                    }
+
+                    return Cargo::find($value)?->nombre;
+                })
+
+                // Crear el cargo al seleccionar la opción nueva
+                ->afterStateUpdated(function ($state, Set $set): void {
+
+                    if (
+                        ! is_string($state) ||
+                        ! str_starts_with($state, 'nuevo:')
+                    ) {
+                        return;
+                    }
 
                     abort_unless(
                         auth()->user()?->rol === 'ADMIN',
@@ -94,15 +136,31 @@ class EditProfile extends BaseEditProfile
                     );
 
                     $nombre = trim(
-                        preg_replace('/\s+/u', ' ', $data['nombre'])
+                        preg_replace(
+                            '/\s+/u',
+                            ' ',
+                            substr($state, 6)
+                        )
                     );
+
+                    if (
+                        $nombre === '' ||
+                        mb_strlen($nombre) > 255
+                    ) {
+                        $set('cargo_id', null);
+
+                        throw ValidationException::withMessages([
+                            'data.cargo_id' =>
+                            'El nombre del cargo no es válido.',
+                        ]);
+                    }
 
                     $cargo = Cargo::firstOrCreate(
                         ['nombre' => $nombre],
                         ['activo' => true]
                     );
 
-                    return $cargo->getKey();
+                    $set('cargo_id', $cargo->id);
                 }),
 
             Select::make('jefe_id')
