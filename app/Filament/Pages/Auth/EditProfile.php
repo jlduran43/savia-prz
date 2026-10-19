@@ -178,6 +178,7 @@ class EditProfile extends BaseEditProfile
                 ->label('Jefatura directa')
                 ->options(
                     fn() => User::query()
+                        ->where('activo', true)
                         ->whereKeyNot(auth()->id())
                         ->orderBy('name')
                         ->get()
