@@ -167,17 +167,31 @@ class UserForm
                     ->required(),
 
                 // Jefatura directa
-
                 Select::make('jefe_id')
                     ->label('Jefatura directa')
                     ->placeholder('Seleccione una jefatura')
-                    ->options(function (?User $record) {
+                    ->nullable()
+                    ->required(false)
+                    ->options(function (Get $get, ?User $record) {
+
+                        $departamentoId = $get('departamento_id');
+
+                        if (blank($departamentoId)) {
+                            return [];
+                        }
+
                         return User::query()
-                            ->where('activo', 1)
+                            ->where('activo', true)
+
+                            // Solo trabajadores del departamento seleccionado
+                            ->where('departamento_id', $departamentoId)
+
+                            // Excluir al mismo usuario que estamos editando
                             ->when(
                                 $record,
                                 fn($query) => $query->where('id', '!=', $record->id)
                             )
+
                             ->orderBy('name')
                             ->get()
                             ->mapWithKeys(fn($user) => [
@@ -190,8 +204,12 @@ class UserForm
                     ->searchable()
                     ->preload()
                     ->native(false)
-                    ->helperText('Seleccione la jefatura directa del trabajador.')
-
+                    ->disabled(
+                        fn(Get $get) => blank($get('departamento_id'))
+                    )
+                    ->helperText(
+                        'Seleccione una jefatura del departamento correspondiente.'
+                    ),
             ]);
     }
 }
