@@ -65,11 +65,11 @@ class EditProfile extends BaseEditProfile
             Select::make('jefe_id')
                 ->label('Jefatura directa')
                 ->options(
-                    fn () => User::query()
+                    fn() => User::query()
                         ->whereKeyNot(auth()->id())
                         ->orderBy('name')
                         ->get()
-                        ->mapWithKeys(fn ($user) => [
+                        ->mapWithKeys(fn($user) => [
                             $user->id => trim(
                                 $user->name . ' ' . $user->apellido
                             ),
@@ -83,11 +83,15 @@ class EditProfile extends BaseEditProfile
         ]);
     }
 
+
     protected function getSaveFormAction(): Action
     {
         return parent::getSaveFormAction()
             ->label('Guardar cambios')
-            ->color(Color::hex('#176B45'));
+            ->color('success')
+            ->extraAttributes([
+                'style' => 'background-color: #176B45 !important; color: #ffffff !important;',
+            ]);
     }
 
     protected function getCancelFormAction(): Action

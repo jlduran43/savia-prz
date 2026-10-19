@@ -127,11 +127,19 @@ class AdminPanelProvider extends PanelProvider
                             ...TipoVehiculoResource::getNavigationItems(),
                         ]),
 
+
                     // TERCERO: USUARIOS
-                    NavigationGroup::make()
-                        ->items([
-                            ...UserResource::getNavigationItems(),
-                        ]),
+                    ...(
+                        auth()->user()?->rol === 'ADMIN'
+                        ? [
+                            NavigationGroup::make()
+                                ->items([
+                                    ...UserResource::getNavigationItems(),
+                                ]),
+                        ]
+                        : []
+                    ),
+
 
                 ]);
             })

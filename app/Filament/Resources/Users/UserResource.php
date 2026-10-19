@@ -62,4 +62,36 @@ class UserResource extends Resource
             'edit' => EditUser::route('/{record}/edit'),
         ];
     }
+
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->rol === 'ADMIN';
+    }
+
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->rol === 'ADMIN';
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->rol === 'ADMIN';
+    }
+
+    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->rol === 'ADMIN';
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->rol === 'ADMIN';
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->rol === 'ADMIN';
+    }
 }
