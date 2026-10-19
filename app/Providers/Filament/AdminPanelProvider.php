@@ -29,8 +29,8 @@ use App\Filament\Resources\MedioPagos\MedioPagoResource;
 use App\Filament\Resources\TipoVehiculos\TipoVehiculoResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Pages\FormularioRequerimientoCompra;
-use Filament\Support\Assets\Css;
-use Filament\Support\Facades\FilamentAsset;
+use App\Filament\Pages\CajaChica;
+use App\Filament\Pages\Auth\EditProfile;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -49,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(asset('images/logo-prz.png'))
             ->brandLogoHeight('3rem')
             ->topNavigation()
+            ->profile(EditProfile::class, isSimple: false)
 
             ->colors([
                 'primary' => Color::hex('#176B45'),
@@ -87,11 +88,14 @@ class AdminPanelProvider extends PanelProvider
 
                 return $builder->groups([
 
+
                     // PRIMERO: COMPRAS
                     NavigationGroup::make()
                         ->label('Compras')
                         ->icon('heroicon-o-shopping-cart')
                         ->items([
+
+                            // Formulario de Requerimiento de Compra
                             NavigationItem::make('Formulario de Requerimiento de Compra')
                                 ->url(FormularioRequerimientoCompra::getUrl())
                                 ->isActiveWhen(
@@ -99,6 +103,16 @@ class AdminPanelProvider extends PanelProvider
                                         'filament.admin.pages.formulario-requerimiento-compra'
                                     )
                                 ),
+
+                            // Caja Chica
+                            NavigationItem::make('Caja Chica')
+                                ->url(CajaChica::getUrl())
+                                ->isActiveWhen(
+                                    fn(): bool => request()->routeIs(
+                                        'filament.admin.pages.caja-chica'
+                                    )
+                                ),
+
                         ]),
 
                     // SEGUNDO: MANTENEDORES
@@ -162,6 +176,27 @@ class AdminPanelProvider extends PanelProvider
                         overflow: visible !important;
                         text-overflow: clip !important;
                     }
+
+                    /* Confirmación de activar usuario */
+                        .fi-modal .fi-btn.btn-activar-usuario {
+                        background-color: #176B45 !important;
+                        border-color: #176B45 !important;
+                        color: #ffffff !important;
+                    }
+
+                    /* Hover activar usuario */
+                        .fi-modal .fi-btn.btn-activar-usuario:hover {
+                        background-color: #125636 !important;
+                        border-color: #125636 !important;
+                        color: #ffffff !important;
+                    }
+
+                    /* Confirmación de desactivar usuario */
+                        .fi-modal .fi-btn.btn-desactivar-usuario {
+                        background-color: #dc2626 !important;
+                        border-color: #dc2626 !important;
+                        color: #ffffff !important;
+                    s}
                 </style>'
             )
 

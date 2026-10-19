@@ -167,6 +167,7 @@ class UserForm
                     ->required(),
 
                 // Jefatura directa
+                // Jefatura directa
                 Select::make('jefe_id')
                     ->label('Jefatura directa')
                     ->placeholder('Sin jefatura directa')
@@ -183,10 +184,12 @@ class UserForm
                         return User::query()
                             ->with('cargo')
 
-                            // Usuarios del departamento seleccionado
-                            // o usuarios con cargo de jefatura superior
-                            ->where(function ($query) use ($departamentoId) {
+                            // Mostrar únicamente usuarios activos
+                            ->where('activo', true)
 
+                            // Usuarios del departamento seleccionado
+                            // o jefaturas superiores
+                            ->where(function ($query) use ($departamentoId) {
                                 $query
                                     ->where('departamento_id', $departamentoId)
                                     ->orWhereHas('cargo', function ($cargoQuery) {
@@ -197,7 +200,7 @@ class UserForm
                                     });
                             })
 
-                            // Impedir que el usuario sea su propio jefe
+                            // Evitar que un usuario sea su propio jefe
                             ->when(
                                 $record,
                                 fn($query) => $query->whereKeyNot($record->id)
@@ -205,8 +208,6 @@ class UserForm
 
                             ->orderBy('name')
                             ->get()
-
-                            // Mostrar nombre, apellido y cargo
                             ->mapWithKeys(fn($user) => [
                                 $user->id =>
                                 trim(
@@ -216,7 +217,6 @@ class UserForm
                                     . ' — ' .
                                     ($user->cargo?->nombre ?? 'Sin cargo'),
                             ])
-
                             ->all();
                     })
                     ->searchable()
@@ -227,7 +227,7 @@ class UserForm
                         fn(Get $get) => blank($get('departamento_id'))
                     )
                     ->helperText(
-                        'Se muestran trabajadores del departamento y la jefatura superior del Parque.'
+                        'Seleccione al trabajador que ejercerá como jefatura directa.'
                     ),
 
             ]);

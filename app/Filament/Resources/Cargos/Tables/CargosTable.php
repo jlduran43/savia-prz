@@ -9,7 +9,6 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-use Filament\Actions\DeleteAction;
 use App\Models\Cargo;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -54,7 +53,7 @@ class CargosTable
                 Action::make('cambiarEstado')
                     ->label(
                         fn(Cargo $record): string =>
-                        $record->activo ? 'Borrar' : 'Activar'
+                        $record->activo ? 'Eliminar' : 'Activar'
                     )
                     ->icon(
                         fn(Cargo $record): string =>

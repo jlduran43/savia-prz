@@ -45,7 +45,7 @@ class DepartamentosTable
                 Action::make('cambiarEstado')
                     ->label(
                         fn(Departamento $record) =>
-                        $record->activo ? 'Borrar' : 'Activar'
+                        $record->activo ? 'Eliminar' : 'Activar'
                     )
                     ->icon(
                         fn(Departamento $record) =>
