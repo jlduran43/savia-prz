@@ -3,16 +3,14 @@
 namespace App\Filament\Pages\Auth;
 
 use App\Models\Cargo;
-use App\Models\Departamento;
 use App\Models\User;
-use App\Support\RutChileno;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
-use Filament\Support\Colors\Color;
-use Illuminate\Validation\Rule;
+use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Validation\ValidationException;
 
 class EditProfile extends BaseEditProfile
 {
@@ -56,20 +54,128 @@ class EditProfile extends BaseEditProfile
                 ->searchable()
                 ->preload(),
 
+            // CARGO: seleccionar o crear desde el buscador
             Select::make('cargo_id')
                 ->label('Cargo')
-                ->relationship('cargo', 'nombre')
+                ->required()
                 ->searchable()
-                ->preload(),
+                ->native(false)
+                ->live()
+
+                ->options(fn (): array =>
+                    Cargo::query()
+                        ->orderBy('nombre')
+                        ->pluck('nombre', 'id')
+                        ->all()
+                )
+
+                ->getSearchResultsUsing(function (string $search): array {
+
+                    $nombre = trim(
+                        preg_replace('/\s+/u', ' ', $search)
+                    );
+
+                    $resultados = Cargo::query()
+                        ->where('nombre', 'like', '%' . $nombre . '%')
+                        ->orderBy('nombre')
+                        ->limit(30)
+                        ->pluck('nombre', 'id')
+                        ->all();
+
+                    if (
+                        $nombre !== '' &&
+                        mb_strlen($nombre) <= 255 &&
+                        auth()->user()?->rol === 'ADMIN' &&
+                        ! Cargo::query()
+                            ->whereRaw(
+                                'LOWER(nombre) = ?',
+                                [mb_strtolower($nombre)]
+                            )
+                            ->exists()
+                    ) {
+                        $resultados['nuevo:' . $nombre] =
+                            '➕ Crear nuevo cargo: ' . $nombre;
+                    }
+
+                    return $resultados;
+                })
+
+                ->getOptionLabelUsing(function ($value): ?string {
+
+                    if (
+                        is_string($value) &&
+                        str_starts_with($value, 'nuevo:')
+                    ) {
+                        return 'Crear nuevo cargo: ' .
+                            substr($value, 6);
+                    }
+
+                    return Cargo::find($value)?->nombre;
+                })
+
+                ->afterStateUpdated(function ($state, Set $set): void {
+
+                    if (
+                        ! is_string($state) ||
+                        ! str_starts_with($state, 'nuevo:')
+                    ) {
+                        return;
+                    }
+
+                    $nombre = trim(
+                        preg_replace(
+                            '/\s+/u',
+                            ' ',
+                            substr($state, 6)
+                        )
+                    );
+
+                    if (
+                        $nombre === '' ||
+                        mb_strlen($nombre) > 255
+                    ) {
+                        $set('cargo_id', null);
+
+                        throw ValidationException::withMessages([
+                            'data.cargo_id' =>
+                                'El nombre del cargo no es válido.',
+                        ]);
+                    }
+
+                    // Solo administradores crean cargos nuevos
+                    if (auth()->user()?->rol !== 'ADMIN') {
+                        $set('cargo_id', null);
+
+                        abort(403, 'No tiene permiso para crear cargos.');
+                    }
+
+                    // Buscar cargo antes de crearlo
+                    $cargo = Cargo::query()
+                        ->whereRaw(
+                            'LOWER(nombre) = ?',
+                            [mb_strtolower($nombre)]
+                        )
+                        ->first();
+
+                    if (! $cargo) {
+                        $cargo = Cargo::create([
+                            'nombre' => $nombre,
+                            'activo' => true,
+                        ]);
+                    }
+
+                    // Seleccionar el ID real
+                    $set('cargo_id', $cargo->id);
+                }),
 
             Select::make('jefe_id')
                 ->label('Jefatura directa')
                 ->options(
-                    fn() => User::query()
+                    fn () => User::query()
                         ->whereKeyNot(auth()->id())
                         ->orderBy('name')
                         ->get()
-                        ->mapWithKeys(fn($user) => [
+                        ->mapWithKeys(fn ($user) => [
                             $user->id => trim(
                                 $user->name . ' ' . $user->apellido
                             ),
@@ -83,14 +189,14 @@ class EditProfile extends BaseEditProfile
         ]);
     }
 
-
     protected function getSaveFormAction(): Action
     {
         return parent::getSaveFormAction()
             ->label('Guardar cambios')
             ->color('success')
             ->extraAttributes([
-                'style' => 'background-color: #176B45 !important; color: #ffffff !important;',
+                'style' =>
+                    'background-color: #176B45 !important; color: #ffffff !important;',
             ]);
     }
 
