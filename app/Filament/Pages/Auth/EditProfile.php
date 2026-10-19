@@ -62,13 +62,6 @@ class EditProfile extends BaseEditProfile
                 ->native(false)
                 ->live()
 
-                ->options(fn (): array =>
-                    Cargo::query()
-                        ->orderBy('nombre')
-                        ->pluck('nombre', 'id')
-                        ->all()
-                )
-
                 ->getSearchResultsUsing(function (string $search): array {
 
                     $nombre = trim(
