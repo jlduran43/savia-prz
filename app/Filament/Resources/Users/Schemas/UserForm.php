@@ -167,68 +167,30 @@ class UserForm
                     ->required(),
 
                 // Jefatura directa
-                // Jefatura directa
+
                 Select::make('jefe_id')
                     ->label('Jefatura directa')
-                    ->placeholder('Sin jefatura directa')
-                    ->nullable()
-                    ->required(false)
-                    ->options(function (Get $get, ?User $record) {
-
-                        $departamentoId = $get('departamento_id');
-
-                        if (blank($departamentoId)) {
-                            return [];
-                        }
-
+                    ->placeholder('Seleccione una jefatura')
+                    ->options(function (?User $record) {
                         return User::query()
-                            ->with('cargo')
-
-                            // Mostrar únicamente usuarios activos
-                            ->where('activo', true)
-
-                            // Usuarios del departamento seleccionado
-                            // o jefaturas superiores
-                            ->where(function ($query) use ($departamentoId) {
-                                $query
-                                    ->where('departamento_id', $departamentoId)
-                                    ->orWhereHas('cargo', function ($cargoQuery) {
-                                        $cargoQuery->where(
-                                            'es_jefatura_superior',
-                                            true
-                                        );
-                                    });
-                            })
-
-                            // Evitar que un usuario sea su propio jefe
+                            ->where('activo', 1)
                             ->when(
                                 $record,
-                                fn($query) => $query->whereKeyNot($record->id)
+                                fn($query) => $query->where('id', '!=', $record->id)
                             )
-
                             ->orderBy('name')
                             ->get()
                             ->mapWithKeys(fn($user) => [
-                                $user->id =>
-                                trim(
-                                    $user->name . ' ' .
-                                        ($user->apellido ?? '')
-                                )
-                                    . ' — ' .
-                                    ($user->cargo?->nombre ?? 'Sin cargo'),
+                                $user->id => trim(
+                                    $user->name . ' ' . ($user->apellido ?? '')
+                                ),
                             ])
                             ->all();
                     })
                     ->searchable()
                     ->preload()
                     ->native(false)
-                    ->live()
-                    ->disabled(
-                        fn(Get $get) => blank($get('departamento_id'))
-                    )
-                    ->helperText(
-                        'Seleccione al trabajador que ejercerá como jefatura directa.'
-                    ),
+                    ->helperText('Seleccione la jefatura directa del trabajador.')
 
             ]);
     }
