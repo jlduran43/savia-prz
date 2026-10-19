@@ -56,16 +56,24 @@ class EditProfile extends BaseEditProfile
 
             // CARGO: seleccionar o crear desde el buscador
 
+
             Select::make('cargo_id')
                 ->label('Cargo')
                 ->required()
-                ->relationship('cargo', 'nombre')
                 ->searchable()
                 ->preload()
                 ->native(false)
                 ->live()
 
-                // Buscar cargos y ofrecer crear uno nuevo
+                // Mostrar cargos existentes
+                ->options(
+                    fn(): array => Cargo::query()
+                        ->orderBy('nombre')
+                        ->pluck('nombre', 'id')
+                        ->all()
+                )
+
+                // Buscar y ofrecer crear un cargo nuevo
                 ->getSearchResultsUsing(function (string $search): array {
 
                     $nombre = trim(
@@ -73,20 +81,12 @@ class EditProfile extends BaseEditProfile
                     );
 
                     $resultados = Cargo::query()
-                        ->when(
-                            $nombre !== '',
-                            fn($query) => $query->where(
-                                'nombre',
-                                'like',
-                                '%' . $nombre . '%'
-                            )
-                        )
+                        ->where('nombre', 'like', '%' . $nombre . '%')
                         ->orderBy('nombre')
-                        ->limit(50)
+                        ->limit(30)
                         ->pluck('nombre', 'id')
                         ->all();
 
-                    // Mostrar opción de creación si no existe
                     if (
                         $nombre !== '' &&
                         mb_strlen($nombre) <= 255 &&
@@ -105,21 +105,20 @@ class EditProfile extends BaseEditProfile
                     return $resultados;
                 })
 
-                // Mostrar correctamente el cargo seleccionado
+                // Mostrar el nombre seleccionado
                 ->getOptionLabelUsing(function ($value): ?string {
 
                     if (
                         is_string($value) &&
                         str_starts_with($value, 'nuevo:')
                     ) {
-                        return '➕ Crear nuevo cargo: ' .
-                            substr($value, 6);
+                        return 'Crear nuevo cargo: ' . substr($value, 6);
                     }
 
                     return Cargo::find($value)?->nombre;
                 })
 
-                // Crear el cargo al seleccionar la opción nueva
+                // Crear el cargo automáticamente
                 ->afterStateUpdated(function ($state, Set $set): void {
 
                     if (
@@ -129,11 +128,11 @@ class EditProfile extends BaseEditProfile
                         return;
                     }
 
-                    abort_unless(
-                        auth()->user()?->rol === 'ADMIN',
-                        403,
-                        'No tiene permiso para crear cargos.'
-                    );
+                    if (auth()->user()?->rol !== 'ADMIN') {
+                        $set('cargo_id', null);
+
+                        abort(403, 'No tiene permiso para crear cargos.');
+                    }
 
                     $nombre = trim(
                         preg_replace(
@@ -155,11 +154,22 @@ class EditProfile extends BaseEditProfile
                         ]);
                     }
 
-                    $cargo = Cargo::firstOrCreate(
-                        ['nombre' => $nombre],
-                        ['activo' => true]
-                    );
+                    // Buscar antes de crear para evitar duplicados
+                    $cargo = Cargo::query()
+                        ->whereRaw(
+                            'LOWER(nombre) = ?',
+                            [mb_strtolower($nombre)]
+                        )
+                        ->first();
 
+                    if (! $cargo) {
+                        $cargo = Cargo::create([
+                            'nombre' => $nombre,
+                            'activo' => true,
+                        ]);
+                    }
+
+                    // Reemplazar por el ID real
                     $set('cargo_id', $cargo->id);
                 }),
 
