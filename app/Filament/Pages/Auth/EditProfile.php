@@ -60,6 +60,13 @@ class EditProfile extends BaseEditProfile
                 ->required()
                 ->searchable()
                 ->native(false)
+                ->preload()
+                ->options(
+                    fn(): array => Cargo::query()
+                        ->orderBy('nombre')
+                        ->pluck('nombre', 'id')
+                        ->all()
+                )
                 ->live()
 
                 ->getSearchResultsUsing(function (string $search): array {
@@ -131,7 +138,7 @@ class EditProfile extends BaseEditProfile
 
                         throw ValidationException::withMessages([
                             'data.cargo_id' =>
-                                'El nombre del cargo no es válido.',
+                            'El nombre del cargo no es válido.',
                         ]);
                     }
 
@@ -164,11 +171,11 @@ class EditProfile extends BaseEditProfile
             Select::make('jefe_id')
                 ->label('Jefatura directa')
                 ->options(
-                    fn () => User::query()
+                    fn() => User::query()
                         ->whereKeyNot(auth()->id())
                         ->orderBy('name')
                         ->get()
-                        ->mapWithKeys(fn ($user) => [
+                        ->mapWithKeys(fn($user) => [
                             $user->id => trim(
                                 $user->name . ' ' . $user->apellido
                             ),
@@ -189,7 +196,7 @@ class EditProfile extends BaseEditProfile
             ->color('success')
             ->extraAttributes([
                 'style' =>
-                    'background-color: #176B45 !important; color: #ffffff !important;',
+                'background-color: #176B45 !important; color: #ffffff !important;',
             ]);
     }
 
