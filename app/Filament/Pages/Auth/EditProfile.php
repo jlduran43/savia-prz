@@ -68,6 +68,7 @@ class EditProfile extends BaseEditProfile
                 // Mostrar cargos existentes
                 ->options(
                     fn(): array => Cargo::query()
+                        ->where('activo', true)
                         ->orderBy('nombre')
                         ->pluck('nombre', 'id')
                         ->all()
@@ -81,6 +82,7 @@ class EditProfile extends BaseEditProfile
                     );
 
                     $resultados = Cargo::query()
+                        ->where('activo', true)
                         ->where('nombre', 'like', '%' . $nombre . '%')
                         ->orderBy('nombre')
                         ->limit(30)
