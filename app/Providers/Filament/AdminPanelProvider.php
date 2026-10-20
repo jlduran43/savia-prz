@@ -119,7 +119,6 @@ class AdminPanelProvider extends PanelProvider
                     // SEGUNDO: DOCUMENTOS
                     NavigationGroup::make()
                         ->label('Documentos')
-                        ->icon('heroicon-o-folder-open')
                         ->items([
                             ...DocumentoCarpetaResource::getNavigationItems(),
                         ]),
