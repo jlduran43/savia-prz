@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Formulario de Requerimiento de Compra, Contratación o Arrendamiento — PRZ — v0.65</title>
+    <title>Formulario de Requerimiento de Compra, Contratación o Arrendamiento — PRZ — v0.75</title>
     <style>
         :root {
             --green: #176b4a;
@@ -323,7 +323,6 @@
 
         input[type=text],
         input[type=date],
-        input[type=time],
         input[type=number],
         input[type=email],
         select,
@@ -818,6 +817,45 @@
             min-height: 34px;
         }
 
+        .evidence-actions {
+            gap: 4px;
+            flex-wrap: wrap
+        }
+
+        .cotiz-cell .evidence-btn,
+        .cotiz-cell .evidence-view-btn {
+            width: 27px !important;
+            height: 27px !important;
+            min-width: 27px !important;
+            border: 1px solid #dbe4df !important;
+            border-radius: 7px !important;
+            background: #fff !important;
+            padding: 0 !important;
+            font-size: 14px !important;
+            box-shadow: none !important;
+            line-height: 1 !important
+        }
+
+        .cotiz-cell .evidence-btn:hover,
+        .cotiz-cell .evidence-view-btn:not(:disabled):hover {
+            background: #f2f8f5 !important;
+            border-color: #a8c7b8 !important;
+            transform: translateY(-1px)
+        }
+
+        .cotiz-cell .evidence-view-btn:disabled {
+            opacity: .28;
+            cursor: not-allowed
+        }
+
+        .cotiz-cell .evidence-info {
+            margin-top: 5px;
+            font-size: 9.5px;
+            line-height: 1.25;
+            text-align: center;
+            color: #617069
+        }
+
         .trash-row {
             width: 22px;
             height: 22px;
@@ -1276,15 +1314,12 @@
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            width: 100%;
-            height: 100dvh;
-            background: rgba(17, 28, 23, 0.45);
-            z-index: 10000;
+            background: rgba(17, 28, 23, .45);
+            z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            overflow-y: auto;
         }
 
         .modal-card {
@@ -1297,16 +1332,14 @@
             border: 1px solid var(--line);
         }
 
-        .modal-card {
-            position: relative;
-            width: min(760px, 100%);
-            max-height: calc(100dvh - 40px);
-            margin: auto;
-            background: #ffffff;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.25);
-            overflow-y: auto;
+        .modal-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--line);
+            background: #fafcfb;
         }
 
         .modal-head h3 {
@@ -2359,26 +2392,52 @@
         }
 
         .structured-cell-editor {
-            min-width: 150px
+            min-width: 150px;
+            width: 100%;
+            max-width: 100%;
+            overflow: visible;
+            padding-bottom: 2px;
         }
 
         .structured-entry-list {
             display: flex;
             flex-direction: column;
-            gap: 6px
+            gap: 7px;
+            width: 100%;
+            min-width: 0;
         }
 
         .structured-entry {
             display: flex;
-            align-items: center;
-            gap: 5px
-        }
-
-        .structured-entry input {
+            align-items: flex-start;
+            gap: 6px;
             width: 100%;
             min-width: 0;
+        }
+
+        .structured-entry textarea {
+            flex: 1 1 auto;
+            width: 100%;
+            min-width: 0;
+            min-height: 52px;
+            height: 52px;
+            max-width: 100%;
             padding: 7px 8px;
-            font-size: 11px
+            font-size: 11px;
+            line-height: 1.35;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            overflow-y: hidden;
+            overflow-x: hidden;
+            resize: none;
+            box-sizing: border-box;
+        }
+
+        .structured-entry-print {
+            display: none;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .structured-entry-remove {
@@ -2386,6 +2445,7 @@
             width: 25px;
             height: 25px;
             padding: 0;
+            margin-top: 4px;
             border-radius: 7px;
             border: 1px solid #e2b9b9;
             color: #9d2f2f;
@@ -2394,9 +2454,94 @@
             line-height: 1
         }
 
+        .structured-entry .spec-priority {
+            flex: 0 0 30px;
+            width: 30px;
+            max-width: 30px;
+            margin-top: 3px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .spec-priority-trigger {
+            width: 30px !important;
+            min-width: 30px !important;
+            height: 26px !important;
+            padding: 0 3px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 1px !important;
+            border: 1px solid #cbd5d0 !important;
+            border-radius: 6px !important;
+            background: #fff !important;
+            color: #3f4e47 !important;
+            box-shadow: none !important;
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            line-height: 1 !important;
+        }
+
+        .spec-priority-trigger:hover,
+        .spec-priority-trigger:focus {
+            border-color: var(--green) !important;
+            box-shadow: 0 0 0 2px rgba(23, 107, 74, .08) !important;
+        }
+
+        .spec-priority-short {
+            min-width: 8px;
+            text-align: center;
+            line-height: 1
+        }
+
+        .spec-priority-chevron {
+            font-size: 7px;
+            color: #63716a;
+            line-height: 1;
+            margin-left: 1px
+        }
+
+        .spec-priority-menu {
+            position: absolute;
+            z-index: 220;
+            top: 30px;
+            right: 0;
+            min-width: 96px;
+            padding: 4px;
+            border: 1px solid #cfd9d4;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 10px 25px rgba(27, 48, 39, .14);
+        }
+
+        .spec-priority-menu button {
+            display: block;
+            width: 100%;
+            border: 0 !important;
+            border-radius: 6px !important;
+            background: #fff !important;
+            box-shadow: none !important;
+            padding: 7px 9px !important;
+            text-align: left;
+            color: #3e4c45 !important;
+            font-size: 10.5px !important;
+            font-weight: 700 !important;
+        }
+
+        .spec-priority-menu button:hover,
+        .spec-priority-menu button[aria-selected="true"] {
+            background: #eef6f2 !important;
+            color: var(--green-dark) !important;
+        }
+
+        .spec-priority-print {
+            display: none
+        }
+
         .structured-add-btn {
             width: 100%;
-            margin-top: 6px;
+            min-width: 150px;
+            margin-top: 7px;
             padding: 6px 7px;
             border: 1px dashed #aac7b9;
             background: #f7fbf9;
@@ -2609,148 +2754,6 @@
             line-height: 1.4
         }
 
-        /* Campo hora - Formulario PRZ */
-        .input-hora-prz {
-            display: block;
-            width: 100%;
-            min-width: 0;
-            height: 50px;
-            padding: 10px 14px;
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: 400;
-            color: #34423d;
-            background-color: #ffffff;
-            border: 1px solid #cbd5d1;
-            border-radius: 11px;
-            box-sizing: border-box;
-        }
-
-        .input-hora-prz:focus {
-            border-color: #176b4a;
-            box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.12);
-            outline: none;
-        }
-
-        /* Icono del reloj */
-        .input-hora-prz::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-            opacity: 0.75;
-        }
-
-        /* Igualar altura de fecha, hora, select y texto */
-        .formulario-calificacion select,
-        .formulario-calificacion input[type="date"],
-        .formulario-calificacion input[type="time"],
-        .formulario-calificacion input[type="text"] {
-            height: 50px;
-            box-sizing: border-box;
-        }
-
-        /* Fondo del modal */
-        #emergencyEvidenceModal {
-            position: fixed;
-            inset: 0;
-            z-index: 10000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.45);
-        }
-
-        #emergencyEvidenceModal.hidden {
-            display: none !important;
-        }
-
-        #emergencyEvidenceModal .modal-card {
-            width: min(1120px, 100%);
-            max-height: calc(100dvh - 40px);
-            overflow-y: auto;
-            margin: 0;
-            background: white;
-            border-radius: 14px;
-        }
-
-        /* Mantener oculto cuando corresponda */
-        #emergencyEvidenceModal.hidden {
-            display: none !important;
-        }
-
-        /* Ventana blanca centrada */
-        #emergencyEvidenceModal {
-            position: fixed;
-            inset: 0;
-            z-index: 10000;
-
-            background: rgba(17, 28, 23, 0.45);
-        }
-
-        #emergencyEvidenceModal.hidden {
-            display: none !important;
-        }
-
-        #emergencyEvidenceModal>.modal-card {
-            position: absolute;
-            width: min(1120px, calc(100% - 40px));
-            background: white;
-            border-radius: 14px;
-            border: 1px solid #d8e0dc;
-            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.25);
-        }
-
-        /* Encabezado del modal E/U/I */
-        #emergencyEvidenceModal .modal-head {
-            position: relative;
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-
-            padding: 18px 20px;
-            border-bottom: 1px solid #d8e0dc;
-            background: #fafcfb;
-        }
-
-        /* Texto del encabezado */
-        #emergencyEvidenceModal .modal-head>div {
-            flex: 1;
-            min-width: 0;
-        }
-
-        /* Botón X en esquina superior derecha */
-        #emergencyEvidenceModal .modal-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            margin: 0;
-            border: none;
-            border-radius: 50%;
-            background: transparent;
-
-            color: #34423d;
-            font-size: 22px;
-            line-height: 1;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        #emergencyEvidenceModal .modal-close:hover {
-            background: #eef2f0;
-            color: #176b4a;
-        }
-
-        /* Evitar que el texto se superponga con la X */
-        #emergencyEvidenceModal .modal-head {
-            padding-right: 60px;
-        }
-
         @media(max-width:760px) {
             .metrics-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr))
@@ -2774,6 +2777,695 @@
             }
         }
 
+        .role-view-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px;
+            border: 1px solid #cfd9d4;
+            border-radius: 10px;
+            background: #f8faf9
+        }
+
+        .role-view-label {
+            padding: 0 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #5f6c65;
+            white-space: nowrap
+        }
+
+        .role-view-btn {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 7px 10px !important;
+            border-radius: 7px !important;
+            color: #53615a !important;
+            font-weight: 700 !important
+        }
+
+        .role-view-btn.active {
+            background: #fff !important;
+            color: var(--green-dark) !important;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, .10) !important
+        }
+
+        .role-state-badge {
+            white-space: nowrap
+        }
+
+        .role-hidden {
+            display: none !important
+        }
+
+        .role-readonly input:not([type="button"]):not([type="submit"]),
+        .role-readonly select,
+        .role-readonly textarea {
+            background: #f6f8f7 !important;
+            color: #45514b !important
+        }
+
+        .role-readonly .structured-add-btn,
+        .role-readonly .structured-entry-remove,
+        .role-readonly .trash-row,
+        .role-readonly .attach,
+        .role-readonly button[onclick^="addItemRow"],
+        .role-readonly button[onclick^="openReferenceImageManager"],
+        .role-readonly button[onclick*="lotQuoteInput"],
+        .role-readonly .table-lock-btn {
+            display: none !important
+        }
+
+        .workflow-summary {
+            display: grid;
+            grid-template-columns: auto 1fr auto 1fr auto;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px
+        }
+
+        .workflow-stage {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0
+        }
+
+        .workflow-stage-num {
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: #e6ece9;
+            color: #68756e;
+            font-size: 11px;
+            font-weight: 800;
+            flex: none
+        }
+
+        .workflow-stage strong {
+            display: block;
+            font-size: 11px
+        }
+
+        .workflow-stage span {
+            display: block;
+            margin-top: 2px;
+            font-size: 9.5px;
+            color: var(--muted)
+        }
+
+        .workflow-stage.current .workflow-stage-num {
+            background: var(--green);
+            color: #fff
+        }
+
+        .workflow-stage.done .workflow-stage-num {
+            background: #d9efe3;
+            color: var(--green-dark)
+        }
+
+        .workflow-line {
+            height: 2px;
+            background: #e3e9e6;
+            border-radius: 99px
+        }
+
+        .workflow-line.done {
+            background: #9cc7b0
+        }
+
+        .role-workspace {
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid #d8e1dc;
+            border-radius: 11px;
+            background: #fbfdfc
+        }
+
+        .workspace-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: flex-start
+        }
+
+        .workspace-kicker {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--green-dark)
+        }
+
+        .workspace-head h3 {
+            margin: 3px 0 4px;
+            font-size: 15px
+        }
+
+        .workspace-head p {
+            margin: 0;
+            max-width: 760px;
+            font-size: 11px;
+            line-height: 1.45;
+            color: var(--muted)
+        }
+
+        .approval-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px
+        }
+
+        .danger-action {
+            border-color: #ddb5b5;
+            color: #8d3434;
+            background: #fffafa
+        }
+
+        .workflow-audit {
+            margin-top: 15px
+        }
+
+        .workflow-audit-row {
+            display: grid;
+            grid-template-columns: 145px 155px 1fr;
+            gap: 10px;
+            padding: 8px 10px;
+            border: 1px solid #e1e7e4;
+            border-radius: 8px;
+            background: #fff;
+            margin-top: 6px;
+            font-size: 10.5px
+        }
+
+        .workflow-audit-row strong {
+            color: var(--green-dark)
+        }
+
+        .view-context-banner {
+            margin: 0 30px 14px;
+            padding: 10px 13px;
+            border: 1px solid #d7e2dc;
+            border-radius: 10px;
+            background: #fbfdfc;
+            font-size: 11px;
+            color: #506059
+        }
+
+        @media(max-width:850px) {
+            .workflow-summary {
+                grid-template-columns: 1fr;
+                gap: 6px
+            }
+
+            .workflow-line {
+                width: 2px;
+                height: 16px;
+                margin-left: 13px
+            }
+
+            .workflow-audit-row {
+                grid-template-columns: 1fr
+            }
+
+            .role-view-control {
+                width: 100%;
+                overflow: auto
+            }
+        }
+
+        .source-chip {
+            display: inline-flex;
+            margin-left: 5px;
+            padding: 2px 5px;
+            border-radius: 999px;
+            background: #eef4f1;
+            color: #587066;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            vertical-align: 1px
+        }
+
+        .auto-source-note,
+        .norm-note {
+            padding: 9px 11px;
+            border: 1px solid #d8e4de;
+            border-radius: 8px;
+            background: #f8fbf9;
+            color: #5e6b65;
+            font-size: 10px;
+            line-height: 1.45
+        }
+
+        .norm-note {
+            margin-top: 10px;
+            border-left: 3px solid var(--green)
+        }
+
+        .pac-link-card {
+            min-height: 100%
+        }
+
+        .pac-linked-summary {
+            margin-top: 9px
+        }
+
+        .pac-data-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 7px;
+            margin-top: 8px
+        }
+
+        .pac-data-item {
+            padding: 7px;
+            border: 1px solid #e2e8e5;
+            border-radius: 7px;
+            background: white;
+            font-size: 10px
+        }
+
+        .pac-data-item strong {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--green-dark);
+            font-size: 9px;
+            text-transform: uppercase
+        }
+
+        .system-control-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .system-control-status {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .item-type {
+            margin-bottom: 6px;
+            font-size: 10px;
+            padding: 6px !important
+        }
+
+        .spec-priority {
+            max-width: 82px;
+            font-size: 9px;
+            padding: 5px !important;
+            flex: 0 0 auto
+        }
+
+        .brand-spec-warning {
+            margin-top: 5px;
+            padding: 6px 7px;
+            border: 1px solid #e3c999;
+            border-radius: 7px;
+            background: #fff8e8;
+            color: #79530a;
+            font-size: 9px;
+            line-height: 1.35
+        }
+
+        .unit-measure {
+            font-size: 10px;
+            padding: 6px !important
+        }
+
+        .other-unit-measure {
+            margin-top: 5px !important;
+            font-size: 10px !important;
+            padding: 6px !important
+        }
+
+        .estimate-source-row {
+            align-items: center
+        }
+
+        .inherited-data-card {
+            background: #f7faf8
+        }
+
+        .inherited-summary {
+            font-size: 11px;
+            color: #5d6c65;
+            line-height: 1.45
+        }
+
+        .document-summary-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px
+        }
+
+        .document-summary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px
+        }
+
+        .document-summary-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px 135px auto;
+            gap: 8px;
+            align-items: center;
+            padding: 9px 10px;
+            border: 1px solid #e0e7e3;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 10px
+        }
+
+        .document-summary-item strong {
+            font-size: 11px;
+            overflow-wrap: anywhere
+        }
+
+        .doc-meta {
+            color: var(--muted)
+        }
+
+        .history-filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.3fr 1fr;
+            gap: 8px
+        }
+
+        .history-event {
+            display: grid;
+            grid-template-columns: 140px 145px 1fr;
+            gap: 9px;
+            padding: 9px 10px;
+            border-bottom: 1px solid #edf1ef;
+            font-size: 10.5px
+        }
+
+        .history-event:last-child {
+            border-bottom: 0
+        }
+
+        .history-event strong {
+            color: var(--green-dark)
+        }
+
+        .daf-edit-active {
+            box-shadow: inset 0 0 0 2px rgba(40, 92, 143, .18);
+            background: #f8fbfe !important
+        }
+
+        body.step-mode .requester-summary-section {
+            display: none
+        }
+
+        @media(max-width:850px) {
+            .pac-data-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .document-summary-item {
+                grid-template-columns: 1fr
+            }
+
+            .history-filter-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .history-event {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .pac-selector-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-top: 10px
+        }
+
+        .pac-record-card {
+            text-align: left;
+            display: grid;
+            grid-template-columns: 130px minmax(0, 1fr);
+            gap: 3px 10px;
+            padding: 10px 11px
+        }
+
+        .pac-record-card strong {
+            grid-row: 1/3;
+            color: var(--green-dark)
+        }
+
+        .pac-record-card span {
+            font-size: 11px
+        }
+
+        .pac-record-card small {
+            color: var(--muted)
+        }
+
+        .req-mark {
+            color: var(--red);
+            font-weight: 900
+        }
+
+        /* Alineación transversal de campos: una misma fila comparte altura de rótulo */
+        .grid>.field {
+            min-width: 0
+        }
+
+        .grid>.field>label:first-child {
+            line-height: 1.25
+        }
+
+        .grid>.field.row-label-aligned>label:first-child {
+            display: flex !important;
+            align-items: flex-end !important
+        }
+
+        .grid>.field.auto-row-align-pad {
+            padding-top: calc(var(--row-label-space, 0px) + 5px)
+        }
+
+        input[type=text],
+        input[type=date],
+        input[type=number],
+        input[type=email],
+        select {
+            min-height: 40px;
+            box-sizing: border-box
+        }
+
+        .auto-source-note,
+        .norm-note,
+        .soft-card,
+        .subbox {
+            box-sizing: border-box
+        }
+
+        /* Buscador del directorio institucional */
+        .counterpart-directory-combo {
+            position: relative
+        }
+
+        .counterpart-search-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            border: 1px solid #cad7d1;
+            border-radius: 9px;
+            background: #fff;
+            padding: 0 8px;
+            transition: border-color .15s, box-shadow .15s
+        }
+
+        .counterpart-search-row:focus-within {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(23, 107, 74, .10)
+        }
+
+        .counterpart-search-icon {
+            font-size: 17px;
+            color: #6f7e77;
+            line-height: 1;
+            flex: none
+        }
+
+        .counterpart-search-row input {
+            flex: 1;
+            border: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding-left: 0 !important
+        }
+
+        .counterpart-directory-toggle {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 6px 8px !important;
+            font-size: 16px !important;
+            color: #607068 !important;
+            min-width: auto !important
+        }
+
+        .counterpart-directory-dropdown {
+            position: absolute;
+            z-index: 140;
+            left: 0;
+            right: 0;
+            top: calc(100% + 6px);
+            max-height: 330px;
+            overflow: auto;
+            background: #fff;
+            border: 1px solid #ced9d4;
+            border-radius: 10px;
+            box-shadow: 0 16px 35px rgba(32, 55, 45, .14)
+        }
+
+        .counterpart-directory-head {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            padding: 9px 11px;
+            background: #f7faf8;
+            border-bottom: 1px solid #e4ebe7;
+            font-size: 10px;
+            color: #56665e
+        }
+
+        .counterpart-directory-results {
+            padding: 5px
+        }
+
+        .counterpart-directory-item {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) auto;
+            gap: 9px;
+            align-items: center;
+            text-align: left;
+            padding: 9px 10px;
+            border: 0 !important;
+            border-radius: 8px !important;
+            background: #fff !important;
+            color: #35443d !important;
+            box-shadow: none !important
+        }
+
+        .counterpart-directory-item:hover,
+        .counterpart-directory-item:focus {
+            background: #f2f8f5 !important
+        }
+
+        .counterpart-avatar {
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: #e6f2ec;
+            color: var(--green-dark);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase
+        }
+
+        .counterpart-person-name {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            color: #33443c
+        }
+
+        .counterpart-person-meta {
+            display: block;
+            margin-top: 2px;
+            font-size: 9.5px;
+            color: #6d7a74;
+            line-height: 1.35
+        }
+
+        .counterpart-person-email {
+            font-size: 9px;
+            color: #718079;
+            max-width: 210px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .counterpart-directory-empty {
+            padding: 14px 12px;
+            font-size: 10.5px;
+            color: #66756e;
+            line-height: 1.45
+        }
+
+        .directory-save-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 9px;
+            border-radius: 8px;
+            background: #f4f8f6;
+            font-size: 10px;
+            font-weight: 700;
+            color: #55655d
+        }
+
+        .directory-save-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a9b5af;
+            flex: none
+        }
+
+        .directory-save-state.saved .directory-save-dot {
+            background: #27865e
+        }
+
+        .directory-save-state.saving .directory-save-dot {
+            background: #c28a21
+        }
+
+        .directory-save-state.needs-data .directory-save-dot {
+            background: #9ca7a2
+        }
+
+        .directory-save-state.error .directory-save-dot {
+            background: #b74f4f
+        }
+
+        @media(max-width:760px) {
+            .counterpart-directory-item {
+                grid-template-columns: 32px minmax(0, 1fr)
+            }
+
+            .counterpart-person-email {
+                grid-column: 2;
+                max-width: none
+            }
+
+            .grid>.field.auto-row-align-pad {
+                padding-top: 0
+            }
+        }
+
         @media print {
             @page {
                 size: A4;
@@ -2793,6 +3485,78 @@
 
             .submission-statistics {
                 display: block !important;
+                break-inside: avoid
+            }
+
+            .role-hidden {
+                display: block !important
+            }
+
+            .requester-summary-section {
+                display: block !important
+            }
+
+            .structured-add-btn,
+            .structured-entry-remove,
+            .attach,
+            .quote-view-btn,
+            .evidence-btn,
+            .evidence-view-btn,
+            .trash-row,
+            .table-bottom-bar,
+            .table-struct-bar {
+                display: none !important
+            }
+
+            .structured-cell-editor {
+                overflow: visible !important;
+                padding-bottom: 0 !important
+            }
+
+            .structured-entry-list,
+            .structured-entry {
+                width: 100% !important;
+                min-width: 0 !important
+            }
+
+            .structured-entry textarea {
+                display: none !important
+            }
+
+            .structured-entry-print {
+                display: block !important;
+                flex: 1;
+                min-width: 0;
+                font-size: 8.5pt;
+                line-height: 1.25;
+                white-space: normal;
+                overflow-wrap: anywhere
+            }
+
+            .spec-priority {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                max-width: none !important
+            }
+
+            .spec-priority-trigger,
+            .spec-priority-menu {
+                display: none !important
+            }
+
+            .spec-priority-print {
+                display: inline !important;
+                font-size: 8pt;
+                font-weight: 700;
+                white-space: nowrap
+            }
+
+            .document-summary-item {
+                grid-template-columns: 1fr 110px 120px !important;
+                break-inside: avoid
+            }
+
+            #itemsTable tr {
                 break-inside: avoid
             }
 
@@ -2866,116 +3630,6 @@
                 padding: 4px
             }
         }
-
-        /* Fondo de advertencia PRZ */
-        .emergency-alert-backdrop {
-            position: fixed;
-            inset: 0;
-            z-index: 20000;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-            background: rgba(17, 28, 23, 0.55);
-        }
-
-        .emergency-alert-backdrop.hidden {
-            display: none !important;
-        }
-
-        /* Ventana de advertencia */
-        .emergency-alert-card {
-            width: min(460px, 100%);
-            max-height: calc(100dvh - 40px);
-
-            background: #ffffff;
-            border: 1px solid #d8e0dc;
-            border-radius: 14px;
-
-            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.25);
-
-            overflow-y: auto;
-        }
-
-        /* Encabezado */
-        .emergency-alert-card .modal-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 16px 20px;
-
-            background: #fafcfb;
-            border-bottom: 1px solid #d8e0dc;
-        }
-
-        .emergency-alert-card .modal-head h3 {
-            font-size: 16px;
-            margin: 0;
-            color: #17211d;
-        }
-
-        /* Botón X */
-        .emergency-alert-card .modal-close {
-            position: static;
-            width: 30px;
-            height: 30px;
-            padding: 0;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            border: none;
-            border-radius: 50%;
-            background: transparent;
-
-            color: #34423d;
-            font-size: 22px;
-            cursor: pointer;
-        }
-
-        /* Mensaje */
-        .emergency-alert-card .modal-body {
-            padding: 22px 20px;
-            font-size: 13px;
-            color: #44514b;
-            line-height: 1.6;
-        }
-
-        .emergency-alert-card .modal-body p {
-            margin: 0;
-        }
-
-        /* Pie */
-        .emergency-alert-card .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-
-            padding: 14px 20px;
-
-            background: #fafcfb;
-            border-top: 1px solid #d8e0dc;
-        }
-
-        /* Botón institucional */
-        .emergency-alert-card .modal-footer .primary {
-            background: #176b4a;
-            color: #ffffff;
-            border: 1px solid #176b4a;
-            border-radius: 8px;
-
-            padding: 10px 18px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .emergency-alert-card .modal-footer .primary:hover {
-            background: #0f4e37;
-        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2983,15 +3637,25 @@
 
 <body>
     <div class="toolbar no-print">
-        <div class="fill-mode-control" aria-label="Modo de llenado">
+        <div class="role-view-control" aria-label="Vista de trabajo">
+            <span class="role-view-label">Vista</span>
+            <button id="roleRequesterBtn" type="button" class="role-view-btn active"
+                onclick="setRoleView('requester')">Área requirente</button>
+            <button id="roleChiefBtn" type="button" class="role-view-btn" onclick="setRoleView('chief')">Jefatura área
+                requirente</button>
+            <button id="roleProcurementBtn" type="button" class="role-view-btn"
+                onclick="setRoleView('procurement')">DAF</button>
+        </div>
+        <div id="roleStateBadge" class="status-badge role-state-badge">Borrador del requerimiento</div>
+        <div id="fillModeControl" class="fill-mode-control" aria-label="Modo de llenado">
             <span class="fill-mode-label">Modo de llenado</span>
             <button id="modeFormBtn" type="button" class="fill-mode-btn active"
-                onclick="setFillMode('form')">Formulario
-                completo</button>
+                onclick="setFillMode('form')">Formulario completo</button>
             <button id="modeStepBtn" type="button" class="fill-mode-btn" onclick="setFillMode('step')">Paso a
                 paso</button>
         </div>
-        <button type="button" onclick="validateWholeForm()">Validar obligatorios</button>
+        <button id="validateWholeFormBtn" type="button" onclick="validateWholeForm()">Validar obligatorios</button>
+        <button id="historyOpenBtn" type="button" onclick="openHistoryModal()">Historial del expediente</button>
         <button class="primary" onclick="window.print()">Imprimir / guardar PDF</button>
         <button onclick="clearForm()">Limpiar formulario</button>
         <div class="grow"></div>
@@ -3018,12 +3682,17 @@
             </div>
             <div class="docmeta">
                 <div><strong>Código</strong> RQ-01</div>
-                <div><strong>Versión</strong> 0.65 — propuesta</div>
+                <div><strong>Versión</strong> 0.75 — propuesta</div>
                 <div><strong>Estado</strong> En revisión</div>
                 <div><strong>Folio</strong> <input id="folio" type="text"
                         style="margin-top:5px;background:rgba(255,255,255,.95)"></div>
             </div>
         </header>
+        <div id="roleContextBanner" class="view-context-banner no-print">
+            Está trabajando en la <strong>vista del área requirente</strong>. Complete el requerimiento y envíelo a la
+            jefatura del área para revisión.
+        </div>
+
         <div id="stepNavigator" class="step-navigator no-print hidden">
             <div class="step-nav-top">
                 <div>
@@ -3044,153 +3713,100 @@
 
         <main>
 
-            <section class="form-step" data-step="1">
+            <section class="form-step requester-section" data-step="1">
                 <div class="section-head">
                     <div class="num">1</div>
                     <div>
-                        <h2>Identificación de la solicitud</h2><small>Quién requiere, quién autoriza y cuándo se
-                            necesita.</small>
+                        <h2>Identificación de la solicitud</h2><small>Quién formula el requerimiento y cuándo se
+                            necesita. La aprobación de jefatura se realiza al finalizar el envío.</small>
                     </div>
                 </div>
                 <div class="section-body">
                     <div class="grid">
                         <div class="field c4">
-
-                            <label class="req">
-                                Área / unidad requirente
+                            <label class="req">Área requirente 
+                                <span class="source-chip">perfil</span>
                             </label>
-
                             @php
                                 $usuario = auth()->user();
 
                                 $departamento = $usuario?->departamento;
                             @endphp
 
-                            <input class="essential" id="requestingUnit" name="departamento_nombre" type="text"
-                                value="{{ $departamento?->nombre ?? '' }}" placeholder="Sin departamento asignado"
-                                readonly required
-                                style="
-                                        background-color: #ffffff;
-                                        cursor: not-allowed;
-                                        opacity: 1;
-                                      ">
-
+                            <input  class="essential" 
+                                    id="requestingUnit"
+                                    name="departamento_nombre" 
+                                    type="text"
+                                    value="{{ $departamento?->nombre ?? '' }}"
+                                    placeholder="Área del usuario"
+                                    readonly 
+                                    required>
                             <input type="hidden" name="departamento_id" value="{{ $departamento?->id ?? '' }}">
-
                             @if (!$departamento)
                                 <div class="alert amber">
-                                    Tu usuario no tiene un departamento asignado.
+                                    Tu usuario no tiene una Área asignada.
                                     Solicita al administrador que actualice tu información.
                                 </div>
                             @endif
-
                         </div>
-                        <div class="field c4"><label class="req">Responsable del requerimiento</label>
-                            @php
-                                $usuario = auth()->user();
-
-                                $nombreCompleto = trim(($usuario?->name ?? '') . ' ' . ($usuario?->apellido ?? ''));
-
-                                $cargo = $usuario?->cargo;
-
-                                $responsable = $nombreCompleto . ($cargo?->nombre ? ' / ' . $cargo->nombre : '');
-                            @endphp
-
-                            <input class="essential" id="responsableRequerimiento" name="responsable_requerimiento"
-                                type="text" value="{{ $responsable }}" placeholder="Sin responsable asignado"
-                                readonly required
-                                style="
-                                    background-color: #ffffff;
-                                    cursor: not-allowed;
-                                    opacity: 1;
-                                ">
-                        </div>
-                        <div class="field c4"><label>Correo</label>
-                            @php
-                                $usuario = auth()->user();
-                            @endphp
-
-                            <input class="essential" id="email" name="correo" type="email"
-                                value="{{ $usuario?->email ?? '' }}" placeholder="Sin correo registrado" readonly
-                                required
-                                style="
-                                    background-color: #ffffff;
-                                    color: #334155;
-                                    cursor: not-allowed;
-                                ">
-                        </div>
-
-                        <div class="field c4"><label class="req">Fecha de solicitud</label><input type="date"
-                                name="fecha" id="fecha" class="form-control"
-                                min="{{ now()->timezone('America/Santiago')->format('Y-m-d') }}"
-                                value="{{ old('fecha', now()->timezone('America/Santiago')->format('Y-m-d')) }}"
-                                required>
-                        </div>
-
-                        <div class="field c4"><label class="req">Fecha en que se requiere</label><input
-                                class="essential" type="date"></div>
-                        <div class="field c4"><label>Prioridad</label>
-                            <select id="priority" onchange="togglePriority()">
-                                <option value="normal">Planificada / normal</option>
-                                <option value="urgent">Urgente</option>
-                                <option value="critical">Crítica para continuidad</option>
-                            </select>
-                        </div>
-
-                        <div id="urgentBox" class="field c12 hidden">
-                            <label class="req">Fundamento de la urgencia o criticidad</label>
-                            <textarea class="short"
-                                placeholder="Indique hechos concretos, fecha conocida de la necesidad y consecuencias de no contratar oportunamente."></textarea>
-                            <div class="alert amber">La urgencia declarada por la unidad no determina por sí sola el
-                                mecanismo de compra; Abastecimiento deberá revisar si existe una causal legal aplicable.
-                            </div>
-                        </div>
-
+                        <div class="field c4"><label class="req">Nombre del requirente <span
+                                    class="source-chip">perfil</span></label><input class="essential"
+                                id="requestingResponsible" type="text" placeholder="Nombre del usuario"></div>
+                        <div class="field c4"><label>Cargo <span class="source-chip">perfil</span></label><input
+                                id="requestingRole" type="text" placeholder="Cargo del usuario"></div>
+                        <div class="field c4"><label>Correo institucional <span
+                                    class="source-chip">perfil</span></label><input id="requestingContact"
+                                type="text" placeholder="correo@institucion.cl"></div>
+                        <div class="field c4"><label>Jefatura del área <span
+                                    class="source-chip">estructura</span></label><input id="requestingChief"
+                                type="text" placeholder="Se obtiene de la estructura organizacional"></div>
+                        <div class="field c4"><label class="req">Fecha de solicitud</label><input
+                                class="essential" id="requestDate" type="date"></div>
+                        <div class="field c6"><label class="req">Fecha en que se requiere</label><input
+                                class="essential" id="requiredNeedDate" type="date"></div>
 
 
                         <div class="field c12">
-                            <label
-                                title="Indique si este requerimiento necesita, además, una solicitud de calificación como emergencia, urgencia o imprevisto.">¿El
-                                requerimiento requiere una solicitud de calificación de emergencia, urgencia o
-                                imprevisto?</label>
+                            <label class="req"
+                                title="Indique si este requerimiento necesita, además, una evaluación como emergencia, urgencia o imprevisto.">¿La
+                                necesidad requiere evaluación como emergencia, urgencia o imprevisto?</label>
                             <div class="choice-row">
-                                <label class="choice"><input type="radio" name="emergencyNeedFlag" value="si"
-                                        onchange="toggleEmergencyNeed()"> Sí</label>
-                                <label class="choice"><input type="radio" name="emergencyNeedFlag" value="no"
-                                        onchange="toggleEmergencyNeed()"> No</label>
+                                <label class="choice"><input class="essential" type="radio"
+                                        name="emergencyNeedFlag" value="si" onchange="toggleEmergencyNeed()">
+                                    Sí</label>
+                                <label class="choice"><input class="essential" type="radio"
+                                        name="emergencyNeedFlag" value="no" onchange="toggleEmergencyNeed()">
+                                    No</label>
                             </div>
-                            <div class="hint">Si selecciona “Sí”, se habilita el módulo para incorporar la solicitud
-                                y sus antecedentes. Si selecciona “No”, quedará registrado que esta acción no aplica.
-                            </div>
+                            <div class="hint">Si selecciona “Sí”, complete los hechos y respaldos. Esta declaración
+                                no determina el mecanismo de contratación; la calificación y su efecto procedimental
+                                corresponden a la revisión posterior del DAF.</div>
                         </div>
 
                         <div id="emergencyRequestOptionBox" class="field c12 hidden">
                             <label
-                                title="Utilice esta opción cuando, además del requerimiento de compra, sea necesario dejar formulada una solicitud de calificación como emergencia, urgencia o imprevisto, con sus antecedentes de respaldo.">Solicitud
-                                de calificación del requerimiento como emergencia, urgencia o imprevisto</label>
+                                title="Utilice esta opción cuando, además del requerimiento de compra, sea necesario dejar formulada una solicitud de calificación como emergencia, urgencia o imprevisto, con sus antecedentes de respaldo.">Antecedentes
+                                para evaluación de emergencia, urgencia o imprevisto</label>
                             <div class="soft-card">
-                                <div class="compact-title">Activación opcional de calificación especial</div>
+                                <div class="compact-title">Antecedentes de situación especial</div>
                                 <div class="tool-group">
                                     <button id="emergencyRequestToggleBtn" type="button" class="small-btn"
-                                        onclick="toggleEmergencyRequestPanel()">Incorporar solicitud de calificación
-                                        E/U/I</button>
+                                        onclick="toggleEmergencyRequestPanel()">Completar antecedentes E/U/I</button>
                                     <span id="emergencyRequestStatus" class="status-badge">No incorporada</span>
                                 </div>
-                                <div class="hint">Si el área requirente necesita solicitar una evaluación por
-                                    emergencia, urgencia o imprevisto, utilice este botón y complete los antecedentes.
-                                    El bloque se despliega dentro de esta misma sección.</div>
+                                <div class="hint">Complete este bloque cuando existan hechos que puedan justificar
+                                    una evaluación como emergencia, urgencia o imprevisto. El requirente informa los
+                                    hechos; DAF evalúa la procedencia jurídica posterior.</div>
                             </div>
                         </div>
 
 
                         <div id="emergencyRequestPanel" class="field c12 hidden">
                             <div class="subbox" style="margin:0;">
-                                <div class="mini-title">Solicitud de calificación de emergencia, urgencia o imprevisto
-                                </div>
-                                <div class="hint" style="margin-bottom:12px;">Complete los antecedentes necesarios
-                                    para que la autoridad o unidad que evalúe la calificación cuente, desde el inicio,
-                                    con la narración de los hechos, fundamentos, afectación, solución requerida y medios
-                                    de respaldo.</div>
+                                <div class="mini-title">Antecedentes para evaluación E/U/I</div>
+                                <div class="hint" style="margin-bottom:12px;">Registre hechos verificables,
+                                    afectación, solución requerida y respaldos. No seleccione ni proponga un mecanismo
+                                    excepcional de compra desde este formulario.</div>
 
                                 <div class="grid">
                                     <div class="field c3">
@@ -3199,16 +3815,47 @@
                                             data-eui-help="tipo" tabindex="0">Tipo de calificación
                                             solicitada</label>
 
-                                        <div id="emergencyTypeCombo">
+                                        <div id="emergencyTypeCombo" class="definition-combo">
+                                            <button id="emergencyTypeComboButton" type="button"
+                                                class="definition-combo-button" aria-haspopup="listbox"
+                                                aria-expanded="false" onclick="toggleEmergencyTypeDropdown()">
+                                                <span id="emergencyTypeComboLabel">Seleccione</span>
+                                                <span class="definition-combo-chevron">⌄</span>
+                                            </button>
 
-                                            <select id="emergencyQualificationType" name="emergencyQualificationType"
-                                                class="essential" required>
+                                            <div id="emergencyTypeDropdown" class="definition-dropdown hidden"
+                                                role="listbox" aria-label="Tipo de calificación solicitada">
+                                                <button type="button" class="definition-option" role="option"
+                                                    onmouseenter="showEmergencyTypeDefinition('emergencia',this)"
+                                                    onfocus="showEmergencyTypeDefinition('emergencia',this)"
+                                                    onclick="selectEmergencyType('Emergencia')">Emergencia</button>
+
+                                                <button type="button" class="definition-option" role="option"
+                                                    onmouseenter="showEmergencyTypeDefinition('urgencia',this)"
+                                                    onfocus="showEmergencyTypeDefinition('urgencia',this)"
+                                                    onclick="selectEmergencyType('Urgencia')">Urgencia</button>
+
+                                                <button type="button" class="definition-option" role="option"
+                                                    onmouseenter="showEmergencyTypeDefinition('imprevisto',this)"
+                                                    onfocus="showEmergencyTypeDefinition('imprevisto',this)"
+                                                    onclick="selectEmergencyType('Imprevisto')">Imprevisto</button>
+                                            </div>
+
+                                            <div id="emergencyTypeDefinition" class="definition-popover hidden"
+                                                role="status" aria-live="polite">
+                                                <div id="emergencyTypeDefinitionTitle"
+                                                    class="definition-popover-title"></div>
+                                                <div id="emergencyTypeDefinitionText" class="definition-popover-text">
+                                                </div>
+                                            </div>
+
+                                            <select id="emergencyQualificationType" class="essential hidden"
+                                                aria-hidden="true" tabindex="-1">
                                                 <option value="">Seleccione</option>
                                                 <option value="Emergencia">Emergencia</option>
                                                 <option value="Urgencia">Urgencia</option>
                                                 <option value="Imprevisto">Imprevisto</option>
                                             </select>
-
                                         </div>
 
                                         <div class="hint">Pose el cursor sobre “Emergencia”, “Urgencia” o
@@ -3218,7 +3865,7 @@
                                     <div class="field c3">
                                         <label
                                             title="Fecha en que ocurrió el hecho o en que fue detectada formalmente la situación."
-                                            class="eui-help-label" data-eui-help="fecha" tabindex="0">Fecha del
+                                            class="req eui-help-label" data-eui-help="fecha" tabindex="0">Fecha del
                                             hecho o detección</label>
                                         <input type="date">
                                     </div>
@@ -3227,8 +3874,7 @@
                                             title="Hora del hecho o del momento en que la situación fue advertida, si se conoce."
                                             class="eui-help-label" data-eui-help="hora" tabindex="0">Hora del hecho
                                             o detección</label>
-                                        <input type="time" id="hora_hecho" name="hora_hecho"
-                                            value="{{ old('hora_hecho') }}" required>
+                                        <input type="time">
                                     </div>
                                     <div class="field c3">
                                         <label
@@ -3242,8 +3888,8 @@
                                     <div class="field c12">
                                         <label class="req eui-help-label"
                                             title="Describa cronológicamente qué ocurrió, cómo se detectó, quién intervino inicialmente y cuál es la situación actual."
-                                            data-eui-help="narracion" tabindex="0">Narración circunstanciada de los
-                                            hechos</label>
+                                            data-eui-help="narracion" tabindex="0" class="req">Narración
+                                            circunstanciada de los hechos</label>
                                         <textarea
                                             placeholder="Relate en forma clara y cronológica lo ocurrido: contexto, hecho gatillante, fecha u hora, personas o áreas involucradas, acciones iniciales y situación actual."></textarea>
                                     </div>
@@ -3267,7 +3913,7 @@
                                     <div class="field c6">
                                         <label
                                             title="Explique qué consecuencias prácticas se producirían si no se actúa de inmediato."
-                                            class="eui-help-label" data-eui-help="consecuencias"
+                                            class="req eui-help-label" data-eui-help="consecuencias"
                                             tabindex="0">Consecuencias de no actuar oportunamente</label>
                                         <textarea
                                             placeholder="Ej.: riesgo para personas, interrupción del servicio, pérdida de bienes, incumplimiento de obligaciones, daño reputacional o patrimonial, afectación a usuarios, etc."></textarea>
@@ -3275,7 +3921,7 @@
                                     <div class="field c6">
                                         <label
                                             title="Señale qué bienes, servicios, trabajos o medidas se requieren para enfrentar la situación."
-                                            class="eui-help-label" data-eui-help="medidas" tabindex="0">Bienes,
+                                            class="req eui-help-label" data-eui-help="medidas" tabindex="0">Bienes,
                                             servicios o medidas requeridas</label>
                                         <textarea
                                             placeholder="Describa brevemente la solución inmediata requerida, incluyendo si se trata de compra, contratación, arrendamiento, reparación, reposición o apoyo externo."></textarea>
@@ -3284,8 +3930,8 @@
                                     <div class="field c4">
                                         <label
                                             title="Indique el plazo máximo en que debe resolverse o iniciarse la respuesta."
-                                            class="eui-help-label" data-eui-help="plazo" tabindex="0">Plazo máximo
-                                            de atención</label>
+                                            class="req eui-help-label" data-eui-help="plazo" tabindex="0">Plazo
+                                            máximo de atención</label>
                                         <input type="text"
                                             placeholder="Ej.: dentro de 24 horas / inicio inmediato / antes de 48 horas">
                                     </div>
@@ -3307,6 +3953,27 @@
                                             class="eui-help-label" data-eui-help="monto" tabindex="0">Monto
                                             aproximado, si se conoce</label>
                                         <input type="text" placeholder="Ej.: $ 1.500.000 aprox.">
+                                    </div>
+
+                                    <div class="field c6">
+                                        <label class="req"
+                                            title="Permite distinguir una circunstancia realmente sobreviniente de una necesidad que pudo incorporarse a la planificación ordinaria.">¿La
+                                            necesidad era razonablemente previsible?</label>
+                                        <select id="emergencyForeseeability"
+                                            onchange="toggleEmergencyForeseeability()">
+                                            <option value="">Seleccione</option>
+                                            <option value="no">No</option>
+                                            <option value="partial">Parcialmente</option>
+                                            <option value="yes">Sí</option>
+                                        </select>
+                                        <div class="hint">Responda desde los hechos conocidos. Esta respuesta no
+                                            determina por sí sola la procedencia de una causal excepcional.</div>
+                                    </div>
+                                    <div id="emergencyForeseeabilityDetail" class="field c6 hidden">
+                                        <label class="req">Explique la previsibilidad y por qué la necesidad no fue
+                                            atendida por la planificación ordinaria</label>
+                                        <textarea class="short"
+                                            placeholder="Describa fechas, antecedentes de planificación, hechos sobrevinientes y cualquier circunstancia relevante."></textarea>
                                     </div>
 
                                     <div class="field c6">
@@ -3361,55 +4028,119 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="norm-note">Control de diseño: el requirente aporta hechos y evidencia. La
+                                    decisión sobre una causal excepcional corresponde al DAF y debe fundarse conforme al
+                                    marco vigente, incluido el art. 74 del D.S. N.º 661/2024.</div>
                             </div>
                         </div>
 
-                        <div class="field c6"><label class="req">Jefatura que autoriza el
-                                requerimiento</label>
-                            @php
-                                $usuario = auth()->user();
+                        <div class="field c6"><label>Contraparte técnica propuesta <span
+                                    class="source-chip">directorio institucional</span></label>
+                            <div class="choice-row" style="margin-bottom:8px;">
+                                <label class="choice"><input type="radio" name="technicalCounterpartMode"
+                                        value="same" onchange="toggleTechnicalCounterpartMode()"> Mismo
+                                    requirente</label>
+                                <label class="choice"><input type="radio" name="technicalCounterpartMode"
+                                        value="different" onchange="toggleTechnicalCounterpartMode()"> Contraparte
+                                    técnica distinta al requirente</label>
+                            </div>
+                            <div class="hint">Si selecciona una persona distinta, búsquela en el directorio de la
+                                intranet. Al seleccionarla se completan automáticamente sus datos.</div>
+                            <div id="sameRequesterCounterpartSummary" class="auto-source-note hidden"
+                                style="margin-top:10px;"></div>
 
-                                $jefe = $usuario?->jefe;
+                            <div id="technicalCounterpartFields" class="grid hidden" style="margin-top:10px;">
+                                <div id="counterpartDirectorySearchBox" class="field c12 hidden">
+                                    <label
+                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Buscar
+                                        persona en el directorio</label>
+                                    <div id="counterpartDirectoryCombo" class="counterpart-directory-combo">
+                                        <div class="counterpart-search-row">
+                                            <span class="counterpart-search-icon">⌕</span>
+                                            <input id="counterpartDirectorySearch" type="text" autocomplete="off"
+                                                placeholder="Buscar por nombre, cargo, área o correo"
+                                                onfocus="openCounterpartDirectory()"
+                                                oninput="handleCounterpartDirectorySearch(this.value)">
+                                            <button type="button" class="counterpart-directory-toggle"
+                                                title="Mostrar directorio"
+                                                onclick="toggleCounterpartDirectory(event)">⌄</button>
+                                        </div>
+                                        <div id="counterpartDirectoryDropdown"
+                                            class="counterpart-directory-dropdown hidden">
+                                            <div class="counterpart-directory-head">
+                                                <strong>Directorio de personas</strong>
+                                                <span id="counterpartDirectoryCount">0 registradas</span>
+                                            </div>
+                                            <div id="counterpartDirectoryResults"
+                                                class="counterpart-directory-results"></div>
+                                        </div>
+                                    </div>
+                                    <div class="hint">Escriba parte del nombre, cargo, área o correo. Si no existe,
+                                        complete sus datos abajo: se guardará automáticamente para futuras selecciones.
+                                    </div>
+                                </div>
 
-                                $nombreJefe = $jefe ? trim($jefe->name . ' ' . $jefe->apellido) : '';
+                                <div class="field c12">
+                                    <label
+                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Nombre</label>
+                                    <input id="technicalCounterpartName" type="text" placeholder="Nombre completo"
+                                        oninput="scheduleCounterpartDirectoryAutosave()">
+                                </div>
+                                <div class="field c6">
+                                    <label
+                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Unidad
+                                        / área</label>
+                                    <input id="technicalCounterpartUnit" type="text" placeholder="Unidad o área"
+                                        oninput="scheduleCounterpartDirectoryAutosave()">
+                                </div>
+                                <div class="field c6">
+                                    <label
+                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Cargo</label>
+                                    <input id="technicalCounterpartRole" type="text" placeholder="Cargo"
+                                        oninput="scheduleCounterpartDirectoryAutosave()">
+                                </div>
+                                <div class="field c12">
+                                    <label
+                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Correo
+                                        institucional</label>
+                                    <input id="technicalCounterpartEmail" type="email"
+                                        placeholder="correo@institucion.cl"
+                                        oninput="scheduleCounterpartDirectoryAutosave()">
+                                </div>
 
-                                $cargoJefe = $jefe?->cargo?->nombre ?? '';
-
-                                $textoJefe = $nombreJefe;
-
-                                if ($cargoJefe) {
-                                    $textoJefe .= ' / ' . $cargoJefe;
-                                }
-                            @endphp
-
-                            <input class="essential" id="jefatura" name="jefatura" type="text"
-                                value="{{ $textoJefe }}" placeholder="Sin jefatura asignada" readonly required
-                                style="
-                                    background-color: #ffffff;
-                                    color: #334155;
-                                    cursor: not-allowed;
-                                ">
-                        </div>
-                        <div class="field c6"><label>Firma / visto bueno de jefatura</label>
-                            <div class="signature-line"></div>
-                            <div class="hint">Firma manuscrita o electrónica, según procedimiento interno.</div>
+                                <div id="technicalCounterpartAutofillHint" class="field c12 hidden">
+                                    <div class="hint">Los datos se completaron desde el perfil del requirente. En la
+                                        intranet real se obtendrán del directorio institucional.</div>
+                                </div>
+                                <div id="technicalCounterpartDirectoryHint" class="field c12 hidden">
+                                    <div id="counterpartDirectorySaveStateBox"
+                                        class="directory-save-state needs-data">
+                                        <span class="directory-save-dot"></span>
+                                        <span id="counterpartDirectorySaveState">Seleccione una persona del directorio
+                                            o complete una nueva.</span>
+                                    </div>
+                                    <div class="hint">En este prototipo los nuevos registros se conservan en este
+                                        navegador. En producción deberán persistir en la base de datos institucional y
+                                        respetar los permisos del directorio.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section class="form-step" data-step="2">
+            <section class="form-step requester-section" data-step="2">
                 <div class="section-head">
                     <div class="num">2</div>
                     <div>
-                        <h2>Necesidad y objeto de la contratación</h2><small>Primero se explica el problema o necesidad;
-                            luego la solución a adquirir.</small>
+                        <h2>Necesidad institucional y finalidad</h2><small>Explique para qué se requiere la compra. El
+                            detalle de qué se compra se define en la sección 4.</small>
                     </div>
                 </div>
                 <div class="section-body">
                     <div class="grid">
                         <div class="field c12">
-                            <label class="req">Tipo de requerimiento</label>
+                            <label class="req">Tipo general de requerimiento</label>
                             <div class="choice-row">
                                 <label class="choice"><input class="essential" type="radio" name="kind"
                                         value="bien" onchange="toggleKind()"> Compra de bienes</label>
@@ -3421,20 +4152,43 @@
                                         value="mixto" onchange="toggleKind()"> Mixto</label>
                             </div>
                         </div>
-                        <div class="field c12"><label class="req">Nombre breve / objeto de la compra <span
-                                    style="font-weight:600;text-transform:none;letter-spacing:normal;font-size:11px;">(Debe
-                                    sintetizar de forma clara la necesidad de compra)</span></label><input
-                                class="essential" type="text"
-                                placeholder="Ej.: Servicio de producción técnica para actividad institucional"></div>
-                        <div class="field c12"><label class="req">Necesidad que se busca satisfacer y
-                                justificación</label>
-                            <textarea class="essential"
-                                placeholder="Explique qué problema o necesidad institucional existe, por qué se requiere la contratación y qué ocurriría si no se realiza. Evite justificar solamente indicando el nombre del producto."></textarea>
+                        <div class="field c12"><label class="req">Nombre breve del requerimiento</label><input
+                                class="essential" id="requestTitle" type="text"
+                                placeholder="Ej.: Adquisición de equipos para atención de visitantes"></div>
+                        <div class="field c6"><label class="req">Necesidad o problema que se busca resolver</label>
+                            <textarea class="essential" id="institutionalNeed"
+                                placeholder="Describa el problema, brecha o necesidad institucional. No describa aquí las especificaciones del producto."></textarea>
                         </div>
-                        <div class="field c6"><label>Resultado esperado / finalidad institucional</label>
-                            <textarea class="short" placeholder="Resultado verificable que debe obtenerse con la compra."></textarea>
+                        <div class="field c6"><label class="req">Resultado esperado / finalidad
+                                institucional</label>
+                            <textarea class="essential" id="expectedResult"
+                                placeholder="Indique qué resultado concreto debe obtenerse con la contratación."></textarea>
                         </div>
-                        <div class="field c3"><label>Nº beneficiarios / usuarios</label><input type="number"
+                        <div class="field c6"><label class="req">Consecuencia de no realizar la
+                                contratación</label>
+                            <textarea class="essential short" id="nonPurchaseConsequence"
+                                placeholder="Explique el efecto operativo, patrimonial, de servicio o institucional de no satisfacer la necesidad."></textarea>
+                        </div>
+                        <div class="field c6"><label class="req">Función o actividad institucional
+                                asociada</label><input class="essential" id="institutionalFunction" type="text"
+                                placeholder="Ej.: atención de visitantes, mantención, conservación, administración">
+                        </div>
+                        <div class="field c4"><label>¿Puede satisfacerse total o parcialmente con recursos o bienes ya
+                                disponibles?</label>
+                            <select id="existingResourcesNeed" onchange="toggleExistingResourcesNeed()">
+                                <option value="">Seleccione</option>
+                                <option value="no">No</option>
+                                <option value="partial">Sí, parcialmente</option>
+                                <option value="yes">Sí, totalmente</option>
+                                <option value="unknown">No se conoce</option>
+                            </select>
+                        </div>
+                        <div id="existingResourcesDetail" class="field c8 hidden"><label>Explique la alternativa
+                                existente o la parte de la necesidad que ya puede cubrirse</label>
+                            <textarea class="short"
+                                placeholder="Identifique bienes, stock, contratos, capacidades internas u otras alternativas disponibles."></textarea>
+                        </div>
+                        <div class="field c3"><label>N.º beneficiarios / usuarios</label><input type="number"
                                 min="0" placeholder="Si aplica"></div>
                         <div class="field c3"><label>Frecuencia de uso</label>
                             <select id="freqUseSelect" onchange="toggleOtherFrequency()">
@@ -3447,27 +4201,23 @@
                                 <option value="otra">Otra</option>
                             </select>
                         </div>
-                        <div id="otherFrequencyBox" class="field c3 hidden"><label>Otra frecuencia
-                                (especifique)</label><input type="text"
-                                placeholder="Escriba otra frecuencia de uso"></div>
+                        <div id="otherFrequencyBox" class="field c3 hidden"><label>Otra frecuencia</label><input
+                                type="text" placeholder="Especifique"></div>
                         <div class="field c6"><label class="req">Lugar de entrega o prestación</label>
                             <div id="deliveryPlaceCombo" class="delivery-place-combo">
                                 <button id="deliveryPlaceButton" type="button"
                                     class="delivery-place-button essential" aria-haspopup="listbox"
-                                    aria-expanded="false" onclick="toggleDeliveryPlaceDropdown()">
-                                    <span id="deliveryPlaceLabel">Parque Museo Pedro del Río Zañartu — Fundo Hualpén
-                                        S/N, Camino a la Desembocadura, Hualpén, Concepción, Biobío</span>
-                                    <span class="delivery-place-chevron">⌄</span>
-                                </button>
-                                <div id="deliveryPlaceDropdown" class="delivery-place-dropdown hidden" role="listbox"
-                                    aria-label="Lugar de entrega o prestación">
-                                    <button type="button" class="delivery-place-option"
+                                    aria-expanded="false" onclick="toggleDeliveryPlaceDropdown()"><span
+                                        id="deliveryPlaceLabel">Parque Museo Pedro del Río Zañartu — Fundo Hualpén S/N,
+                                        Camino a la Desembocadura, Hualpén, Concepción, Biobío</span><span
+                                        class="delivery-place-chevron">⌄</span></button>
+                                <div id="deliveryPlaceDropdown" class="delivery-place-dropdown hidden"
+                                    role="listbox"><button type="button" class="delivery-place-option"
                                         onclick="selectDeliveryPlace('prz','Parque Museo Pedro del Río Zañartu — Fundo Hualpén S/N, Camino a la Desembocadura, Hualpén, Concepción, Biobío')">Parque
                                         Museo Pedro del Río Zañartu — Fundo Hualpén S/N, Camino a la Desembocadura,
-                                        Hualpén, Concepción, Biobío</button>
-                                    <button type="button" class="delivery-place-option"
-                                        onclick="selectDeliveryPlace('otro','Otro lugar')">Otro lugar</button>
-                                </div>
+                                        Hualpén, Concepción, Biobío</button><button type="button"
+                                        class="delivery-place-option"
+                                        onclick="selectDeliveryPlace('otro','Otro lugar')">Otro lugar</button></div>
                                 <select class="essential hidden" id="deliveryPlace" aria-hidden="true"
                                     tabindex="-1" onchange="toggleOtherDeliveryPlace()">
                                     <option value="prz">Parque Museo Pedro del Río Zañartu — Fundo Hualpén S/N,
@@ -3475,160 +4225,132 @@
                                     <option value="otro">Otro lugar</option>
                                 </select>
                             </div>
-                            <div class="hint">Dirección obtenida del sitio oficial del Parque.</div>
+                            <div class="hint">Este dato se reutiliza posteriormente; no se vuelve a solicitar en
+                                otras secciones.</div>
                         </div>
                         <div id="otherDeliveryPlaceBox" class="field c6 hidden"><label class="req">Otro lugar de
                                 entrega o prestación</label><input class="essential" type="text"
                                 placeholder="Indique dependencia, dirección o lugar de ejecución"></div>
-                        <div class="field c6"><label>Contraparte técnica propuesta</label>
-                            <div class="choice-row" style="margin-bottom:8px;">
-                                <label class="choice"><input type="radio" name="technicalCounterpartMode"
-                                        value="same" onchange="toggleTechnicalCounterpartMode()"> Mismo
-                                    requirente</label>
-                                <label class="choice"><input type="radio" name="technicalCounterpartMode"
-                                        value="different" onchange="toggleTechnicalCounterpartMode()"> Contraparte
-                                    técnica distinta al requirente</label>
-                            </div>
-                            <div class="hint">Seleccione si la contraparte técnica será la misma persona que formuló
-                                el requerimiento o si corresponde designar a otra persona.</div>
-
-                            <div id="technicalCounterpartFields" class="grid hidden" style="margin-top:10px;">
-                                <div class="field c12"><label
-                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Nombre</label><input
-                                        id="technicalCounterpartName" type="text" placeholder="Nombre"></div>
-                                <div class="field c6"><label
-                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Unidad</label><input
-                                        id="technicalCounterpartUnit" type="text" placeholder="Unidad"></div>
-                                <div class="field c6"><label
-                                        style="margin-top:2px;text-transform:none;letter-spacing:normal;font-size:11px;">Cargo</label><input
-                                        id="technicalCounterpartRole" type="text" placeholder="Cargo"></div>
-                                <div id="technicalCounterpartAutofillHint" class="field c12 hidden">
-                                    <div class="hint">Los datos se completaron a partir de la información ingresada
-                                        en la sección 1. Puede corregirlos si es necesario.</div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
+                    <div class="norm-note">La sección 2 describe la necesidad institucional y su finalidad. Las
+                        especificaciones del bien, servicio u obra se estructuran una sola vez en la sección 4.</div>
                 </div>
             </section>
 
-            <section class="form-step" data-step="3">
+            <section class="form-step requester-section" data-step="3">
                 <div class="section-head">
                     <div class="num">3</div>
                     <div>
-                        <h2>PAC, planificación y control de duplicidades</h2><small>Permite detectar compras fuera de
-                            planificación, acumulación de demanda y riesgos de fragmentación.</small>
+                        <h2>PAC, planificación y compras relacionadas</h2><small>Vincula el requerimiento con la
+                            planificación institucional y activa controles preventivos de duplicidad y
+                            fragmentación.</small>
                     </div>
                 </div>
                 <div class="section-body">
                     <div class="grid">
                         <div class="field c4 planning-control-align">
-                            <label class="req">¿La compra está identificada en el PAC?</label>
+                            <label class="req">¿La compra está contemplada en el PAC?</label>
                             <div class="choice-row">
                                 <label class="choice"><input class="essential" type="radio" name="pac"
                                         value="yes" onchange="togglePac()"> Sí</label>
                                 <label class="choice"><input class="essential" type="radio" name="pac"
                                         value="no" onchange="togglePac()"> No</label>
+                                <label class="choice"><input class="essential" type="radio" name="pac"
+                                        value="unknown" onchange="togglePac()"> No se conoce</label>
                             </div>
+                            <div class="hint">Si selecciona “Sí”, deberá vincular una compra real del PAC. La mera
+                                declaración no acredita que la compra esté planificada.</div>
                         </div>
                         <div id="pacYes" class="c8 hidden">
-                            <div class="grid">
-                                <div class="field c5"><label>ID / código PAC</label>
-                                    <input type="text" placeholder="Código generado por el sistema PAC">
-                                    <div class="hint">Este campo deberá vincularse automáticamente al código único de
-                                        la compra planificada en el sistema PAC del PRZ.</div>
-                                </div>
-                                <div class="field c3">
-                                    <label
-                                        title="Mes en que esta compra se encuentra programada en el Plan Anual de Compras institucional.">Mes
-                                        planificado de compra en el PAC</label>
-                                    <select id="pacPlannedMonth">
-                                        <option value="">Seleccione mes</option>
-                                        <option>Enero</option>
-                                        <option>Febrero</option>
-                                        <option>Marzo</option>
-                                        <option>Abril</option>
-                                        <option>Mayo</option>
-                                        <option>Junio</option>
-                                        <option>Julio</option>
-                                        <option>Agosto</option>
-                                        <option>Septiembre</option>
-                                        <option>Octubre</option>
-                                        <option>Noviembre</option>
-                                        <option>Diciembre</option>
-                                    </select>
-                                    <div class="hint">Seleccione el mes en que la compra está programada en el Plan
-                                        Anual de Compras.</div>
-                                </div>
-                                <div class="field c4">
-                                    <label
-                                        title="Monto estimado que figura para esta compra en el Plan Anual de Compras institucional.">Monto
-                                        estimado registrado en el PAC</label>
-                                    <input id="pacEstimatedAmount" type="text" inputmode="numeric"
-                                        placeholder="$ 0" oninput="formatPacAmount(this)">
-                                    <div class="hint">Ingrese el monto estimado consignado para esta compra en el
-                                        PAC, no el presupuesto disponible actual.</div>
+                            <div class="soft-card pac-link-card">
+                                <div class="compact-title">Compra planificada vinculada</div>
+                                <div class="tool-group"><button type="button" class="small-btn primary"
+                                        onclick="openPacSelector()">Abrir PAC y seleccionar compra</button><span
+                                        id="pacLinkStatus" class="status-badge">Sin compra PAC vinculada</span></div>
+                                <input id="pacLinkedId" class="essential hidden" type="text" aria-hidden="true">
+                                <div id="pacLinkedSummary" class="pac-linked-summary">
+                                    <div class="hint">Seleccione un registro del Plan Anual de Compras institucional.
+                                        En la versión conectada, este selector consultará directamente el módulo PAC de
+                                        la intranet.</div>
                                 </div>
                             </div>
                         </div>
-                        <div id="pacNo" class="field c12 hidden">
-                            <label class="req">Justificación de compra no contemplada en PAC</label>
+                        <div id="pacNo" class="field c12 hidden"><label class="req">Justificación de compra no
+                                contemplada en PAC</label>
                             <textarea class="short"
-                                placeholder="Indique por qué la necesidad no pudo ser prevista y antecedente para gestionar la modificación/regularización del PAC, según corresponda."></textarea>
-                            <div class="alert amber">El antecedente deberá conservarse para fundar el acto que autorice
-                                contratar fuera del PAC y/o su modificación, según corresponda.</div>
+                                placeholder="Explique por qué la necesidad no estaba contemplada y el antecedente que deberá revisar DAF para la eventual modificación o regularización del PAC."></textarea>
+                        </div>
+                        <div id="pacUnknown" class="field c12 hidden">
+                            <div class="alert amber">Antes de continuar, revise el PAC institucional. Puede abrirlo
+                                desde este formulario y verificar si existe una compra planificada equivalente.</div>
+                            <button type="button" class="small-btn" onclick="openPacSelector()">Revisar PAC
+                                institucional</button>
                         </div>
 
                         <div class="field c4 planning-control-align"><label>¿Existe stock o bien institucional que
-                                cubra la necesidad?</label>
-                            <select>
+                                cubra la necesidad?</label><select id="stockCoverage">
                                 <option value="">Seleccione</option>
                                 <option>No</option>
                                 <option>Sí, total</option>
                                 <option>Sí, parcialmente</option>
                                 <option>No aplica</option>
-                            </select>
-                        </div>
+                            </select></div>
                         <div class="field c4 planning-control-align"><label>¿Existe contrato, convenio u OC vigente que
-                                la cubra?</label>
-                            <select>
+                                la cubra?</label><select id="existingContract">
                                 <option value="">Seleccione</option>
                                 <option>No</option>
                                 <option>Sí</option>
                                 <option>No se conoce</option>
-                            </select>
-                        </div>
-                        <div class="field c4"><label
-                                title="Antes de responder, revise el Plan Anual de Compras institucional y otros antecedentes disponibles para verificar si existen compras similares en esta u otras áreas.">¿Hay
-                                requerimientos similares de otras áreas o dentro de la misma?</label>
-                            <select id="similarRequirementsSelect"
+                            </select></div>
+                        <div class="field c4"><label>¿Conoce requerimientos similares de esta u otras
+                                áreas?</label><select id="similarRequirementsSelect"
                                 onchange="handleSimilarRequirementsCheck(this.value)">
                                 <option value="">Seleccione</option>
                                 <option value="no">No</option>
                                 <option value="si">Sí</option>
                                 <option value="desconocido">No se conoce</option>
                             </select>
-                            <div class="hint">La respuesta debe considerar, cuando sea posible, una revisión del PAC
-                                institucional y de compras relacionadas.</div>
+                            <div class="hint">La respuesta del usuario se complementa con un cruce automático del
+                                sistema.</div>
                         </div>
-                        <div class="field c12">
-                            <label>Antecedentes de compras relacionadas / posibilidad de agrupar demanda</label>
+
+                        <div class="field c12"><label>Antecedentes de compras relacionadas / posibilidad de agrupar
+                                demanda</label>
                             <textarea id="relatedPurchasesBackground" class="short"
-                                placeholder="Luego de revisar el PAC institucional y otros antecedentes disponibles, indique OC, contratos, solicitudes relacionadas, compras similares del año y/o áreas que podrían requerir el mismo bien o servicio."></textarea>
-                            <div class="hint">Consigne aquí el resultado de la revisión realizada, incluso cuando
-                                concluya que no se identificaron compras similares.</div>
+                                placeholder="Consigne el resultado de la revisión, áreas relacionadas, solicitudes conocidas o razones por las que las necesidades no corresponden a una misma compra."></textarea>
+                        </div>
+
+                        <div class="field c12">
+                            <div class="soft-card system-control-card">
+                                <div class="compact-title">Control automático de compras relacionadas</div>
+                                <div id="similarityControlStatus" class="system-control-status">Pendiente de ejecutar
+                                    cruce con PAC, requerimientos abiertos y compras recientes.</div>
+                                <div class="tool-group"><button type="button" class="small-btn"
+                                        onclick="runSimilarityControl()">Ejecutar verificación</button><span
+                                        class="status-badge">Control preventivo</span></div>
+                                <div class="hint">La alerta no concluye que exista fragmentación. Entrega
+                                    antecedentes para que DAF analice agrupación de demanda y procedimiento aplicable.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="pacDeviationBox" class="field c12 hidden">
+                            <div class="alert amber"><strong>Variación respecto del PAC.</strong> <span
+                                    id="pacDeviationText"></span></div><label>Explique la desviación relevante respecto
+                                de la planificación</label>
+                            <textarea id="pacDeviationReason" class="short"
+                                placeholder="Explique cambios de cantidad, alcance, fecha o monto respecto de lo planificado."></textarea>
+                            <div class="hint">El PAC original se conserva; el sistema no lo reemplaza
+                                silenciosamente.</div>
                         </div>
                     </div>
-                    <div class="alert blue">Control recomendado: Abastecimiento debe revisar compras relacionadas antes
-                        de definir el procedimiento, tanto para agrupar demanda cuando sea eficiente como para prevenir
-                        una fragmentación improcedente.</div>
+                    <div class="norm-note">Controles de diseño asociados a planificación y prevención: PAC conforme a
+                        la Directiva N.º 6/2025; análisis preventivo de compras relacionadas y prohibición de
+                        fragmentación conforme al marco de la Ley N.º 19.886. La conclusión corresponde al DAF.</div>
                 </div>
             </section>
 
-
-
-
-            <section class="form-step" data-step="4">
+            <section class="form-step requester-section" data-step="4">
                 <div class="section-head">
                     <div class="num">4</div>
                     <div>
@@ -3665,24 +4387,54 @@
                                         style="width:12%">Valor unitario estimado (CLP)</th>
                                     <th title="Resultado de multiplicar la cantidad por el valor unitario estimado."
                                         style="width:11%">Subtotal estimado</th>
-                                    <th title="Adjunte una o más cotizaciones específicas para esta línea. En la parte inferior derecha de esta misma celda podrá eliminarse la fila."
-                                        style="width:9%">Cotiz.</th>
+                                    <th title="Adjunte cotizaciones o imágenes directamente vinculadas a esta línea. La vista previa permite revisar todos los antecedentes asociados al ítem."
+                                        style="width:10%">Cotiz. / Img.</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr data-item-key="item-1">
                                     <td>1</td>
-                                    <td>
+                                    <td><select class="item-type" title="Tipo de ítem">
+                                            <option value="">Tipo</option>
+                                            <option value="bien">Bien</option>
+                                            <option value="servicio">Servicio</option>
+                                            <option value="obra">Obra menor</option>
+                                            <option value="mantencion">Mantención</option>
+                                        </select>
                                         <textarea class="item-name" placeholder="Nombre del bien o servicio"
                                             oninput="if(!document.getElementById('attachmentModal')?.classList.contains('hidden')) renderManagerItemList(); if(!document.getElementById('refImageModal')?.classList.contains('hidden')) renderRefImageItemList()"></textarea>
                                     </td>
                                     <td>
                                         <div class="structured-cell-editor item-spec-editor" data-kind="spec">
                                             <div class="structured-entry-list">
-                                                <div class="structured-entry"><input class="item-spec-entry"
-                                                        type="text" placeholder="Ej.: 16 GB de RAM"></div>
+                                                <div class="structured-entry">
+                                                    <textarea class="item-spec-entry" rows="2" placeholder="Ej.: 16 GB de RAM"
+                                                        oninput="handleSpecificationInput(this)"></textarea>
+                                                    <div class="spec-priority spec-priority-compact"
+                                                        data-value="essential">
+                                                        <button type="button" class="spec-priority-trigger"
+                                                            title="Esencial" aria-haspopup="listbox"
+                                                            aria-expanded="false"
+                                                            onclick="toggleSpecPriorityMenu(this,event)">
+                                                            <span class="spec-priority-short">E</span><span
+                                                                class="spec-priority-chevron">⌄</span>
+                                                        </button>
+                                                        <div class="spec-priority-menu hidden" role="listbox">
+                                                            <button type="button" role="option"
+                                                                data-value="essential"
+                                                                onclick="selectSpecPriority(this,'essential')">Esencial</button>
+                                                            <button type="button" role="option"
+                                                                data-value="desirable"
+                                                                onclick="selectSpecPriority(this,'desirable')">Deseable</button>
+                                                        </div>
+                                                        <span class="spec-priority-print">Esencial</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <button type="button" class="structured-add-btn"
+                                            <div class="brand-spec-warning hidden">Se detectó una posible referencia a
+                                                marca o modelo. Si es indispensable, justifique técnicamente la
+                                                referencia y formule la exigencia de manera compatible con la
+                                                competencia.</div><button type="button" class="structured-add-btn"
                                                 onclick="addStructuredEntry(this,'spec')">＋ Agregar
                                                 especificación</button>
                                         </div>
@@ -3690,8 +4442,9 @@
                                     <td>
                                         <div class="structured-cell-editor item-feature-editor" data-kind="feature">
                                             <div class="structured-entry-list">
-                                                <div class="structured-entry"><input class="item-feature-entry"
-                                                        type="text" placeholder="Ej.: compatible con red 5G"></div>
+                                                <div class="structured-entry">
+                                                    <textarea class="item-feature-entry" rows="2" placeholder="Ej.: compatible con red 5G"></textarea>
+                                                </div>
                                             </div>
                                             <button type="button" class="structured-add-btn"
                                                 onclick="addStructuredEntry(this,'feature')">＋ Agregar
@@ -3700,7 +4453,22 @@
                                     </td>
                                     <td><input class="qty" type="number" min="0" step="1"
                                             oninput="calcTotals()"></td>
-                                    <td><input type="text" placeholder="Ej.: unidad, caja, pack, litro, hora"></td>
+                                    <td><select class="unit-measure" onchange="toggleOtherUnitMeasure(this)">
+                                            <option value="">Seleccione</option>
+                                            <option>Unidad</option>
+                                            <option>Caja</option>
+                                            <option>Pack</option>
+                                            <option>Kg</option>
+                                            <option>Litro</option>
+                                            <option>Metro</option>
+                                            <option>m²</option>
+                                            <option>Hora</option>
+                                            <option>Jornada</option>
+                                            <option>Mes</option>
+                                            <option>Servicio</option>
+                                            <option value="otra">Otra</option>
+                                        </select><input class="other-unit-measure hidden" type="text"
+                                            placeholder="Otra unidad de medida"></td>
                                     <td>
                                         <div class="money-input"><span>$</span><input class="unit-price"
                                                 type="text" inputmode="numeric" placeholder="0"
@@ -3708,33 +4476,68 @@
                                     </td>
                                     <td class="subtotal right">$0</td>
                                     <td class="cotiz-cell">
-                                        <div class="cotiz-wrap">
-
-                                            <button type="button" class="icon-btn attach"
-                                                title="Adjuntar o gestionar cotizaciones de esta fila"
-                                                onclick="openAttachmentManager(this)">📎</button>
-                                            <button type="button" class="icon-btn quote-view-btn"
-                                                title="Visualizar cotizaciones vinculadas a esta fila"
-                                                onclick="openRowQuoteViewer(this)" disabled>👁</button>
+                                        <div class="cotiz-wrap evidence-actions">
+                                            <button type="button"
+                                                class="icon-btn attach evidence-btn quote-attach-btn"
+                                                title="Adjuntar cotización o documento a este ítem"
+                                                onclick="openAttachmentManager(this)">📄</button>
+                                            <button type="button"
+                                                class="icon-btn attach evidence-btn image-attach-btn"
+                                                title="Adjuntar imagen o fotografía a este ítem"
+                                                onclick="openRowImageManager(this)">🖼️</button>
+                                            <button type="button" class="icon-btn quote-view-btn evidence-view-btn"
+                                                title="Visualizar cotizaciones e imágenes vinculadas a este ítem"
+                                                onclick="openRowEvidenceViewer(this)" disabled>👁</button>
                                         </div>
-                                        <div class="quote-linked quote-info">Sin cotización vinculada</div>
+                                        <div class="quote-linked quote-info evidence-info">Sin adjuntos vinculados
+                                        </div>
                                         <button type="button" class="trash-row" title="Eliminar esta fila"
                                             onclick="removeItemRow(this)">🗑</button>
                                     </td>
                                 </tr>
                                 <tr data-item-key="item-2">
                                     <td>2</td>
-                                    <td>
+                                    <td><select class="item-type" title="Tipo de ítem">
+                                            <option value="">Tipo</option>
+                                            <option value="bien">Bien</option>
+                                            <option value="servicio">Servicio</option>
+                                            <option value="obra">Obra menor</option>
+                                            <option value="mantencion">Mantención</option>
+                                        </select>
                                         <textarea class="item-name" placeholder="Nombre del bien o servicio"
                                             oninput="if(!document.getElementById('attachmentModal')?.classList.contains('hidden')) renderManagerItemList(); if(!document.getElementById('refImageModal')?.classList.contains('hidden')) renderRefImageItemList()"></textarea>
                                     </td>
                                     <td>
                                         <div class="structured-cell-editor item-spec-editor" data-kind="spec">
                                             <div class="structured-entry-list">
-                                                <div class="structured-entry"><input class="item-spec-entry"
-                                                        type="text" placeholder="Ej.: 16 GB de RAM"></div>
+                                                <div class="structured-entry">
+                                                    <textarea class="item-spec-entry" rows="2" placeholder="Ej.: 16 GB de RAM"
+                                                        oninput="handleSpecificationInput(this)"></textarea>
+                                                    <div class="spec-priority spec-priority-compact"
+                                                        data-value="essential">
+                                                        <button type="button" class="spec-priority-trigger"
+                                                            title="Esencial" aria-haspopup="listbox"
+                                                            aria-expanded="false"
+                                                            onclick="toggleSpecPriorityMenu(this,event)">
+                                                            <span class="spec-priority-short">E</span><span
+                                                                class="spec-priority-chevron">⌄</span>
+                                                        </button>
+                                                        <div class="spec-priority-menu hidden" role="listbox">
+                                                            <button type="button" role="option"
+                                                                data-value="essential"
+                                                                onclick="selectSpecPriority(this,'essential')">Esencial</button>
+                                                            <button type="button" role="option"
+                                                                data-value="desirable"
+                                                                onclick="selectSpecPriority(this,'desirable')">Deseable</button>
+                                                        </div>
+                                                        <span class="spec-priority-print">Esencial</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <button type="button" class="structured-add-btn"
+                                            <div class="brand-spec-warning hidden">Se detectó una posible referencia a
+                                                marca o modelo. Si es indispensable, justifique técnicamente la
+                                                referencia y formule la exigencia de manera compatible con la
+                                                competencia.</div><button type="button" class="structured-add-btn"
                                                 onclick="addStructuredEntry(this,'spec')">＋ Agregar
                                                 especificación</button>
                                         </div>
@@ -3742,8 +4545,9 @@
                                     <td>
                                         <div class="structured-cell-editor item-feature-editor" data-kind="feature">
                                             <div class="structured-entry-list">
-                                                <div class="structured-entry"><input class="item-feature-entry"
-                                                        type="text" placeholder="Ej.: compatible con red 5G"></div>
+                                                <div class="structured-entry">
+                                                    <textarea class="item-feature-entry" rows="2" placeholder="Ej.: compatible con red 5G"></textarea>
+                                                </div>
                                             </div>
                                             <button type="button" class="structured-add-btn"
                                                 onclick="addStructuredEntry(this,'feature')">＋ Agregar
@@ -3752,7 +4556,22 @@
                                     </td>
                                     <td><input class="qty" type="number" min="0" step="1"
                                             oninput="calcTotals()"></td>
-                                    <td><input type="text" placeholder="Ej.: unidad, caja, pack, litro, hora"></td>
+                                    <td><select class="unit-measure" onchange="toggleOtherUnitMeasure(this)">
+                                            <option value="">Seleccione</option>
+                                            <option>Unidad</option>
+                                            <option>Caja</option>
+                                            <option>Pack</option>
+                                            <option>Kg</option>
+                                            <option>Litro</option>
+                                            <option>Metro</option>
+                                            <option>m²</option>
+                                            <option>Hora</option>
+                                            <option>Jornada</option>
+                                            <option>Mes</option>
+                                            <option>Servicio</option>
+                                            <option value="otra">Otra</option>
+                                        </select><input class="other-unit-measure hidden" type="text"
+                                            placeholder="Otra unidad de medida"></td>
                                     <td>
                                         <div class="money-input"><span>$</span><input class="unit-price"
                                                 type="text" inputmode="numeric" placeholder="0"
@@ -3760,33 +4579,68 @@
                                     </td>
                                     <td class="subtotal right">$0</td>
                                     <td class="cotiz-cell">
-                                        <div class="cotiz-wrap">
-
-                                            <button type="button" class="icon-btn attach"
-                                                title="Adjuntar o gestionar cotizaciones de esta fila"
-                                                onclick="openAttachmentManager(this)">📎</button>
-                                            <button type="button" class="icon-btn quote-view-btn"
-                                                title="Visualizar cotizaciones vinculadas a esta fila"
-                                                onclick="openRowQuoteViewer(this)" disabled>👁</button>
+                                        <div class="cotiz-wrap evidence-actions">
+                                            <button type="button"
+                                                class="icon-btn attach evidence-btn quote-attach-btn"
+                                                title="Adjuntar cotización o documento a este ítem"
+                                                onclick="openAttachmentManager(this)">📄</button>
+                                            <button type="button"
+                                                class="icon-btn attach evidence-btn image-attach-btn"
+                                                title="Adjuntar imagen o fotografía a este ítem"
+                                                onclick="openRowImageManager(this)">🖼️</button>
+                                            <button type="button" class="icon-btn quote-view-btn evidence-view-btn"
+                                                title="Visualizar cotizaciones e imágenes vinculadas a este ítem"
+                                                onclick="openRowEvidenceViewer(this)" disabled>👁</button>
                                         </div>
-                                        <div class="quote-linked quote-info">Sin cotización vinculada</div>
+                                        <div class="quote-linked quote-info evidence-info">Sin adjuntos vinculados
+                                        </div>
                                         <button type="button" class="trash-row" title="Eliminar esta fila"
                                             onclick="removeItemRow(this)">🗑</button>
                                     </td>
                                 </tr>
                                 <tr data-item-key="item-3">
                                     <td>3</td>
-                                    <td>
+                                    <td><select class="item-type" title="Tipo de ítem">
+                                            <option value="">Tipo</option>
+                                            <option value="bien">Bien</option>
+                                            <option value="servicio">Servicio</option>
+                                            <option value="obra">Obra menor</option>
+                                            <option value="mantencion">Mantención</option>
+                                        </select>
                                         <textarea class="item-name" placeholder="Nombre del bien o servicio"
                                             oninput="if(!document.getElementById('attachmentModal')?.classList.contains('hidden')) renderManagerItemList(); if(!document.getElementById('refImageModal')?.classList.contains('hidden')) renderRefImageItemList()"></textarea>
                                     </td>
                                     <td>
                                         <div class="structured-cell-editor item-spec-editor" data-kind="spec">
                                             <div class="structured-entry-list">
-                                                <div class="structured-entry"><input class="item-spec-entry"
-                                                        type="text" placeholder="Ej.: 16 GB de RAM"></div>
+                                                <div class="structured-entry">
+                                                    <textarea class="item-spec-entry" rows="2" placeholder="Ej.: 16 GB de RAM"
+                                                        oninput="handleSpecificationInput(this)"></textarea>
+                                                    <div class="spec-priority spec-priority-compact"
+                                                        data-value="essential">
+                                                        <button type="button" class="spec-priority-trigger"
+                                                            title="Esencial" aria-haspopup="listbox"
+                                                            aria-expanded="false"
+                                                            onclick="toggleSpecPriorityMenu(this,event)">
+                                                            <span class="spec-priority-short">E</span><span
+                                                                class="spec-priority-chevron">⌄</span>
+                                                        </button>
+                                                        <div class="spec-priority-menu hidden" role="listbox">
+                                                            <button type="button" role="option"
+                                                                data-value="essential"
+                                                                onclick="selectSpecPriority(this,'essential')">Esencial</button>
+                                                            <button type="button" role="option"
+                                                                data-value="desirable"
+                                                                onclick="selectSpecPriority(this,'desirable')">Deseable</button>
+                                                        </div>
+                                                        <span class="spec-priority-print">Esencial</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <button type="button" class="structured-add-btn"
+                                            <div class="brand-spec-warning hidden">Se detectó una posible referencia a
+                                                marca o modelo. Si es indispensable, justifique técnicamente la
+                                                referencia y formule la exigencia de manera compatible con la
+                                                competencia.</div><button type="button" class="structured-add-btn"
                                                 onclick="addStructuredEntry(this,'spec')">＋ Agregar
                                                 especificación</button>
                                         </div>
@@ -3794,8 +4648,9 @@
                                     <td>
                                         <div class="structured-cell-editor item-feature-editor" data-kind="feature">
                                             <div class="structured-entry-list">
-                                                <div class="structured-entry"><input class="item-feature-entry"
-                                                        type="text" placeholder="Ej.: compatible con red 5G"></div>
+                                                <div class="structured-entry">
+                                                    <textarea class="item-feature-entry" rows="2" placeholder="Ej.: compatible con red 5G"></textarea>
+                                                </div>
                                             </div>
                                             <button type="button" class="structured-add-btn"
                                                 onclick="addStructuredEntry(this,'feature')">＋ Agregar
@@ -3804,7 +4659,22 @@
                                     </td>
                                     <td><input class="qty" type="number" min="0" step="1"
                                             oninput="calcTotals()"></td>
-                                    <td><input type="text" placeholder="Ej.: unidad, caja, pack, litro, hora"></td>
+                                    <td><select class="unit-measure" onchange="toggleOtherUnitMeasure(this)">
+                                            <option value="">Seleccione</option>
+                                            <option>Unidad</option>
+                                            <option>Caja</option>
+                                            <option>Pack</option>
+                                            <option>Kg</option>
+                                            <option>Litro</option>
+                                            <option>Metro</option>
+                                            <option>m²</option>
+                                            <option>Hora</option>
+                                            <option>Jornada</option>
+                                            <option>Mes</option>
+                                            <option>Servicio</option>
+                                            <option value="otra">Otra</option>
+                                        </select><input class="other-unit-measure hidden" type="text"
+                                            placeholder="Otra unidad de medida"></td>
                                     <td>
                                         <div class="money-input"><span>$</span><input class="unit-price"
                                                 type="text" inputmode="numeric" placeholder="0"
@@ -3812,16 +4682,21 @@
                                     </td>
                                     <td class="subtotal right">$0</td>
                                     <td class="cotiz-cell">
-                                        <div class="cotiz-wrap">
-
-                                            <button type="button" class="icon-btn attach"
-                                                title="Adjuntar o gestionar cotizaciones de esta fila"
-                                                onclick="openAttachmentManager(this)">📎</button>
-                                            <button type="button" class="icon-btn quote-view-btn"
-                                                title="Visualizar cotizaciones vinculadas a esta fila"
-                                                onclick="openRowQuoteViewer(this)" disabled>👁</button>
+                                        <div class="cotiz-wrap evidence-actions">
+                                            <button type="button"
+                                                class="icon-btn attach evidence-btn quote-attach-btn"
+                                                title="Adjuntar cotización o documento a este ítem"
+                                                onclick="openAttachmentManager(this)">📄</button>
+                                            <button type="button"
+                                                class="icon-btn attach evidence-btn image-attach-btn"
+                                                title="Adjuntar imagen o fotografía a este ítem"
+                                                onclick="openRowImageManager(this)">🖼️</button>
+                                            <button type="button" class="icon-btn quote-view-btn evidence-view-btn"
+                                                title="Visualizar cotizaciones e imágenes vinculadas a este ítem"
+                                                onclick="openRowEvidenceViewer(this)" disabled>👁</button>
                                         </div>
-                                        <div class="quote-linked quote-info">Sin cotización vinculada</div>
+                                        <div class="quote-linked quote-info evidence-info">Sin adjuntos vinculados
+                                        </div>
                                         <button type="button" class="trash-row" title="Eliminar esta fila"
                                             onclick="removeItemRow(this)">🗑</button>
                                     </td>
@@ -3849,6 +4724,10 @@
 
                     <div class="amount-total"><span>Total referencial de líneas</span><strong
                             id="lineTotal">$0</strong></div>
+                    <div class="norm-note">Las especificaciones deben ser suficientes, proporcionales y no
+                        restrictivas. Las referencias comerciales detectadas se someten a advertencia y justificación.
+                        Se mantienen íntegramente los gestores de cotizaciones, imágenes, vista previa y ampliación ya
+                        definidos.</div>
 
                     <div class="grid" style="margin-top:15px">
                         <div class="field c12">
@@ -4003,355 +4882,395 @@
 
 
 
-            <section class="section-budget-market form-step" data-step="5">
+            <section class="section-budget-market form-step requester-section" data-step="5">
                 <div class="section-head">
                     <div class="num">5</div>
                     <div>
-                        <h2>Presupuesto y estimación de mercado</h2><small>El monto estimado debe ser trazable y
-                            considerar impuestos y costos asociados.</small>
+                        <h2>Estimación y antecedentes de mercado</h2><small>El requirente sustenta el valor estimado; la
+                            disponibilidad e imputación presupuestaria se validan posteriormente por DAF.</small>
                     </div>
                 </div>
                 <div class="section-body">
                     <div class="grid">
-                        <div class="field c4"><label class="req">Valor total aproximado</label>
-                            <div class="money-input">
-                                <span>$</span>
-                                <input class="essential" id="estimatedAmount" type="text" inputmode="numeric"
-                                    placeholder="0"
-                                    oninput="markEstimatedAmountManual(); sanitizeCurrencyInput(this)">
+                        <div class="field c4"><label class="req">Monto total estimado</label>
+                            <div class="money-input"><span>$</span><input class="essential" id="estimatedAmount"
+                                    type="text" inputmode="numeric" placeholder="0"
+                                    oninput="markEstimatedAmountManual(); sanitizeCurrencyInput(this); checkPacDeviation()">
                             </div>
-                            <div class="hint">Se completa automáticamente con el total referencial de líneas de la
-                                sección 4. Puede editarse manualmente.</div>
+                            <div class="hint">Se calcula desde la sección 4 cuando existen cantidades y precios.
+                                Solo se habilita edición manual cuando no existe cálculo por líneas.</div>
                         </div>
-                        <div class="field c4"><label>Moneda</label><select>
+                        <div class="field c4"><label>Moneda</label><select id="estimatedCurrency">
                                 <option>CLP</option>
                                 <option>UF</option>
                                 <option>USD</option>
                                 <option>Otra</option>
                             </select></div>
-                        <div class="field c4"><label>¿Incluye IVA, impuestos, fletes y otros costos?</label><select>
+                        <div class="field c4"><label>¿Incluye IVA, impuestos, fletes y costos
+                                asociados?</label><select id="estimatedIncludesCosts">
                                 <option>Sí, monto total estimado</option>
                                 <option>No / requiere ajuste</option>
                                 <option>No aplica IVA</option>
                             </select></div>
 
-                        <div class="field c6"><label class="req">Fuente de la estimación</label>
-                            <div class="choice-row">
-                                <label class="choice"><input type="checkbox"> Compras anteriores</label>
-                                <label class="choice"><input type="checkbox"> Cotizaciones</label>
-                                <label class="choice"><input type="checkbox"> Catálogo / precios públicos</label>
-                                <label class="choice"><input type="checkbox"> Consulta al mercado</label>
-                                <label class="choice"><input type="checkbox"> Otra</label>
+                        <div class="field c12"><label>Fuente(s) de la estimación <span
+                                    class="req-mark">*</span></label>
+                            <div class="choice-row estimate-source-row"><label class="choice"><input
+                                        id="sourcePreviousPurchase" type="checkbox"> Compra anterior del
+                                    Parque</label><label class="choice"><input id="sourceQuotes" type="checkbox"
+                                        disabled> Cotizaciones vinculadas <span
+                                        id="sourceQuoteCount">(0)</span></label><label class="choice"><input
+                                        id="sourceMarketPublic" type="checkbox"> Mercado Público</label><label
+                                    class="choice"><input id="sourcePublicCatalog" type="checkbox"> Web / catálogo
+                                    público</label><label class="choice"><input id="sourceOther" type="checkbox"
+                                        onchange="toggleOtherEstimateSource()"> Otra fuente</label></div>
+                            <div class="hint">Las cotizaciones ya adjuntadas en la sección 4 se reconocen
+                                automáticamente y no deben cargarse nuevamente.</div>
+                        </div>
+                        <div id="otherEstimateSourceBox" class="field c6 hidden"><label>Otra fuente de
+                                estimación</label><input type="text" placeholder="Indique la fuente utilizada">
+                        </div>
+                        <div class="field c6"><label>Referencia de compra anterior / Mercado Público /
+                                catálogo</label><input id="marketReference" type="text"
+                                placeholder="ID, OC, proceso, enlace o antecedente de referencia"></div>
+                        <div class="field c6"><label>Fecha del antecedente de mercado</label><input
+                                id="marketReferenceDate" type="date"></div>
+                        <div class="field c6"><label>Criterio utilizado para estimar</label><select
+                                id="estimateMethod" onchange="toggleEstimateExplanation()">
+                                <option value="">Seleccione</option>
+                                <option value="lowest">Menor precio válido</option>
+                                <option value="average">Promedio de referencias</option>
+                                <option value="recent">Referencia más reciente</option>
+                                <option value="historical">Compra histórica comparable</option>
+                                <option value="other">Otro / requiere explicación</option>
+                            </select></div>
+                        <div id="estimateExplanationBox" class="field c12 hidden"><label>Explique brevemente el
+                                criterio o una diferencia relevante entre referencias</label>
+                            <textarea class="short"
+                                placeholder="Explique dispersión de precios, diferencias de alcance, actualización por mercado u otro antecedente necesario."></textarea>
+                        </div>
+                        <div class="field c12">
+                            <div id="marketEvidenceSummary" class="soft-card">
+                                <div class="compact-title">Antecedentes ya disponibles en el expediente</div>
+                                <div id="marketEvidenceText" class="hint">Aún no existen cotizaciones vinculadas a
+                                    ítems. Los documentos se reutilizarán automáticamente cuando sean incorporados.
+                                </div>
                             </div>
                         </div>
-                        <div class="field c6"><label>Fecha y antecedente de referencia</label><input type="text"
-                                placeholder="OC/ID, proveedor consultado, catálogo, enlace o documento adjunto"></div>
-
                     </div>
+                    <div class="norm-note">La estimación de mercado es antecedente del requerimiento. La certificación
+                        de disponibilidad, imputación y demás controles presupuestarios corresponden a la vista DAF y no
+                        se duplican aquí.</div>
                 </div>
             </section>
 
-            <section class="form-step" data-step="6">
+            <section class="form-step requester-section" data-step="6">
                 <div class="section-head">
                     <div class="num">6</div>
                     <div>
-                        <h2>Condiciones de contratación y evaluación</h2><small>Antecedentes para que Abastecimiento
-                            pueda convertir el requerimiento en una compra ejecutable.</small>
+                        <h2>Condiciones de ejecución y declaraciones complementarias</h2><small>Complete solo
+                            antecedentes técnicos u operativos que no hayan quedado definidos previamente.</small>
                     </div>
                 </div>
                 <div class="section-body">
                     <div class="grid">
-                        <div class="field c6"><label>Requisitos técnicos indispensables / admisibilidad
-                                sugerida</label>
-                            <textarea class="short"
-                                placeholder="Solo requisitos necesarios y proporcionales para asegurar la correcta prestación."></textarea>
-                        </div>
-                        <div class="field c6">
-                            <label>Criterios de evaluación sugeridos</label>
-                            <div class="criteria-builder">
-                                <div class="criteria-combo evaluation-criteria-combo">
-                                    <div class="criteria-combo-row">
-                                        <input id="evaluationCriteriaInput" type="text" autocomplete="off"
-                                            placeholder="Escriba un criterio o seleccione un Ej. de la lista"
-                                            oninput="filterEvaluationCriteria()"
-                                            onfocus="openEvaluationCriteriaDropdown()">
-                                        <button type="button" class="criteria-combo-toggle"
-                                            title="Mostrar ejemplos de criterios de evaluación"
-                                            onclick="toggleEvaluationCriteriaDropdown()">⌄</button>
-                                    </div>
-                                    <div id="evaluationCriteriaDropdown" class="criteria-dropdown hidden"></div>
-                                </div>
-                                <button type="button" class="small-btn" onclick="addEvaluationCriterion()">Agregar
-                                    criterio</button>
+                        <div class="field c12">
+                            <div class="soft-card inherited-data-card">
+                                <div class="compact-title">Datos reutilizados del requerimiento</div>
+                                <div id="inheritedExecutionSummary" class="inherited-summary">El sistema reutilizará
+                                    automáticamente fecha requerida, lugar de entrega, contraparte técnica y condiciones
+                                    técnicas ya informadas.</div>
                             </div>
-                            <div id="evaluationCriteriaStatus" class="criteria-status" aria-live="polite"></div>
-                            <div id="evaluationCriteriaList" class="criteria-list"></div>
-                            <div class="hint">Puede escribir un criterio propio o seleccionar uno de los ejemplos
-                                identificados con “Ej.”. Abastecimiento deberá validar su pertinencia, fórmula, escala y
-                                ponderación.</div>
                         </div>
-                        <div class="field c4"><label>Forma de pago propuesta</label><input type="text"
-                                placeholder="Ej.: contra recepción conforme / por hitos"></div>
-                        <div class="field c4"><label>¿Pago por hitos?</label><select>
-                                <option>No</option>
-                                <option>Sí</option>
-                            </select></div>
-                        <div class="field c4"><label>¿Anticipo?</label><select>
-                                <option>No</option>
-                                <option>Sí, requiere revisión</option>
-                            </select></div>
-                        <div class="field c6">
-                            <label>Niveles de servicio / hitos / entregables</label>
+
+                        <div class="field c6"><label>Entregables, hitos o niveles de servicio</label>
                             <div class="criteria-builder">
                                 <div class="criteria-combo service-level-combo">
-                                    <div class="criteria-combo-row">
-                                        <input id="serviceLevelInput" type="text" autocomplete="off"
-                                            placeholder="Escriba un hito, entregable o nivel de servicio, o seleccione un Ej."
-                                            oninput="filterServiceLevels()" onfocus="openServiceLevelsDropdown()">
-                                        <button type="button" class="criteria-combo-toggle"
-                                            title="Mostrar ejemplos de hitos, entregables y niveles de servicio"
-                                            onclick="toggleServiceLevelsDropdown()">⌄</button>
-                                    </div>
+                                    <div class="criteria-combo-row"><input id="serviceLevelInput" type="text"
+                                            autocomplete="off"
+                                            placeholder="Escriba un hito, entregable o nivel de servicio"
+                                            oninput="filterServiceLevels()"
+                                            onfocus="openServiceLevelsDropdown()"><button type="button"
+                                            class="criteria-combo-toggle" title="Mostrar ejemplos"
+                                            onclick="toggleServiceLevelsDropdown()">⌄</button></div>
                                     <div id="serviceLevelsDropdown" class="criteria-dropdown hidden"></div>
-                                </div>
-                                <button type="button" class="small-btn" onclick="addServiceLevel()">Agregar</button>
+                                </div><button type="button" class="small-btn"
+                                    onclick="addServiceLevel()">Agregar</button>
                             </div>
                             <div id="serviceLevelStatus" class="criteria-status" aria-live="polite"></div>
                             <div id="serviceLevelList" class="criteria-list"></div>
-                            <div class="hint">Puede escribir un hito, un entregable o un nivel de servicio propio, o
-                                seleccionar un “Ej.” de la lista. Los ejemplos están identificados expresamente como
-                                Hito, Entregable o Nivel de servicio y puede agregar varios elementos.</div>
+                            <div class="hint">Use esta lista solo cuando la prestación requiera hitos, entregables o
+                                niveles de servicio específicos.</div>
                         </div>
-                        <div class="field c6"><label>Incumplimientos relevantes a regular / eventuales multas</label>
+                        <div class="field c3"><label>¿Requiere instalación o puesta en marcha?</label><select
+                                id="installationRequired"
+                                onchange="toggleExecutionConditional('installationRequired','installationDetail')">
+                                <option value="no">No</option>
+                                <option value="yes">Sí</option>
+                            </select></div>
+                        <div id="installationDetail" class="field c3 hidden"><label>Detalle de
+                                instalación</label><input type="text" placeholder="Describa brevemente"></div>
+                        <div class="field c3"><label>¿Requiere capacitación técnica?</label><select
+                                id="trainingRequired"
+                                onchange="toggleExecutionConditional('trainingRequired','trainingDetail')">
+                                <option value="no">No</option>
+                                <option value="yes">Sí</option>
+                            </select></div>
+                        <div id="trainingDetail" class="field c3 hidden"><label>Detalle de
+                                capacitación</label><input type="text" placeholder="Personas, horas o alcance">
+                        </div>
+
+                        <div class="field c4"><label class="req">¿Hubo contacto previo con potenciales
+                                proveedores por esta necesidad?</label><select id="priorSupplierContact"
+                                onchange="toggleSupplierContactDetails()">
+                                <option value="">Seleccione</option>
+                                <option value="no">No</option>
+                                <option value="yes">Sí</option>
+                            </select>
+                            <div class="hint">Incluya contactos de estudio de mercado o levantamiento técnico
+                                previos al procedimiento formal.</div>
+                        </div>
+                        <div id="supplierContactDetails" class="c8 hidden">
+                            <div class="grid">
+                                <div class="field c4"><label class="req">Proveedor / entidad
+                                        contactada</label><input id="contactedSupplier" type="text"
+                                        placeholder="Nombre o razón social"></div>
+                                <div class="field c4"><label class="req">Fecha</label><input
+                                        id="supplierContactDate" type="date"></div>
+                                <div class="field c4"><label class="req">Medio</label><select
+                                        id="supplierContactMedium">
+                                        <option value="">Seleccione</option>
+                                        <option>Correo electrónico</option>
+                                        <option>Reunión</option>
+                                        <option>Teléfono</option>
+                                        <option>Formulario / web</option>
+                                        <option>Otro</option>
+                                    </select></div>
+                                <div class="field c6"><label class="req">Finalidad</label><select
+                                        id="supplierContactPurpose">
+                                        <option value="">Seleccione</option>
+                                        <option>Estudio de mercado</option>
+                                        <option>Antecedente técnico</option>
+                                        <option>Estimación de precios</option>
+                                        <option>Otra</option>
+                                    </select></div>
+                                <div class="field c6"><label>Observación de trazabilidad</label><input
+                                        type="text" placeholder="Antecedente complementario, si corresponde">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field c4"><label class="req">¿Existe alguna circunstancia que pueda afectar
+                                su imparcialidad o que deba informarse por potencial conflicto de
+                                interés?</label><select id="conflictInterestDeclaration"
+                                onchange="toggleConflictInterestDetail()">
+                                <option value="">Seleccione</option>
+                                <option value="no">No</option>
+                                <option value="yes">Sí</option>
+                                <option value="reserved">Sí, informar reservadamente</option>
+                            </select></div>
+                        <div id="conflictInterestDetail" class="field c8 hidden"><label class="req">Antecedente
+                                a informar</label>
                             <textarea class="short"
-                                placeholder="Describa riesgos de ejecución que deban quedar regulados; la redacción final será revisada por Abastecimiento/Jurídica cuando corresponda."></textarea>
+                                placeholder="Describa únicamente los antecedentes necesarios para que la situación sea evaluada por el rol competente."></textarea>
+                            <div class="alert amber">La declaración genera una alerta de revisión. No corresponde al
+                                requirente resolver por sí mismo si existe jurídicamente un conflicto ni determinar la
+                                abstención.</div>
+                        </div>
+
+                        <div class="field c12">
+                            <div class="norm-note">Integridad: el sistema registra quién interviene y conserva la
+                                trazabilidad de contactos previos. La eventual abstención o gestión de un conflicto se
+                                revisa conforme al marco de probidad, incluido el art. 35 quinquies de la Ley N.º 19.886
+                                y las orientaciones de la Directiva N.º 28/2025.</div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section class="conditional form-step" data-step="7">
+            <section class="requester-summary-section" id="documentSummarySection">
+                <div class="section-head">
+                    <div class="num" style="background:#65736c">DOC</div>
+                    <div>
+                        <h2>Documentos del expediente</h2><small>Resumen automático. Los archivos se adjuntan en el
+                            lugar donde nacen y se almacenan una sola vez.</small>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div class="document-summary-toolbar no-print"><button type="button" class="small-btn"
+                            onclick="refreshDocumentSummary()">Actualizar resumen</button><span
+                            id="documentSummaryStatus" class="status-badge">Sin documentos registrados</span></div>
+                    <div id="documentSummaryEmpty" class="hint">Aún no hay archivos adjuntos.</div>
+                    <div id="documentSummaryList" class="document-summary-list"></div>
+                    <div class="norm-note">Los archivos se vinculan al expediente y a su contexto (ítem, situación
+                        E/U/I u otra categoría). No se solicita volver a cargarlos en una sección separada.</div>
+                </div>
+            </section>
+
+            <section class="form-step workflow-section" data-step="7">
                 <div class="section-head">
                     <div class="num">7</div>
                     <div>
-                        <h2>Controles especiales — solo cuando corresponda</h2><small>Evita recargar las compras
-                            simples, pero activa respaldos para situaciones que requieren mayor análisis.</small>
+                        <h2>Aprobación de jefatura y flujo del requerimiento</h2><small>La información del requerimiento
+                            se conserva sin sobrescribirse; cada rol agrega su propia decisión y trazabilidad.</small>
                     </div>
                 </div>
                 <div class="section-body">
-                    <div id="circularBlock" class="subbox">
-                        <div class="mini-title">A. Economía circular / bienes muebles</div>
-                        <div class="grid">
-                            <div class="field c4 circular-align"><label>¿Aplica consulta a plataforma de economía
-                                    circular?</label><select>
-                                    <option>Por determinar por Abastecimiento</option>
-                                    <option>Sí</option>
-                                    <option>No, por naturaleza</option>
-                                    <option>No aplica</option>
-                                </select></div>
-                            <div class="field c4 circular-align"><label>Fecha de consulta</label><input
-                                    type="date"></div>
-                            <div class="field c4 circular-align"><label>Resultado</label><input type="text"
-                                    placeholder="Sin bienes aptos / existe alternativa / exento"></div>
-                            <div class="field c12"><label>Respaldo / fundamento si no aplica</label>
-                                <textarea class="short"></textarea>
+                    <div id="workflowSummary" class="workflow-summary">
+                        <div class="workflow-stage current" data-workflow-stage="requester">
+                            <div class="workflow-stage-num">1</div>
+                            <div><strong>Área requirente</strong><span id="workflowRequesterStatus">Borrador en
+                                    preparación</span></div>
+                        </div>
+                        <div class="workflow-line"></div>
+                        <div class="workflow-stage" data-workflow-stage="chief">
+                            <div class="workflow-stage-num">2</div>
+                            <div><strong>Jefatura del área requirente</strong><span id="workflowChiefStatus">Pendiente
+                                    de recepción</span></div>
+                        </div>
+                        <div class="workflow-line"></div>
+                        <div class="workflow-stage" data-workflow-stage="procurement">
+                            <div class="workflow-stage-num">3</div>
+                            <div><strong>DAF</strong><span id="workflowProcurementStatus">Pendiente de aprobación de
+                                    jefatura</span></div>
+                        </div>
+                    </div>
+
+                    <div id="chiefApprovalWorkspace" class="role-workspace hidden">
+                        <div class="workspace-head">
+                            <div>
+                                <div class="workspace-kicker">Vista de jefatura</div>
+                                <h3>Revisión del requerimiento del área</h3>
+                                <p>Revise el expediente completo, incluidas cotizaciones, imágenes y antecedentes
+                                    adjuntos. La información ingresada por el requirente se presenta en modo solo
+                                    lectura.</p>
+                            </div>
+                            <span id="chiefDecisionBadge" class="status-badge">Pendiente</span>
+                        </div>
+
+                        <div id="chiefRequestSummary" class="metrics-grid"></div>
+
+                        <div class="grid" style="margin-top:12px;">
+                            <div class="field c4"><label>Nombre de quien revisa</label><input id="chiefReviewerName"
+                                    type="text" placeholder="Nombre de la jefatura"></div>
+                            <div class="field c4"><label>Cargo</label><input id="chiefReviewerRole" type="text"
+                                    placeholder="Cargo"></div>
+                            <div class="field c4"><label>Fecha de decisión</label><input id="chiefDecisionDate"
+                                    type="date" readonly></div>
+                            <div class="field c12"><label>Observación / fundamento de la decisión</label>
+                                <textarea id="chiefDecisionComment" class="short"
+                                    placeholder="Indique observaciones, correcciones solicitadas o fundamento de rechazo, cuando corresponda."></textarea>
                             </div>
                         </div>
+
+                        <div class="approval-actions no-print">
+                            <button type="button" class="primary"
+                                onclick="recordChiefDecision('approved')">Aprobar requerimiento</button>
+                            <button type="button" onclick="recordChiefDecision('changes')">Solicitar
+                                correcciones</button>
+                            <button type="button" class="danger-action"
+                                onclick="recordChiefDecision('rejected')">Rechazar</button>
+                        </div>
+                        <div id="chiefApprovalHint" class="hint" style="margin-top:8px;">La aprobación de
+                            jefatura habilita la revisión de suficiencia por el DAF.</div>
                     </div>
 
-                    <div class="subbox">
-                        <div class="mini-title">B. Riesgos y revisiones sectoriales</div>
-                        <div class="checklist">
-                            <label><input type="checkbox"> Involucra datos personales o acceso a información
-                                institucional.</label>
-                            <label><input type="checkbox"> Involucra software, licencias, sistemas o
-                                ciberseguridad.</label>
-                            <label><input type="checkbox"> Requiere instalación, obras menores o intervención de
-                                infraestructura.</label>
-                            <label><input type="checkbox"> Involucra seguridad de personas, alimentos, transporte u
-                                otro riesgo operacional.</label>
-                            <label><input type="checkbox"> Puede requerir permisos, autorizaciones, seguros o
-                                certificaciones especiales.</label>
-                            <label><input type="checkbox"> Corresponde a publicidad, difusión u otro gasto sujeto a
-                                instrucciones especiales.</label>
-                        </div>
-                        <div class="field" style="margin-top:10px"><label>Detalle y revisión requerida</label>
-                            <textarea class="short"
-                                placeholder="Identifique antecedentes que deban revisar TI, Jurídica, Prevención, Administración u otra unidad."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="subbox">
-                        <div class="mini-title">C. Integridad y contactos previos con el mercado</div>
-                        <div class="grid">
-                            <div class="field c4"><label>¿Hubo contacto previo con potenciales
-                                    proveedores?</label><select>
-                                    <option>No</option>
-                                    <option>Sí</option>
-                                </select></div>
-                            <div class="field c4"><label>¿Se recibieron cotizaciones o antecedentes
-                                    técnicos?</label><select>
-                                    <option>No</option>
-                                    <option>Sí, se adjuntan</option>
-                                </select></div>
-                            <div class="field c4"><label>¿Existe alguna situación que deba informarse por eventual
-                                    conflicto de interés?</label><select>
-                                    <option>No se conoce</option>
-                                    <option>Sí, informar a jefatura/Abastecimiento</option>
-                                </select></div>
-                            <div class="field c12"><label>Detalle / trazabilidad</label>
-                                <textarea class="short" placeholder="Individualice gestiones previas relevantes y adjunte respaldos."></textarea>
+                    <div id="procurementWorkflowNotice" class="role-workspace hidden">
+                        <div class="workspace-head">
+                            <div>
+                                <div class="workspace-kicker">Vista DAF</div>
+                                <h3>Recepción y revisión de suficiencia</h3>
+                                <p>La información original del área requirente y la decisión de jefatura se mantienen
+                                    visibles. DAF puede devolver para subsanar o efectuar una modificación controlada,
+                                    siempre con trazabilidad de autoría.</p>
                             </div>
+                            <span id="procurementAccessBadge" class="status-badge">Pendiente</span>
                         </div>
+                        <div id="procurementRequestSummary" class="metrics-grid"></div>
+                        <div id="procurementGateMessage" class="alert amber">El requerimiento todavía no cuenta con
+                            aprobación de jefatura.</div>
+                    </div>
+
+                    <div id="workflowAuditTrail" class="workflow-audit">
+                        <div class="mini-title">Historial del flujo</div>
+                        <div id="workflowAuditEmpty" class="hint">Aún no existen hitos registrados.</div>
+                        <div id="workflowAuditList"></div>
                     </div>
                 </div>
             </section>
 
-            <section class="form-step" data-step="8">
+            <section class="internal form-step procurement-section" data-step="8">
                 <div class="section-head">
-                    <div class="num">8</div>
+                    <div class="num" style="background:var(--blue)">8</div>
                     <div>
-                        <h2>Antecedentes adjuntos</h2><small>Checklist de respaldos. Marcar solo los que
-                            correspondan.</small>
+                        <h2>Revisión de suficiencia y tramitación — DAF</h2><small>Control institucional posterior a la
+                            aprobación de jefatura. DAF valida completitud, presupuesto, planificación, integridad y
+                            curso de compra.</small>
                     </div>
                 </div>
                 <div class="section-body">
-                    <div class="checklist">
-                        <label><input type="checkbox"> Especificaciones técnicas / términos de referencia.</label>
-                        <label><input type="checkbox"> Cotizaciones, referencias de mercado o compras
-                            anteriores.</label>
-                        <label><input type="checkbox"> Respaldo PAC / modificación o justificación de compra no
-                            planificada.</label>
-                        <label><input type="checkbox"> Antecedentes de disponibilidad presupuestaria / CDP.</label>
-                        <label><input type="checkbox"> Respaldo de consulta a economía circular, si aplica.</label>
-                        <label><input type="checkbox"> Fotografías, planos, medidas, inventario u otros anexos
-                            técnicos.</label>
-                        <label><input type="checkbox"> Antecedente de contrato/OC vigente o compra
-                            relacionada.</label>
-                        <label><input type="checkbox"> Informe, autorización o revisión especial, si aplica.</label>
-                    </div>
-                    <div class="field" style="margin-top:12px"><label>Otros documentos</label><input type="text">
-                    </div>
-                </div>
-            </section>
-
-            <section class="form-step" data-step="9">
-                <div class="section-head">
-                    <div class="num">9</div>
-                    <div>
-                        <h2>Registro de autorizaciones y visaciones</h2><small>Propuesta inicial. La secuencia y los
-                            umbrales se definirán en el procedimiento interno del PRZ.</small>
-                    </div>
-                </div>
-                <div class="section-body">
-                    <div class="sign-grid">
-                        <div class="head">Etapa / responsable</div>
-                        <div class="head">Decisión</div>
-                        <div class="head">Fecha</div>
-                        <div class="head">Nombre / firma</div>
-                        <div class="head">Observación</div>
-
-                        <div><b>1. Unidad Requirente</b><br>Elabora y asume responsabilidad técnica.</div>
-                        <div>☐ Conforme<br>☐ Corregir</div>
-                        <div></div>
-                        <div>
-                            <div class="signature-line"></div>
-                        </div>
-                        <div></div>
-
-                        <div><b>2. Jefatura de la Unidad</b><br>Autoriza la necesidad y prioridad.</div>
-                        <div>☐ Autoriza<br>☐ Rechaza</div>
-                        <div></div>
-                        <div>
-                            <div class="signature-line"></div>
-                        </div>
-                        <div></div>
-
-                        <div><b>3. Presupuesto / Finanzas</b><br>Valida imputación y disponibilidad.</div>
-                        <div>☐ Visa<br>☐ Observa</div>
-                        <div></div>
-                        <div>
-                            <div class="signature-line"></div>
-                        </div>
-                        <div></div>
-
-                        <div><b>4. Abastecimiento / Compras</b><br>Revisa suficiencia y procedimiento.</div>
-                        <div>☐ Admite<br>☐ Devuelve</div>
-                        <div></div>
-                        <div>
-                            <div class="signature-line"></div>
-                        </div>
-                        <div></div>
-
-                        <div><b>5. Administración / autoridad competente</b><br>Autoriza cuando proceda según delegación
-                            o monto.</div>
-                        <div>☐ Autoriza<br>☐ Rechaza<br>☐ N/A</div>
-                        <div></div>
-                        <div>
-                            <div class="signature-line"></div>
-                        </div>
-                        <div></div>
-
-                        <div><b>6. Jurídica / control especializado</b><br>Solo en casos definidos por procedimiento.
-                        </div>
-                        <div>☐ Visa<br>☐ Observa<br>☐ N/A</div>
-                        <div></div>
-                        <div>
-                            <div class="signature-line"></div>
-                        </div>
-                        <div></div>
-                    </div>
-                    <div class="alert blue">Para mantener agilidad, no recomiendo exigir todas las visaciones en todas
-                        las compras. La matriz de autorizaciones debería variar por monto, complejidad, mecanismo y
-                        riesgo.</div>
-                </div>
-            </section>
-
-            <section class="internal form-step" data-step="10">
-                <div class="section-head">
-                    <div class="num" style="background:var(--blue)">10</div>
-                    <div>
-                        <h2>Uso exclusivo de Abastecimiento / Compras Públicas</h2><small>Control de admisibilidad
-                            interna y definición del curso de compra.</small>
-                    </div>
-                </div>
-                <div class="section-body">
-                    <div class="grid">
-                        <div class="field c4"><label>Fecha recepción en Abastecimiento</label><input type="date">
-                        </div>
-                        <div class="field c4"><label>Analista / responsable</label><input type="text"></div>
-                        <div class="field c4"><label>Estado</label><select>
+                    <div id="procurementSectionGate" class="alert amber" style="margin-top:0;">Esta sección se
+                        habilitará cuando la jefatura del área requirente apruebe el requerimiento.</div>
+                    <div class="grid" id="procurementEditableArea">
+                        <div class="field c4"><label>Fecha recepción DAF</label><input id="dafReceivedDate"
+                                type="date"></div>
+                        <div class="field c4"><label>Analista / responsable DAF</label><input id="dafAnalyst"
+                                type="text"></div>
+                        <div class="field c4"><label>Estado de revisión</label><select id="dafReviewState">
                                 <option>En revisión</option>
                                 <option>Admitido</option>
                                 <option>Devuelto para completar</option>
-                                <option>Desistido</option>
-                                <option>En proceso</option>
+                                <option>Observado</option>
+                                <option>En tramitación</option>
                                 <option>Finalizado</option>
                             </select></div>
 
-                        <div class="field c12"><label>Control mínimo de suficiencia</label>
-                            <div class="checklist">
-                                <label><input type="checkbox"> Necesidad y objeto claros.</label>
-                                <label><input type="checkbox"> Cantidad / alcance definidos.</label>
-                                <label><input type="checkbox"> Especificaciones suficientes y no restrictivas.</label>
-                                <label><input type="checkbox"> Fecha requerida compatible con tiempos del
-                                    proceso.</label>
-                                <label><input type="checkbox"> PAC revisado y documentado.</label>
-                                <label><input type="checkbox"> Presupuesto / CDP revisado según etapa.</label>
-                                <label><input type="checkbox"> Compras relacionadas / fragmentación revisadas.</label>
-                                <label><input type="checkbox"> Stock / contratos existentes revisados.</label>
-                                <label><input type="checkbox"> Economía circular revisada cuando corresponde.</label>
-                                <label><input type="checkbox"> Estimación de mercado suficientemente
-                                    respaldada.</label>
-                                <label><input type="checkbox"> Antecedentes para evaluación/condiciones
-                                    suficientes.</label>
-                                <label><input type="checkbox"> Anexos y revisiones especiales completos.</label>
+                        <div class="field c12"><label>Control de suficiencia y resguardos</label>
+                            <div class="checklist daf-checklist">
+                                <label><input type="checkbox"> Necesidad institucional y resultado esperado
+                                    suficientemente definidos.</label>
+                                <label><input type="checkbox"> Cantidad, alcance y especificaciones suficientes y
+                                    proporcionales.</label>
+                                <label><input type="checkbox"> Referencias comerciales justificadas, si
+                                    existen.</label>
+                                <label><input type="checkbox"> PAC vinculado o situación fuera de PAC debidamente
+                                    documentada.</label>
+                                <label><input type="checkbox"> Variaciones relevantes respecto del PAC
+                                    revisadas.</label>
+                                <label><input type="checkbox"> Compras relacionadas y riesgo de fragmentación
+                                    analizados.</label>
+                                <label><input type="checkbox"> Stock, contratos u órdenes vigentes revisados.</label>
+                                <label><input type="checkbox"> Estimación de mercado respaldada y coherente.</label>
+                                <label><input type="checkbox"> Disponibilidad e imputación presupuestaria
+                                    revisadas.</label>
+                                <label><input type="checkbox"> Economía circular revisada cuando corresponda a bienes
+                                    muebles.</label>
+                                <label><input type="checkbox"> Contactos previos con proveedores revisados cuando
+                                    existen.</label>
+                                <label><input type="checkbox"> Potenciales conflictos de interés revisados y
+                                    gestionados cuando corresponda.</label>
+                                <label><input type="checkbox"> Antecedentes E/U/I evaluados, cuando
+                                    corresponda.</label>
+                                <label><input type="checkbox"> Documentos y anexos suficientes para continuar.</label>
                             </div>
                         </div>
 
+                        <div class="field c4"><label>Disponibilidad presupuestaria</label><select
+                                id="dafBudgetAvailability">
+                                <option value="">Seleccione</option>
+                                <option>Validada</option>
+                                <option>Pendiente</option>
+                                <option>Insuficiente</option>
+                                <option>No aplica en esta etapa</option>
+                            </select></div>
+                        <div class="field c4"><label>Imputación / cuenta</label><input id="dafBudgetAccount"
+                                type="text" placeholder="Cuenta o clasificación interna"></div>
+                        <div class="field c4"><label>CDP / antecedente presupuestario</label><input
+                                id="dafBudgetEvidence" type="text"
+                                placeholder="N.º o referencia, si corresponde"></div>
+
                         <div class="field c6"><label class="req">Procedimiento de contratación definido /
-                                validado</label>
-                            <select>
+                                validado</label><select id="dafProcedure">
                                 <option value="">Seleccione</option>
                                 <option>Compra Ágil</option>
                                 <option>Convenio Marco</option>
@@ -4364,10 +5283,18 @@
                                 <option>Subasta Inversa Electrónica — si procede</option>
                                 <option>Contrato para la Innovación / Diálogo Competitivo — si procede</option>
                                 <option>Otro autorizado por normativa</option>
-                            </select>
+                            </select></div>
+                        <div class="field c6"><label>Fundamento / antecedentes de la definición</label>
+                            <textarea id="dafProcedureBasis" class="short"></textarea>
                         </div>
-                        <div class="field c6"><label>Fundamento / antecedentes de la elección</label>
-                            <textarea class="short"></textarea>
+
+                        <div class="field c6"><label>Criterios de evaluación / admisibilidad a estructurar</label>
+                            <textarea id="dafEvaluationNotes" class="short"
+                                placeholder="DAF define la estructura formal a partir de la necesidad y requisitos técnicos del área requirente."></textarea>
+                        </div>
+                        <div class="field c6"><label>Condiciones administrativas relevantes</label>
+                            <textarea id="dafAdministrativeConditions" class="short"
+                                placeholder="Forma de pago, garantías, multas, hitos contractuales u otros elementos administrativos que correspondan."></textarea>
                         </div>
 
                         <div class="field c4"><label>Consulta Convenio Marco</label><select>
@@ -4376,26 +5303,38 @@
                                 <option>No aplica</option>
                             </select></div>
                         <div class="field c4"><label>ID proceso Mercado Público</label><input type="text"></div>
-                        <div class="field c4"><label>ID / Nº orden de compra</label><input type="text"></div>
+                        <div class="field c4"><label>ID / N.º orden de compra</label><input type="text"></div>
                         <div class="field c12"><label>Observaciones / antecedentes faltantes</label>
-                            <textarea class="short"></textarea>
+                            <textarea id="dafReviewComment" class="short"
+                                placeholder="Detalle las observaciones que deba subsanar el área requirente o los ajustes efectuados por DAF."></textarea>
+                        </div>
+
+                        <div class="field c12">
+                            <div class="approval-actions no-print"><button type="button" class="primary"
+                                    onclick="recordDafDecision('admit')">Admitir requerimiento</button><button
+                                    type="button" onclick="recordDafDecision('return')">Devolver para
+                                    completar</button><button id="dafEditToggleBtn" type="button"
+                                    onclick="toggleDafControlledEdit()">Habilitar edición controlada</button></div>
+                            <div class="hint">La edición controlada permite que DAF corrija antecedentes puntuales
+                                sin borrar la autoría original. Cada modificación queda registrada en el historial
+                                técnico.</div>
                         </div>
                     </div>
+                    <div class="norm-note">La vista DAF concentra controles que no corresponden al requirente:
+                        suficiencia, presupuesto, PAC, fragmentación, economía circular, integridad y definición del
+                        procedimiento. Esto favorece segregación de funciones y evita duplicar preguntas.</div>
                 </div>
             </section>
 
-
-
-
             <div id="requestSubmissionArea" class="submission-area no-print">
                 <div>
-                    <div class="submission-title">Finalización del requerimiento</div>
-                    <div class="submission-help">Al enviar, el sistema valida los campos obligatorios de la parte
-                        requirente, cierra la medición de tiempo y genera un registro estadístico interno para acompañar
-                        el expediente.</div>
+                    <div class="submission-title">Envío del requerimiento a jefatura</div>
+                    <div class="submission-help">Al enviar, el sistema valida los campos obligatorios del área
+                        requirente, cierra la medición de tiempo y remite el requerimiento a la jefatura del área para
+                        su revisión.</div>
                 </div>
                 <button id="submitRequestBtn" type="button" class="primary submission-btn"
-                    onclick="submitPurchaseRequest()">Enviar requerimiento</button>
+                    onclick="submitPurchaseRequest()">Enviar a jefatura del área</button>
             </div>
 
             <div id="submissionStatisticsPanel" class="submission-statistics hidden">
@@ -4429,7 +5368,7 @@
             </div>
 
             <div class="footer-note">
-                Versión de trabajo v0.65 · Este formulario está diseñado para integrarse posteriormente al procedimiento
+                Versión de trabajo v0.75 · Este formulario está diseñado para integrarse posteriormente al procedimiento
                 interno de adquisiciones del PRZ y a una matriz de autorizaciones por monto/riesgo. Los campos marcados
                 con * conforman el núcleo mínimo sugerido.
             </div>
@@ -4437,6 +5376,669 @@
     </div>
 
     <script>
+        let currentRoleView = 'requester';
+        const workflowState = {
+            status: 'draft',
+            requesterSubmittedAt: null,
+            chiefDecision: null,
+            chiefDecisionAt: null,
+            chiefReviewerName: '',
+            chiefReviewerRole: '',
+            chiefComment: '',
+            procurementOpenedAt: null,
+            audit: []
+        };
+
+        function addWorkflowAudit(actor, action, detail = '', stage = 'Requerimiento') {
+            const role = actor === 'DAF' ? 'DAF' : actor.includes('Jefatura') ? 'Jefatura' : actor === 'Sistema' ?
+                'Sistema' : 'Área requirente';
+            workflowState.audit.push({
+                at: new Date().toISOString(),
+                actor,
+                role,
+                stage,
+                action,
+                detail
+            });
+            renderWorkflowAudit();
+            if (!document.getElementById('historyModal')?.classList.contains('hidden')) renderHistoryModal();
+        }
+
+        function renderWorkflowAudit() {
+            const empty = document.getElementById('workflowAuditEmpty');
+            const list = document.getElementById('workflowAuditList');
+            if (!empty || !list) return;
+            list.innerHTML = '';
+            empty.classList.toggle('hidden', workflowState.audit.length > 0);
+
+            workflowState.audit.forEach(event => {
+                const row = document.createElement('div');
+                row.className = 'workflow-audit-row';
+                const dt = new Date(event.at);
+                row.innerHTML = `
+      <span>${dt.toLocaleString('es-CL')}</span>
+      <strong>${escapeHtml(event.actor)}</strong>
+      <span>${escapeHtml(event.action)}${event.detail ? ` · ${escapeHtml(event.detail)}` : ''}</span>`;
+                list.appendChild(row);
+            });
+        }
+
+        function requesterSummaryCards() {
+            const unit = (document.getElementById('requestingUnit')?.value || '').trim() || 'Sin área informada';
+            const responsible = (document.getElementById('requestingResponsible')?.value || '').trim() ||
+                'Sin responsable informado';
+            const folio = (document.getElementById('folio')?.value || '').trim() || 'Sin folio';
+            const total = document.getElementById('lineTotal')?.textContent || '$0';
+            return [
+                metricsCard('Área requirente', unit),
+                metricsCard('Responsable', responsible),
+                metricsCard('Folio', folio),
+                metricsCard('Total referencial', total)
+            ].join('');
+        }
+
+        function renderWorkflowSummaries() {
+            const summary = requesterSummaryCards();
+            const chief = document.getElementById('chiefRequestSummary');
+            const procurement = document.getElementById('procurementRequestSummary');
+            if (chief) chief.innerHTML = summary;
+            if (procurement) procurement.innerHTML = summary;
+        }
+
+        function setRequesterSectionsReadonly(readonly) {
+            document.querySelectorAll('.requester-section').forEach(section => {
+                section.classList.toggle('role-readonly', readonly);
+
+                section.querySelectorAll('input,select,textarea').forEach(control => {
+                    // Keep hidden native proxy controls disabled like the rest.
+                    if (readonly) {
+                        if (!control.dataset.rolePrevDisabled) {
+                            control.dataset.rolePrevDisabled = control.disabled ? '1' : '0';
+                        }
+                        control.disabled = true;
+                    } else {
+                        if (control.dataset.rolePrevDisabled === '0') control.disabled = false;
+                        delete control.dataset.rolePrevDisabled;
+                    }
+                });
+
+                // Keep pure viewing actions available while read-only.
+                section.querySelectorAll('.quote-view-btn,[onclick^="openGenericFilePreview"]').forEach(btn => btn
+                    .disabled = false);
+            });
+        }
+
+        function setProcurementEditable(enabled) {
+            const area = document.getElementById('procurementEditableArea');
+            if (!area) return;
+            area.querySelectorAll('input,select,textarea,button').forEach(control => {
+                control.disabled = !enabled;
+            });
+            const gate = document.getElementById('procurementSectionGate');
+            if (gate) {
+                gate.classList.toggle('hidden', enabled);
+                gate.textContent = enabled ?
+                    '' :
+                    'Esta sección se habilitará cuando la jefatura del área requirente apruebe el requerimiento.';
+            }
+        }
+
+        function visibleSectionsForRole() {
+            if (currentRoleView === 'requester') {
+                return [...document.querySelectorAll('main > .requester-section')].filter(x => !x.classList.contains(
+                    'role-hidden'));
+            }
+            if (currentRoleView === 'chief') {
+                return [
+                    ...document.querySelectorAll('main > .requester-section:not(.role-hidden)'),
+                    ...document.querySelectorAll('main > .workflow-section:not(.role-hidden)')
+                ];
+            }
+            return [
+                ...document.querySelectorAll('main > .requester-section:not(.role-hidden)'),
+                ...document.querySelectorAll('main > .workflow-section:not(.role-hidden)'),
+                ...document.querySelectorAll('main > .procurement-section:not(.role-hidden)')
+            ];
+        }
+
+        function getStepSections() {
+            return visibleSectionsForRole();
+        }
+
+        function updateRoleStateBadge() {
+            const badge = document.getElementById('roleStateBadge');
+            if (!badge) return;
+
+            const labels = {
+                draft: 'Borrador del requerimiento',
+                submitted: 'En revisión de jefatura',
+                changes: 'Devuelto para correcciones',
+                rejected: 'Rechazado por jefatura',
+                approved: 'Aprobado · disponible para DAF',
+                daf_admitted: 'Admitido por DAF'
+            };
+            badge.textContent = labels[workflowState.status] || workflowState.status;
+        }
+
+        function updateWorkflowStages() {
+            const requesterStage = document.querySelector('[data-workflow-stage="requester"]');
+            const chiefStage = document.querySelector('[data-workflow-stage="chief"]');
+            const procurementStage = document.querySelector('[data-workflow-stage="procurement"]');
+            const lines = document.querySelectorAll('.workflow-line');
+
+            [requesterStage, chiefStage, procurementStage].forEach(x => x?.classList.remove('current', 'done'));
+            lines.forEach(x => x.classList.remove('done'));
+
+            if (workflowState.status === 'draft' || workflowState.status === 'changes') {
+                requesterStage?.classList.add('current');
+            } else {
+                requesterStage?.classList.add('done');
+                lines[0]?.classList.add('done');
+            }
+
+            if (workflowState.status === 'submitted') {
+                chiefStage?.classList.add('current');
+            } else if (workflowState.status === 'approved' || workflowState.status === 'daf_admitted') {
+                chiefStage?.classList.add('done');
+                lines[1]?.classList.add('done');
+                procurementStage?.classList.add(workflowState.status === 'daf_admitted' ? 'done' : 'current');
+            } else if (workflowState.status === 'rejected') {
+                chiefStage?.classList.add('current');
+            }
+
+            const reqStatus = document.getElementById('workflowRequesterStatus');
+            const chiefStatus = document.getElementById('workflowChiefStatus');
+            const procStatus = document.getElementById('workflowProcurementStatus');
+
+            if (reqStatus) {
+                reqStatus.textContent = workflowState.status === 'draft' ? 'Borrador en preparación' :
+                    workflowState.status === 'changes' ? 'Correcciones solicitadas' :
+                    'Enviado a jefatura';
+            }
+            if (chiefStatus) {
+                chiefStatus.textContent = workflowState.status === 'submitted' ? 'Pendiente de decisión' :
+                    workflowState.status === 'approved' ? 'Aprobado' :
+                    workflowState.status === 'rejected' ? 'Rechazado' :
+                    workflowState.status === 'changes' ? 'Devuelto para correcciones' :
+                    'Pendiente de recepción';
+            }
+            if (procStatus) {
+                procStatus.textContent = workflowState.status === 'daf_admitted' ? 'Admitido por DAF' : workflowState
+                    .status === 'approved' ? 'Habilitado para revisión DAF' : 'Pendiente de aprobación de jefatura';
+            }
+
+            const chiefBadge = document.getElementById('chiefDecisionBadge');
+            if (chiefBadge) {
+                chiefBadge.textContent = workflowState.status === 'approved' ? 'Aprobado' :
+                    workflowState.status === 'rejected' ? 'Rechazado' :
+                    workflowState.status === 'changes' ? 'Correcciones solicitadas' :
+                    workflowState.status === 'submitted' ? 'Pendiente de decisión' : 'Sin envío';
+            }
+
+            const procurementBadge = document.getElementById('procurementAccessBadge');
+            if (procurementBadge) procurementBadge.textContent = workflowState.status === 'approved' ? 'Habilitado' :
+                'Pendiente';
+
+            const gateMsg = document.getElementById('procurementGateMessage');
+            if (gateMsg) {
+                gateMsg.className = workflowState.status === 'approved' ? 'alert blue' : 'alert amber';
+                gateMsg.textContent = workflowState.status === 'approved' ?
+                    'La jefatura aprobó el requerimiento. DAF puede realizar la revisión de suficiencia y definir el curso de tramitación.' :
+                    'El requerimiento todavía no cuenta con aprobación de jefatura.';
+            }
+
+            setProcurementEditable(['approved', 'daf_admitted'].includes(workflowState.status));
+            updateRoleStateBadge();
+        }
+
+        function applyRoleVisibility() {
+            const requesterSections = document.querySelectorAll('.requester-section');
+            const workflow = document.querySelector('.workflow-section');
+            const procurement = document.querySelector('.procurement-section');
+            const submission = document.getElementById('requestSubmissionArea');
+            const fillMode = document.getElementById('fillModeControl');
+            const validateBtn = document.getElementById('validateWholeFormBtn');
+            const stepNav = document.getElementById('stepNavigator');
+            const chiefWorkspace = document.getElementById('chiefApprovalWorkspace');
+            const procurementNotice = document.getElementById('procurementWorkflowNotice');
+            const context = document.getElementById('roleContextBanner');
+
+            requesterSections.forEach(s => s.classList.remove('role-hidden'));
+            workflow?.classList.toggle('role-hidden', currentRoleView === 'requester');
+            procurement?.classList.toggle('role-hidden', currentRoleView !== 'procurement');
+
+            const readonly = currentRoleView !== 'requester' || workflowState.status === 'submitted' || workflowState
+                .status === 'approved' || workflowState.status === 'daf_admitted' || workflowState.status === 'rejected';
+            setRequesterSectionsReadonly(readonly);
+
+            chiefWorkspace?.classList.toggle('hidden', currentRoleView !== 'chief');
+            procurementNotice?.classList.toggle('hidden', currentRoleView !== 'procurement');
+
+            if (submission) submission.classList.toggle('hidden', currentRoleView !== 'requester' || workflowState
+                .status === 'submitted' || workflowState.status === 'approved' || workflowState.status ===
+                'daf_admitted' || workflowState.status === 'rejected');
+            if (fillMode) fillMode.classList.toggle('hidden', currentRoleView !== 'requester');
+            if (validateBtn) validateBtn.classList.toggle('hidden', currentRoleView !== 'requester');
+
+            if (currentRoleView !== 'requester') {
+                currentFillMode = 'form';
+                document.body.classList.remove('step-mode');
+                stepNav?.classList.add('hidden');
+            } else {
+                document.getElementById('stepNavigator')?.classList.toggle('hidden', currentFillMode !== 'step');
+            }
+
+            if (context) {
+                if (currentRoleView === 'requester') {
+                    context.innerHTML = workflowState.status === 'changes' ?
+                        'Está trabajando en la <strong>vista del área requirente</strong>. La jefatura solicitó correcciones; revise las observaciones y vuelva a enviar el requerimiento.' :
+                        'Está trabajando en la <strong>vista del área requirente</strong>. Complete el requerimiento y envíelo a la jefatura del área para revisión.';
+                } else if (currentRoleView === 'chief') {
+                    context.innerHTML =
+                        'Está trabajando en la <strong>vista de jefatura del área requirente</strong>. Los antecedentes del requirente se muestran en modo solo lectura para su revisión y decisión.';
+                } else {
+                    context.innerHTML =
+                        'Está trabajando en la <strong>vista DAF</strong>. El requerimiento y la aprobación de jefatura permanecen visibles. DAF realiza la revisión de suficiencia, validación presupuestaria, controles de planificación e integridad y define el curso de tramitación.';
+                }
+            }
+
+            document.getElementById('roleRequesterBtn')?.classList.toggle('active', currentRoleView === 'requester');
+            document.getElementById('roleChiefBtn')?.classList.toggle('active', currentRoleView === 'chief');
+            document.getElementById('roleProcurementBtn')?.classList.toggle('active', currentRoleView === 'procurement');
+
+            renderWorkflowSummaries();
+            updateWorkflowStages();
+        }
+
+        function setRoleView(role) {
+            currentRoleView = ['chief', 'procurement'].includes(role) ? role : 'requester';
+            if (currentRoleView === 'procurement' && !workflowState.procurementOpenedAt) {
+                workflowState.procurementOpenedAt = new Date().toISOString();
+            }
+            applyRoleVisibility();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function enableRequesterResubmission() {
+            const btn = document.getElementById('submitRequestBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Reenviar a jefatura del área';
+            }
+            formAnalytics.submittedAt = null;
+        }
+
+        function recordChiefDecision(decision) {
+            if (workflowState.status !== 'submitted' && workflowState.status !== 'rejected') {
+                alert(
+                'La jefatura solo puede decidir sobre un requerimiento que haya sido enviado por el área requirente.');
+                return;
+            }
+
+            const name = (document.getElementById('chiefReviewerName')?.value || '').trim();
+            const role = (document.getElementById('chiefReviewerRole')?.value || '').trim();
+            const comment = (document.getElementById('chiefDecisionComment')?.value || '').trim();
+
+            if (!name || !role) {
+                alert('Ingrese nombre y cargo de la jefatura que realiza la revisión.');
+                return;
+            }
+            if ((decision === 'changes' || decision === 'rejected') && !comment) {
+                alert('Para solicitar correcciones o rechazar, indique el fundamento u observación.');
+                return;
+            }
+
+            workflowState.chiefDecision = decision;
+            workflowState.chiefDecisionAt = new Date().toISOString();
+            workflowState.chiefReviewerName = name;
+            workflowState.chiefReviewerRole = role;
+            workflowState.chiefComment = comment;
+            workflowState.status = decision;
+            if (decision === 'changes') enableRequesterResubmission();
+
+            const dateInput = document.getElementById('chiefDecisionDate');
+            if (dateInput) {
+                const d = new Date();
+                dateInput.value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+            }
+
+            const action = decision === 'approved' ? 'Aprobó el requerimiento' :
+                decision === 'changes' ? 'Solicitó correcciones al requirente' :
+                'Rechazó el requerimiento';
+
+            addWorkflowAudit('Jefatura del área requirente', action, comment, 'Jefatura');
+            applyRoleVisibility();
+
+            if (decision === 'approved') {
+                alert('Requerimiento aprobado. Queda habilitado para revisión por DAF.');
+            } else if (decision === 'changes') {
+                alert('El requerimiento fue devuelto al área requirente para correcciones.');
+            } else {
+                alert('El requerimiento fue rechazado por la jefatura.');
+            }
+        }
+
+        const PAC_DEMO_RECORDS = [{
+                id: 'PAC-DEMO-001',
+                description: 'Ejemplo: adquisición de equipos computacionales',
+                month: 'Marzo',
+                amount: 4200000,
+                quantity: 6,
+                area: 'Administración'
+            },
+            {
+                id: 'PAC-DEMO-002',
+                description: 'Ejemplo: servicio de mantención preventiva',
+                month: 'Junio',
+                amount: 2800000,
+                quantity: 1,
+                area: 'Operaciones'
+            },
+            {
+                id: 'PAC-DEMO-003',
+                description: 'Ejemplo: adquisición de mobiliario',
+                month: 'Agosto',
+                amount: 3500000,
+                quantity: 18,
+                area: 'Museo'
+            }
+        ];
+        let selectedPacRecord = null;
+        let dafControlledEdit = false;
+        let dafEditOriginalValues = new WeakMap();
+
+        function toggleExistingResourcesNeed() {
+            const v = document.getElementById('existingResourcesNeed')?.value;
+            document.getElementById('existingResourcesDetail')?.classList.toggle('hidden', !(v === 'partial' || v ===
+                'yes'));
+        }
+
+        function toggleEmergencyForeseeability() {
+            const v = document.getElementById('emergencyForeseeability')?.value;
+            document.getElementById('emergencyForeseeabilityDetail')?.classList.toggle('hidden', !(v === 'partial' || v ===
+                'yes'));
+        }
+
+        function toggleOtherEstimateSource() {
+            document.getElementById('otherEstimateSourceBox')?.classList.toggle('hidden', !document.getElementById(
+                'sourceOther')?.checked)
+        }
+
+        function toggleEstimateExplanation() {
+            document.getElementById('estimateExplanationBox')?.classList.toggle('hidden', document.getElementById(
+                'estimateMethod')?.value !== 'other')
+        }
+
+        function toggleExecutionConditional(selectId, boxId) {
+            document.getElementById(boxId)?.classList.toggle('hidden', document.getElementById(selectId)?.value !== 'yes')
+        }
+
+        function toggleSupplierContactDetails() {
+            document.getElementById('supplierContactDetails')?.classList.toggle('hidden', document.getElementById(
+                'priorSupplierContact')?.value !== 'yes')
+        }
+
+        function toggleConflictInterestDetail() {
+            document.getElementById('conflictInterestDetail')?.classList.toggle('hidden', !['yes', 'reserved'].includes(
+                document.getElementById('conflictInterestDeclaration')?.value))
+        }
+
+        function toggleOtherUnitMeasure(select) {
+            select?.parentElement?.querySelector('.other-unit-measure')?.classList.toggle('hidden', select.value !== 'otra')
+        }
+
+        function openPacSelector() {
+            document.getElementById('pacSelectorModal')?.classList.remove('hidden');
+            renderPacSelector()
+        }
+
+        function closePacSelector() {
+            document.getElementById('pacSelectorModal')?.classList.add('hidden')
+        }
+
+        function renderPacSelector() {
+            const list = document.getElementById('pacSelectorList');
+            if (!list) return;
+            const q = (document.getElementById('pacSearchInput')?.value || '').trim().toLowerCase();
+            const rows = PAC_DEMO_RECORDS.filter(r => !q || [r.id, r.description, r.month, r.area].join(' ').toLowerCase()
+                .includes(q));
+            list.innerHTML = rows.map(r =>
+                `<button type="button" class="pac-record-card" onclick="selectPacRecord('${r.id}')"><strong>${escapeHtml(r.id)}</strong><span>${escapeHtml(r.description)}</span><small>${escapeHtml(r.area)} · ${escapeHtml(r.month)} · ${new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(r.amount)} · Cant. ${r.quantity}</small></button>`
+                ).join('') || '<div class="hint">No hay coincidencias.</div>';
+        }
+
+        function selectPacRecord(id) {
+            const r = PAC_DEMO_RECORDS.find(x => x.id === id);
+            if (!r) return;
+            selectedPacRecord = r;
+            const hidden = document.getElementById('pacLinkedId');
+            if (hidden) hidden.value = r.id;
+            const status = document.getElementById('pacLinkStatus');
+            if (status) status.textContent = 'PAC vinculado';
+            const summary = document.getElementById('pacLinkedSummary');
+            if (summary) summary.innerHTML =
+                `<div class="pac-data-grid"><div class="pac-data-item"><strong>Código</strong>${escapeHtml(r.id)}</div><div class="pac-data-item"><strong>Descripción</strong>${escapeHtml(r.description)}</div><div class="pac-data-item"><strong>Mes</strong>${escapeHtml(r.month)}</div><div class="pac-data-item"><strong>Monto PAC</strong>${new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(r.amount)}</div><div class="pac-data-item"><strong>Cantidad</strong>${r.quantity}</div><div class="pac-data-item"><strong>Área</strong>${escapeHtml(r.area)}</div></div>`;
+            addWorkflowAudit('Área requirente', 'Vinculó compra del PAC', r.id, 'Requerimiento');
+            closePacSelector();
+            checkPacDeviation();
+            updateProgress();
+        }
+
+        function runSimilarityControl() {
+            const status = document.getElementById('similarityControlStatus');
+            if (!status) return;
+            status.innerHTML =
+                '<strong>Verificación ejecutada.</strong> En el prototipo no existe conexión a la base institucional. En producción, este control cruzará PAC, requerimientos abiertos y compras recientes y devolverá coincidencias para revisión DAF.';
+        }
+
+        function parseMoneyValue(value) {
+            return parseInt(String(value || '').replace(/[^0-9]/g, ''), 10) || 0
+        }
+
+        function checkPacDeviation() {
+            const box = document.getElementById('pacDeviationBox');
+            const text = document.getElementById('pacDeviationText');
+            if (!box || !text || !selectedPacRecord) {
+                box?.classList.add('hidden');
+                return
+            }
+            const actual = parseMoneyValue(document.getElementById('estimatedAmount')?.value);
+            if (!actual) {
+                box.classList.add('hidden');
+                return
+            }
+            const diff = actual - selectedPacRecord.amount;
+            const pct = selectedPacRecord.amount ? Math.abs(diff) / selectedPacRecord.amount * 100 : 0;
+            if (pct >= 20) {
+                box.classList.remove('hidden');
+                text.textContent =
+                    `El monto estimado del requerimiento difiere ${pct.toFixed(1)}% del monto planificado. El umbral mostrado es parametrizable por la institución.`
+            } else box.classList.add('hidden');
+        }
+
+        function looksLikeBrandReference(text) {
+            const t = (text || '').trim();
+            if (!t) return false;
+            return /(modelo|marca|iphone|samsung|lenovo|dell|hp|apple|sony|bosch|makita|toyota|ford|canon|epson)/i.test(
+                t) || /[A-Z]{2,}[\-_]?\d{2,}/.test(t);
+        }
+
+        function handleSpecificationInput(input) {
+            const editor = input?.closest('.item-spec-editor');
+            const warning = editor?.querySelector('.brand-spec-warning');
+            if (!warning) return;
+            const any = [...editor.querySelectorAll('.item-spec-entry')].some(x => looksLikeBrandReference(x.value));
+            warning.classList.toggle('hidden', !any);
+        }
+
+        function refreshEstimateSources() {
+            const count = typeof attachmentsRegistry !== 'undefined' ? attachmentsRegistry.length : 0;
+            const check = document.getElementById('sourceQuotes');
+            const label = document.getElementById('sourceQuoteCount');
+            if (check) check.checked = count > 0;
+            if (label) label.textContent = `(${count})`;
+            const text = document.getElementById('marketEvidenceText');
+            if (text) text.textContent = count ?
+                `${count} cotización(es) ya vinculada(s) en la sección 4. Se reutilizan automáticamente como antecedente de mercado.` :
+                'Aún no existen cotizaciones vinculadas a ítems.';
+        }
+
+        function refreshInheritedExecutionSummary() {
+            const el = document.getElementById('inheritedExecutionSummary');
+            if (!el) return;
+            const date = document.getElementById('requiredNeedDate')?.value || 'No informada';
+            const place = document.getElementById('deliveryPlaceLabel')?.textContent || 'No informado';
+            const cp = document.getElementById('technicalCounterpartName')?.value || 'No definida';
+            el.innerHTML =
+                `<strong>Fecha requerida:</strong> ${escapeHtml(date)} · <strong>Lugar:</strong> ${escapeHtml(place)} · <strong>Contraparte técnica:</strong> ${escapeHtml(cp)}. Estos antecedentes se muestran por referencia y no se vuelven a solicitar.`;
+        }
+
+        function refreshDocumentSummary() {
+            const list = document.getElementById('documentSummaryList');
+            const empty = document.getElementById('documentSummaryEmpty');
+            const status = document.getElementById('documentSummaryStatus');
+            if (!list || !empty || !status) return;
+            const docs = [];
+            if (typeof attachmentsRegistry !== 'undefined') attachmentsRegistry.forEach(x => docs.push({
+                name: x.name || x.displayName || x.file?.name || 'Cotización',
+                type: 'Cotización',
+                origin: (x.itemKeys || []).map(k => itemNumberLabelForQuote(k)).filter(Boolean).join(', ') ||
+                    'Ítem',
+                record: x
+            }));
+            if (typeof lotQuoteRegistry !== 'undefined') lotQuoteRegistry.forEach(x => docs.push({
+                name: x.name || x.file?.name || 'Cotización por lote',
+                type: 'Cotización por lote',
+                origin: 'Lote',
+                record: x
+            }));
+            if (typeof referenceImagesRegistry !== 'undefined') referenceImagesRegistry.forEach(x => docs.push({
+                name: x.name || x.displayName || x.file?.name || 'Imagen',
+                type: 'Imagen referencial',
+                origin: (x.itemKeys || []).map(k => itemNumberLabelForQuote(k)).filter(Boolean).join(', ') ||
+                    'Ítem',
+                record: x
+            }));
+            if (typeof emergencyEvidenceRegistry !== 'undefined') emergencyEvidenceRegistry.forEach(x => docs.push({
+                name: x.displayName || x.name || x.file?.name || 'Antecedente E/U/I',
+                type: 'Antecedente E/U/I',
+                origin: (x.categoryKeys || []).join(', ') || 'Situación especial',
+                record: x
+            }));
+            list.innerHTML = '';
+            empty.classList.toggle('hidden', docs.length > 0);
+            status.textContent = docs.length ? `${docs.length} documento(s) en expediente` : 'Sin documentos registrados';
+            docs.forEach(d => {
+                const row = document.createElement('div');
+                row.className = 'document-summary-item';
+                const who = d.record?.uploadedBy || 'Usuario del expediente';
+                const when = d.record?.uploadedAt ? new Date(d.record.uploadedAt).toLocaleString('es-CL') : '';
+                row.innerHTML =
+                    `<strong>${escapeHtml(d.name)}</strong><span class="doc-meta">${escapeHtml(d.type)}</span><span class="doc-meta">${escapeHtml(d.origin)}<br>${escapeHtml(who)}${when?` · ${escapeHtml(when)}`:''}</span><button type="button" class="small-btn no-print">Visualizar</button>`;
+                row.querySelector('button').onclick = () => openGenericFilePreview(d.record);
+                list.appendChild(row)
+            });
+            refreshEstimateSources();
+        }
+
+        function openHistoryModal() {
+            document.getElementById('historyModal')?.classList.remove('hidden');
+            renderHistoryModal()
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal')?.classList.add('hidden')
+        }
+
+        function renderHistoryModal() {
+            const list = document.getElementById('historyModalList');
+            const empty = document.getElementById('historyModalEmpty');
+            if (!list || !empty) return;
+            const role = (document.getElementById('historyRoleFilter')?.value || '').toLowerCase();
+            const stage = (document.getElementById('historyStageFilter')?.value || '').toLowerCase();
+            const q = (document.getElementById('historyTextFilter')?.value || '').toLowerCase();
+            const date = document.getElementById('historyDateFilter')?.value || '';
+            const events = workflowState.audit.filter(e => {
+                const hay = [e.actor, e.action, e.detail, e.role, e.stage].join(' ').toLowerCase();
+                if (role && !String(e.role || e.actor).toLowerCase().includes(role.toLowerCase())) return false;
+                if (stage && !String(e.stage || '').toLowerCase().includes(stage)) return false;
+                if (q && !hay.includes(q)) return false;
+                if (date && String(e.at).slice(0, 10) < date) return false;
+                return true
+            });
+            empty.classList.toggle('hidden', events.length > 0);
+            list.innerHTML = events.map(e =>
+                `<div class="history-event"><span>${new Date(e.at).toLocaleString('es-CL')}</span><strong>${escapeHtml(e.actor)}<br><small>${escapeHtml(e.role||'')}</small></strong><span>${escapeHtml(e.action)}${e.detail?` · ${escapeHtml(e.detail)}`:''}</span></div>`
+                ).join('');
+        }
+
+        function recordDafDecision(decision) {
+            if (workflowState.status !== 'approved' && decision !== 'return') {
+                alert('El requerimiento debe contar con aprobación de jefatura antes de ser admitido por DAF.');
+                return
+            }
+            const comment = (document.getElementById('dafReviewComment')?.value || '').trim();
+            if (decision === 'return' && !comment) {
+                alert('Indique las observaciones que debe subsanar el área requirente.');
+                return
+            }
+            if (decision === 'return') {
+                workflowState.status = 'changes';
+                enableRequesterResubmission();
+                addWorkflowAudit('DAF', 'Devolvió el requerimiento para completar', comment, 'DAF');
+                setRoleView('requester');
+                alert('El requerimiento fue devuelto al área requirente para subsanar observaciones.');
+            } else {
+                workflowState.status = 'daf_admitted';
+                addWorkflowAudit('DAF', 'Admitió el requerimiento para tramitación', comment ||
+                    'Control de suficiencia registrado.', 'DAF');
+                alert('Requerimiento admitido por DAF para continuar su tramitación.');
+            }
+            applyRoleVisibility();
+        }
+
+        function toggleDafControlledEdit() {
+            if (currentRoleView !== 'procurement') return;
+            dafControlledEdit = !dafControlledEdit;
+            const btn = document.getElementById('dafEditToggleBtn');
+            if (btn) btn.textContent = dafControlledEdit ? 'Cerrar edición controlada' : 'Habilitar edición controlada';
+            document.querySelectorAll('.requester-section').forEach(section => {
+                section.classList.toggle('role-readonly', !dafControlledEdit);
+                section.classList.toggle('daf-edit-active', dafControlledEdit);
+                section.querySelectorAll('input,select,textarea').forEach(c => {
+                    if (dafControlledEdit) {
+                        c.disabled = false
+                    } else {
+                        c.disabled = true
+                    }
+                })
+            });
+            addWorkflowAudit('DAF', dafControlledEdit ? 'Habilitó edición controlada' : 'Cerró edición controlada',
+                'Las modificaciones sustantivas se registran por campo.', 'DAF');
+        }
+
+        function controlReadableLabel(control) {
+            return fieldLabelForControl(control) || control.id || control.name || 'Campo'
+        }
+        document.addEventListener('focusin', e => {
+            if (dafControlledEdit && currentRoleView === 'procurement' && e.target.matches(
+                    '.requester-section input,.requester-section select,.requester-section textarea'))
+                dafEditOriginalValues.set(e.target, String(e.target.value ?? ''))
+        });
+        document.addEventListener('change', e => {
+            if (dafControlledEdit && currentRoleView === 'procurement' && e.target.matches(
+                    '.requester-section input,.requester-section select,.requester-section textarea')) {
+                const before = dafEditOriginalValues.get(e.target);
+                const after = String(e.target.value ?? '');
+                if (before !== undefined && before !== after) addWorkflowAudit('DAF',
+                    `Modificó ${controlReadableLabel(e.target)}`,
+                    `Valor anterior: ${before||'—'} · Nuevo: ${after||'—'}`, 'DAF')
+            }
+        });
+
         const formAnalytics = {
             startedAt: Date.now(),
             submittedAt: null,
@@ -4520,7 +6122,7 @@
 
             return {
                 schemaVersion: '1.0',
-                formVersion: '0.65',
+                formVersion: '0.75',
                 formCode: 'RQ-01',
                 startedAt: new Date(formAnalytics.startedAt).toISOString(),
                 submittedAt: new Date(submittedAt).toISOString(),
@@ -4569,7 +6171,7 @@
             ranking.innerHTML = ranked.length ?
                 ranked.map(([label, count], index) =>
                     `<div class="metrics-list-row"><span>${index+1}. ${escapeHtml(label)}</span><strong>${count} alerta(s)</strong></div>`
-                ).join('') :
+                    ).join('') :
                 '<div class="metrics-list-row"><span>No se registraron alertas de campos obligatorios.</span><strong>0</strong></div>';
 
             const modes = (snapshot.fillingModesUsed || []).map(x => x === 'step' ? 'Paso a paso' : 'Formulario completo')
@@ -4603,8 +6205,49 @@
             }
         }
 
+        function validateItemRowsForRequester() {
+            const missing = [];
+            currentItemRows().forEach((row, index) => {
+                const name = (row.querySelector('.item-name')?.value || '').trim();
+                const qty = (row.querySelector('.qty')?.value || '').trim();
+                const type = row.querySelector('.item-type')?.value || '';
+                const specs = [...row.querySelectorAll('.item-spec-entry')].map(x => x.value.trim()).filter(
+                Boolean);
+                const features = [...row.querySelectorAll('.item-feature-entry')].map(x => x.value.trim()).filter(
+                    Boolean);
+                const unit = row.querySelector('.unit-measure')?.value || '';
+                const hasAny = name || qty || specs.length || features.length || unit || type;
+                if (!hasAny) return;
+                if (!type) missing.push({
+                    control: row.querySelector('.item-type'),
+                    label: `Ítem ${index+1}: tipo de ítem`
+                });
+                if (!name) missing.push({
+                    control: row.querySelector('.item-name'),
+                    label: `Ítem ${index+1}: nombre del bien o servicio`
+                });
+                if (type === 'bien' && (!qty || !unit)) missing.push({
+                    control: row.querySelector('.qty'),
+                    label: `Ítem ${index+1}: cantidad y unidad de medida`
+                });
+                if (['bien', 'obra', 'mantencion'].includes(type) && !specs.length) missing.push({
+                    control: row.querySelector('.item-spec-entry'),
+                    label: `Ítem ${index+1}: al menos una especificación técnica`
+                });
+                if (type === 'servicio' && !specs.length && !features.length) missing.push({
+                    control: row.querySelector('.item-spec-entry'),
+                    label: `Ítem ${index+1}: condición técnica o funcional del servicio`
+                });
+            });
+            if (!currentItemRows().some(row => (row.querySelector('.item-name')?.value || '').trim())) missing.push({
+                control: document.querySelector('#itemsTable .item-name'),
+                label: 'Debe registrar al menos un ítem de compra'
+            });
+            return missing;
+        }
+
         function validateRequesterSubmission() {
-            const sections = getStepSections().filter(section => !section.classList.contains('internal'));
+            const sections = [...document.querySelectorAll('main > .requester-section')];
             clearValidationMarks(document);
             const allMissing = [];
 
@@ -4616,6 +6259,39 @@
                     ...item,
                     step: index
                 }));
+            });
+            validateItemRowsForRequester().forEach(item => allMissing.push({
+                ...item,
+                step: 3
+            }));
+            if (document.querySelector('input[name="pac"]:checked')?.value === 'yes' && !document.getElementById(
+                    'pacLinkedId')?.value) allMissing.push({
+                control: document.querySelector('[onclick="openPacSelector()"]'),
+                label: 'Debe seleccionar una compra real del PAC'
+            });
+            if (document.getElementById('priorSupplierContact')?.value === 'yes') {
+                ['contactedSupplier', 'supplierContactDate', 'supplierContactMedium', 'supplierContactPurpose'].forEach(
+                    id => {
+                        const c = document.getElementById(id);
+                        if (c && !String(c.value || '').trim()) allMissing.push({
+                            control: c,
+                            label: fieldLabelForControl(c)
+                        })
+                    });
+            }
+            if (['yes', 'reserved'].includes(document.getElementById('conflictInterestDeclaration')?.value)) {
+                const c = document.querySelector('#conflictInterestDetail textarea');
+                if (c && !c.value.trim()) allMissing.push({
+                    control: c,
+                    label: 'Antecedente de potencial conflicto de interés'
+                });
+            }
+            const sourceIds = ['sourcePreviousPurchase', 'sourceQuotes', 'sourceMarketPublic', 'sourcePublicCatalog',
+                'sourceOther'
+            ];
+            if (!sourceIds.some(id => document.getElementById(id)?.checked)) allMissing.push({
+                control: document.getElementById('sourcePreviousPurchase'),
+                label: 'Debe seleccionar al menos una fuente de estimación'
             });
 
             recordValidationAttempt(allMissing);
@@ -4637,17 +6313,29 @@
                 analyticsFinalizeActiveTime();
             }
 
+            workflowState.status = 'submitted';
+            workflowState.requesterSubmittedAt = new Date().toISOString();
+            addWorkflowAudit('Área requirente', 'Envió el requerimiento a jefatura',
+                'Requerimiento cerrado para revisión de jefatura.', 'Requerimiento');
+
             const snapshot = submissionMetricSnapshot();
             formAnalytics.lastSubmissionSnapshot = snapshot;
             renderSubmissionMetrics(snapshot);
 
             const btn = document.getElementById('submitRequestBtn');
             if (btn) {
-                btn.textContent = 'Requerimiento finalizado';
+                btn.textContent = 'Enviado a jefatura';
                 btn.disabled = true;
             }
 
             updateFormElapsedTimer();
+            applyRoleVisibility();
+
+            const headline = document.getElementById('submissionModalHeadline');
+            const detail = document.getElementById('submissionModalDetail');
+            if (headline) headline.textContent = `Requerimiento enviado a jefatura en ${snapshot.elapsedHuman}.`;
+            if (detail) detail.textContent =
+                'La información del área requirente quedó cerrada para revisión. La jefatura podrá aprobar, solicitar correcciones o rechazar.';
             document.getElementById('submissionMetricsModal')?.classList.remove('hidden');
         }
 
@@ -4707,10 +6395,7 @@
             input.value = localDate.toISOString().slice(0, 10);
         }
 
-        function togglePriority() {
-            const v = document.getElementById('priority').value;
-            document.getElementById('urgentBox').classList.toggle('hidden', v === 'normal');
-        }
+        function togglePriority() {}
 
         function formatPacAmount(input) {
             if (!input) return;
@@ -4746,8 +6431,10 @@
 
         function togglePac() {
             const v = document.querySelector('input[name="pac"]:checked')?.value;
-            document.getElementById('pacYes').classList.toggle('hidden', v !== 'yes');
-            document.getElementById('pacNo').classList.toggle('hidden', v !== 'no');
+            document.getElementById('pacYes')?.classList.toggle('hidden', v !== 'yes');
+            document.getElementById('pacNo')?.classList.toggle('hidden', v !== 'no');
+            document.getElementById('pacUnknown')?.classList.toggle('hidden', v !== 'unknown');
+            if (v !== 'yes' && document.getElementById('pacLinkedId')) document.getElementById('pacLinkedId').value = '';
         }
 
         function toggleKind() {
@@ -4817,44 +6504,405 @@
             };
         }
 
+        const PEOPLE_DIRECTORY_STORAGE_KEY = 'prz_people_directory_v1';
+        let peopleDirectory = [];
+        let selectedDirectoryPersonId = null;
+        let counterpartDirectorySaveTimer = null;
+        let counterpartDirectoryProgrammaticFill = false;
+
+        function normalizeDirectoryText(value) {
+            return (value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function makeDirectoryPersonId() {
+            return 'person_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+        }
+
+        function personInitials(name) {
+            const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+            return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'P';
+        }
+
+        function loadPeopleDirectory() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(PEOPLE_DIRECTORY_STORAGE_KEY) || '[]');
+                peopleDirectory = Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                peopleDirectory = [];
+            }
+            renderCounterpartDirectory();
+        }
+
+        function persistPeopleDirectory() {
+            try {
+                localStorage.setItem(PEOPLE_DIRECTORY_STORAGE_KEY, JSON.stringify(peopleDirectory));
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function setCounterpartDirectorySaveState(text, state = 'needs-data') {
+            const box = document.getElementById('counterpartDirectorySaveStateBox');
+            const label = document.getElementById('counterpartDirectorySaveState');
+            if (label) label.textContent = text;
+            if (box) {
+                box.classList.remove('saved', 'saving', 'needs-data', 'error');
+                box.classList.add(state);
+            }
+        }
+
+        function directoryPersonKey(person) {
+            const email = normalizeDirectoryText(person.email);
+            if (email) return 'email:' + email;
+            return 'name:' + normalizeDirectoryText(person.name) + '|unit:' + normalizeDirectoryText(person.unit);
+        }
+
+        function upsertDirectoryPerson(person, {
+            select = false,
+            source = 'manual'
+        } = {}) {
+            const clean = {
+                id: person.id || makeDirectoryPersonId(),
+                name: (person.name || '').trim(),
+                unit: (person.unit || '').trim(),
+                role: (person.role || '').trim(),
+                email: (person.email || '').trim(),
+                source: person.source || source,
+                updatedAt: new Date().toISOString()
+            };
+            if (clean.name.length < 3) return null;
+
+            const key = directoryPersonKey(clean);
+            let idx = peopleDirectory.findIndex(p => p.id === clean.id);
+            if (idx < 0) idx = peopleDirectory.findIndex(p => directoryPersonKey(p) === key);
+
+            if (idx >= 0) {
+                clean.id = peopleDirectory[idx].id;
+                clean.createdAt = peopleDirectory[idx].createdAt || peopleDirectory[idx].updatedAt || clean.updatedAt;
+                peopleDirectory[idx] = {
+                    ...peopleDirectory[idx],
+                    ...clean
+                };
+            } else {
+                clean.createdAt = clean.updatedAt;
+                peopleDirectory.push(clean);
+            }
+            peopleDirectory.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+            persistPeopleDirectory();
+            if (select) selectedDirectoryPersonId = clean.id;
+            renderCounterpartDirectory(document.getElementById('counterpartDirectorySearch')?.value || '');
+            return clean;
+        }
+
+        function syncRequesterProfileToDirectory() {
+            const name = (document.getElementById('requestingResponsible')?.value || '').trim();
+            const unit = (document.getElementById('requestingUnit')?.value || '').trim();
+            const role = (document.getElementById('requestingRole')?.value || '').trim();
+            const email = (document.getElementById('requestingContact')?.value || '').trim();
+            if (name.length < 3 || !(unit || role || email)) return;
+            upsertDirectoryPerson({
+                name,
+                unit,
+                role,
+                email
+            }, {
+                source: 'profile'
+            });
+        }
+
+        function getFilteredDirectoryPeople(query = '') {
+            const q = normalizeDirectoryText(query);
+            if (!q) return peopleDirectory.slice();
+            return peopleDirectory.filter(person => {
+                const hay = [person.name, person.unit, person.role, person.email].map(normalizeDirectoryText).join(
+                    ' ');
+                return hay.includes(q);
+            });
+        }
+
+        function renderCounterpartDirectory(query = '') {
+            const results = document.getElementById('counterpartDirectoryResults');
+            const count = document.getElementById('counterpartDirectoryCount');
+            if (!results) return;
+
+            const filtered = getFilteredDirectoryPeople(query);
+            if (count) count.textContent =
+                `${peopleDirectory.length} ${peopleDirectory.length===1?'persona registrada':'personas registradas'}`;
+            results.innerHTML = '';
+
+            if (!filtered.length) {
+                const empty = document.createElement('div');
+                empty.className = 'counterpart-directory-empty';
+                empty.innerHTML = query ?
+                    '<strong>No se encontraron coincidencias.</strong><br>Complete los datos de la persona debajo y el sistema la incorporará automáticamente al directorio de este prototipo.' :
+                    '<strong>El directorio aún no tiene personas registradas.</strong><br>Los perfiles y nuevas personas que se ingresen quedarán disponibles aquí.';
+                results.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach(person => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'counterpart-directory-item';
+                button.innerHTML = `
+      <span class="counterpart-avatar">${escapeHtml(personInitials(person.name))}</span>
+      <span>
+        <span class="counterpart-person-name">${escapeHtml(person.name||'Sin nombre')}</span>
+        <span class="counterpart-person-meta">${escapeHtml([person.role,person.unit].filter(Boolean).join(' · ')||'Sin cargo/área registrados')}</span>
+      </span>
+      <span class="counterpart-person-email">${escapeHtml(person.email||'')}</span>`;
+                button.onclick = () => selectCounterpartDirectoryPerson(person.id);
+                results.appendChild(button);
+            });
+        }
+
+        function openCounterpartDirectory() {
+            renderCounterpartDirectory(document.getElementById('counterpartDirectorySearch')?.value || '');
+            document.getElementById('counterpartDirectoryDropdown')?.classList.remove('hidden');
+        }
+
+        function closeCounterpartDirectory() {
+            document.getElementById('counterpartDirectoryDropdown')?.classList.add('hidden');
+        }
+
+        function toggleCounterpartDirectory(event) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            const dropdown = document.getElementById('counterpartDirectoryDropdown');
+            if (!dropdown) return;
+            if (dropdown.classList.contains('hidden')) openCounterpartDirectory();
+            else closeCounterpartDirectory();
+        }
+
+        function handleCounterpartDirectorySearch(value) {
+            renderCounterpartDirectory(value);
+            openCounterpartDirectory();
+        }
+
+        function selectCounterpartDirectoryPerson(id) {
+            const person = peopleDirectory.find(p => p.id === id);
+            if (!person) return;
+            selectedDirectoryPersonId = id;
+            counterpartDirectoryProgrammaticFill = true;
+            const values = {
+                technicalCounterpartName: person.name || '',
+                technicalCounterpartUnit: person.unit || '',
+                technicalCounterpartRole: person.role || '',
+                technicalCounterpartEmail: person.email || ''
+            };
+            Object.entries(values).forEach(([fieldId, value]) => {
+                const el = document.getElementById(fieldId);
+                if (el) el.value = value;
+            });
+            const search = document.getElementById('counterpartDirectorySearch');
+            if (search) search.value = person.name || '';
+            counterpartDirectoryProgrammaticFill = false;
+            setCounterpartDirectorySaveState(`Datos cargados desde el directorio · ${person.name}`, 'saved');
+            closeCounterpartDirectory();
+            updateProgress();
+            scheduleNormalizeFieldAlignment();
+        }
+
+        function scheduleCounterpartDirectoryAutosave() {
+            if (counterpartDirectoryProgrammaticFill) return;
+            clearTimeout(counterpartDirectorySaveTimer);
+            setCounterpartDirectorySaveState('Guardando datos automáticamente…', 'saving');
+            counterpartDirectorySaveTimer = setTimeout(saveCurrentCounterpartToDirectory, 700);
+        }
+
+        function saveCurrentCounterpartToDirectory() {
+            if (document.querySelector('input[name="technicalCounterpartMode"]:checked')?.value !== 'different') return;
+            const person = {
+                id: selectedDirectoryPersonId || undefined,
+                name: (document.getElementById('technicalCounterpartName')?.value || '').trim(),
+                unit: (document.getElementById('technicalCounterpartUnit')?.value || '').trim(),
+                role: (document.getElementById('technicalCounterpartRole')?.value || '').trim(),
+                email: (document.getElementById('technicalCounterpartEmail')?.value || '').trim()
+            };
+            if (person.name.length < 3 || !(person.unit || person.role || person.email)) {
+                setCounterpartDirectorySaveState(
+                    'Complete el nombre y al menos un dato adicional para incorporarlo al directorio.', 'needs-data');
+                return;
+            }
+            const saved = upsertDirectoryPerson(person, {
+                select: true,
+                source: 'manual'
+            });
+            if (saved) {
+                selectedDirectoryPersonId = saved.id;
+                setCounterpartDirectorySaveState(`Guardado automáticamente en el directorio · ${saved.name}`, 'saved');
+            } else {
+                setCounterpartDirectorySaveState('No fue posible guardar el registro.', 'error');
+            }
+        }
+
         function autofillTechnicalCounterpart() {
             const responsible = document.getElementById('requestingResponsible')?.value || '';
             const unit = document.getElementById('requestingUnit')?.value || '';
             const parsed = parseResponsibleNameAndRole(responsible);
+            const requesterRole = (document.getElementById('requestingRole')?.value || '').trim();
+            const requesterEmail = (document.getElementById('requestingContact')?.value || '').trim();
 
+            counterpartDirectoryProgrammaticFill = true;
             const name = document.getElementById('technicalCounterpartName');
             const unitInput = document.getElementById('technicalCounterpartUnit');
             const role = document.getElementById('technicalCounterpartRole');
+            const email = document.getElementById('technicalCounterpartEmail');
 
             if (name) name.value = parsed.name;
             if (unitInput) unitInput.value = unit;
-            if (role) role.value = parsed.role;
+            if (role) role.value = requesterRole || parsed.role;
+            if (email) email.value = requesterEmail;
+            counterpartDirectoryProgrammaticFill = false;
+        }
+
+        function clearTechnicalCounterpartFields() {
+            counterpartDirectoryProgrammaticFill = true;
+            ['technicalCounterpartName', 'technicalCounterpartUnit', 'technicalCounterpartRole',
+                'technicalCounterpartEmail', 'counterpartDirectorySearch'
+            ].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            counterpartDirectoryProgrammaticFill = false;
+            selectedDirectoryPersonId = null;
+        }
+
+        function renderSameRequesterCounterpartSummary() {
+            const box = document.getElementById('sameRequesterCounterpartSummary');
+            if (!box) return;
+            const name = (document.getElementById('requestingResponsible')?.value || '').trim();
+            const unit = (document.getElementById('requestingUnit')?.value || '').trim();
+            const role = (document.getElementById('requestingRole')?.value || '').trim();
+            const email = (document.getElementById('requestingContact')?.value || '').trim();
+            const parts = [name, role, unit, email].filter(Boolean);
+            box.innerHTML = parts.length ?
+                `<strong>Contraparte técnica:</strong> ${parts.map(escapeHtml).join(' · ')}` :
+                '<strong>Contraparte técnica:</strong> se utilizarán automáticamente los datos del requirente.';
         }
 
         function toggleTechnicalCounterpartMode() {
             const mode = document.querySelector('input[name="technicalCounterpartMode"]:checked')?.value;
             const fields = document.getElementById('technicalCounterpartFields');
-            const hint = document.getElementById('technicalCounterpartAutofillHint');
-            const name = document.getElementById('technicalCounterpartName');
-            const unit = document.getElementById('technicalCounterpartUnit');
-            const role = document.getElementById('technicalCounterpartRole');
+            const sameSummary = document.getElementById('sameRequesterCounterpartSummary');
+            const sameHint = document.getElementById('technicalCounterpartAutofillHint');
+            const directoryHint = document.getElementById('technicalCounterpartDirectoryHint');
+            const searchBox = document.getElementById('counterpartDirectorySearchBox');
             if (!fields) return;
 
             if (mode === 'same') {
-                fields.classList.remove('hidden');
+                // Los datos se reutilizan internamente, pero los campos de edición se ocultan
+                // para no obligar al usuario a revisar información que ya existe en su perfil.
                 autofillTechnicalCounterpart();
-                hint?.classList.remove('hidden');
-            } else if (mode === 'different') {
-                fields.classList.remove('hidden');
-                if (name) name.value = '';
-                if (unit) unit.value = '';
-                if (role) role.value = '';
-                hint?.classList.add('hidden');
-            } else {
                 fields.classList.add('hidden');
-                hint?.classList.add('hidden');
+                sameHint?.classList.add('hidden');
+                directoryHint?.classList.add('hidden');
+                searchBox?.classList.add('hidden');
+                renderSameRequesterCounterpartSummary();
+                sameSummary?.classList.remove('hidden');
+                closeCounterpartDirectory();
+            } else if (mode === 'different') {
+                sameSummary?.classList.add('hidden');
+                fields.classList.remove('hidden');
+                clearTechnicalCounterpartFields();
+                searchBox?.classList.remove('hidden');
+                sameHint?.classList.add('hidden');
+                directoryHint?.classList.remove('hidden');
+                setCounterpartDirectorySaveState('Seleccione una persona del directorio o complete una nueva.',
+                    'needs-data');
+                renderCounterpartDirectory();
+            } else {
+                sameSummary?.classList.add('hidden');
+                fields.classList.add('hidden');
+                sameHint?.classList.add('hidden');
+                directoryHint?.classList.add('hidden');
+                searchBox?.classList.add('hidden');
+                closeCounterpartDirectory();
             }
+            scheduleNormalizeFieldAlignment();
         }
+
+        let fieldAlignmentRaf = null;
+
+        function clearGridFieldAlignment() {
+            document.querySelectorAll('.grid > .field.row-label-aligned > label:first-child').forEach(label => {
+                label.style.minHeight = '';
+            });
+            document.querySelectorAll('.grid > .field.row-label-aligned').forEach(field => field.classList.remove(
+                'row-label-aligned'));
+            document.querySelectorAll('.grid > .field.auto-row-align-pad').forEach(field => {
+                field.classList.remove('auto-row-align-pad');
+                field.style.removeProperty('--row-label-space');
+            });
+        }
+
+        function normalizeGridFieldAlignment() {
+            fieldAlignmentRaf = null;
+            clearGridFieldAlignment();
+            if (window.matchMedia('(max-width:760px)').matches) return;
+
+            document.querySelectorAll('.grid').forEach(grid => {
+                if (grid.offsetParent === null) return;
+                const fields = [...grid.children].filter(el => el.classList?.contains('field') && el
+                    .offsetParent !== null);
+                if (fields.length < 2) return;
+
+                const rows = [];
+                fields.forEach(field => {
+                    const top = Math.round(field.getBoundingClientRect().top);
+                    let row = rows.find(r => Math.abs(r.top - top) <= 4);
+                    if (!row) {
+                        row = {
+                            top,
+                            fields: []
+                        };
+                        rows.push(row);
+                    }
+                    row.fields.push(field);
+                });
+
+                rows.forEach(row => {
+                    if (row.fields.length < 2) return;
+                    const labels = row.fields
+                        .map(field => field.querySelector(':scope > label:first-child'))
+                        .filter(Boolean);
+                    if (!labels.length) return;
+
+                    const maxHeight = Math.max(...labels.map(label => Math.ceil(label
+                    .getBoundingClientRect().height)));
+                    if (!maxHeight) return;
+
+                    row.fields.forEach(field => {
+                        const label = field.querySelector(':scope > label:first-child');
+                        if (label) {
+                            field.classList.add('row-label-aligned');
+                            label.style.minHeight = maxHeight + 'px';
+                        } else if (
+                            field.querySelector(
+                                ':scope > .auto-source-note, :scope > .norm-note, :scope > .soft-card, :scope > .inherited-data-card'
+                                )
+                        ) {
+                            field.classList.add('auto-row-align-pad');
+                            field.style.setProperty('--row-label-space', maxHeight + 'px');
+                        }
+                    });
+                });
+            });
+        }
+
+        function scheduleNormalizeFieldAlignment() {
+            if (fieldAlignmentRaf) cancelAnimationFrame(fieldAlignmentRaf);
+            fieldAlignmentRaf = requestAnimationFrame(() => requestAnimationFrame(normalizeGridFieldAlignment));
+        }
+        window.addEventListener('resize', () => {
+            scheduleNormalizeFieldAlignment();
+            initializeStructuredTextEntries();
+        });
 
         function toggleOtherDeliveryPlace() {
             const v = document.getElementById('deliveryPlace')?.value;
@@ -4877,14 +6925,20 @@
 
         function syncEstimatedAmountFromLines(total) {
             const input = document.getElementById('estimatedAmount');
-            if (!input || estimatedAmountEditedManually) return;
+            if (!input) return;
             syncingEstimatedAmount = true;
-            input.value = total ?
-                new Intl.NumberFormat('es-CL', {
+            if (total) {
+                input.value = new Intl.NumberFormat('es-CL', {
                     maximumFractionDigits: 0
-                }).format(total) :
-                '';
+                }).format(total);
+                input.readOnly = true;
+                estimatedAmountEditedManually = false;
+            } else {
+                input.readOnly = false;
+                if (!estimatedAmountEditedManually) input.value = '';
+            }
             syncingEstimatedAmount = false;
+            checkPacDeviation();
         }
 
         function calcTotals() {
@@ -4922,6 +6976,86 @@
             return false;
         }
 
+        function ensureStructuredPrintValue(field) {
+            if (!field?.classList?.contains('item-spec-entry') && !field?.classList?.contains('item-feature-entry'))
+            return null;
+            let mirror = field.parentElement?.querySelector(':scope > .structured-entry-print');
+            if (!mirror) {
+                mirror = document.createElement('span');
+                mirror.className = 'structured-entry-print';
+                field.insertAdjacentElement('afterend', mirror);
+            }
+            mirror.textContent = (field.value || '').trim() || '—';
+            return mirror;
+        }
+
+        function resizeStructuredField(field) {
+            if (!field || !(field.classList.contains('item-spec-entry') || field.classList.contains('item-feature-entry')))
+                return;
+            field.style.height = 'auto';
+            const minimum = 52;
+            field.style.height = Math.max(minimum, field.scrollHeight) + 'px';
+            field.title = (field.value || '').trim();
+            ensureStructuredPrintValue(field);
+        }
+
+        function initializeStructuredTextEntries(scope = document) {
+            scope.querySelectorAll('.item-spec-entry,.item-feature-entry').forEach(field => resizeStructuredField(field));
+        }
+
+        function closeAllSpecPriorityMenus(except = null) {
+            document.querySelectorAll('.spec-priority-menu').forEach(menu => {
+                if (menu !== except) menu.classList.add('hidden');
+            });
+            document.querySelectorAll('.spec-priority-trigger').forEach(trigger => {
+                const menu = trigger.closest('.spec-priority')?.querySelector('.spec-priority-menu');
+                if (menu !== except) trigger.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function toggleSpecPriorityMenu(trigger, event) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            const wrap = trigger?.closest('.spec-priority');
+            const menu = wrap?.querySelector('.spec-priority-menu');
+            if (!menu) return;
+            const willOpen = menu.classList.contains('hidden');
+            closeAllSpecPriorityMenus(menu);
+            menu.classList.toggle('hidden', !willOpen);
+            trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+            const current = wrap.dataset.value || 'essential';
+            menu.querySelectorAll('[data-value]').forEach(btn => {
+                btn.setAttribute('aria-selected', btn.dataset.value === current ? 'true' : 'false');
+            });
+        }
+
+        function selectSpecPriority(option, value) {
+            const wrap = option?.closest('.spec-priority');
+            if (!wrap) return;
+            const isDesirable = value === 'desirable';
+            wrap.dataset.value = isDesirable ? 'desirable' : 'essential';
+
+            const trigger = wrap.querySelector('.spec-priority-trigger');
+            const short = wrap.querySelector('.spec-priority-short');
+            const print = wrap.querySelector('.spec-priority-print');
+            const full = isDesirable ? 'Deseable' : 'Esencial';
+
+            if (short) short.textContent = isDesirable ? 'D' : 'E';
+            if (trigger) {
+                trigger.title = full;
+                trigger.setAttribute('aria-label', `Clasificación: ${full}`);
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+            if (print) print.textContent = full;
+
+            wrap.querySelectorAll('[data-value]').forEach(btn => {
+                btn.setAttribute('aria-selected', btn.dataset.value === wrap.dataset.value ? 'true' : 'false');
+            });
+            wrap.querySelector('.spec-priority-menu')?.classList.add('hidden');
+            updateProgress();
+        }
+
         function addStructuredEntry(button, kind) {
             const editor = button?.closest('.structured-cell-editor');
             const list = editor?.querySelector('.structured-entry-list');
@@ -4930,9 +7064,10 @@
             const entry = document.createElement('div');
             entry.className = 'structured-entry';
 
-            const input = document.createElement('input');
-            input.type = 'text';
+            const input = document.createElement('textarea');
+            input.rows = 2;
             input.className = kind === 'feature' ? 'item-feature-entry' : 'item-spec-entry';
+            if (kind === 'spec') input.addEventListener('input', () => handleSpecificationInput(input));
             input.placeholder = kind === 'feature' ?
                 'Ej.: compatible con red 5G' :
                 'Ej.: 512 GB de almacenamiento';
@@ -4945,8 +7080,17 @@
             remove.onclick = () => removeStructuredEntry(remove);
 
             entry.appendChild(input);
+            if (kind === 'spec') {
+                const priority = document.createElement('div');
+                priority.className = 'spec-priority spec-priority-compact';
+                priority.dataset.value = 'essential';
+                priority.innerHTML =
+                    `<button type="button" class="spec-priority-trigger" title="Esencial" aria-haspopup="listbox" aria-expanded="false" onclick="toggleSpecPriorityMenu(this,event)"><span class="spec-priority-short">E</span><span class="spec-priority-chevron">⌄</span></button><div class="spec-priority-menu hidden" role="listbox"><button type="button" role="option" data-value="essential" onclick="selectSpecPriority(this,'essential')">Esencial</button><button type="button" role="option" data-value="desirable" onclick="selectSpecPriority(this,'desirable')">Deseable</button></div><span class="spec-priority-print">Esencial</span>`;
+                entry.appendChild(priority);
+            }
             entry.appendChild(remove);
             list.appendChild(entry);
+            resizeStructuredField(input);
             input.focus();
             updateProgress();
         }
@@ -4958,8 +7102,11 @@
 
             const entries = [...list.querySelectorAll(':scope > .structured-entry')];
             if (entries.length <= 1) {
-                const input = entry.querySelector('input');
-                if (input) input.value = '';
+                const input = entry.querySelector('textarea, input');
+                if (input) {
+                    input.value = '';
+                    resizeStructuredField(input);
+                }
                 input?.focus();
                 return;
             }
@@ -4971,8 +7118,7 @@
         function addItemRow() {
             if (tableStructureLocked) {
                 alert(
-                    'La estructura de la tabla está bloqueada. Desbloquee el candado para agregar filas o modificar tamaños.'
-                );
+                    'La estructura de la tabla está bloqueada. Desbloquee el candado para agregar filas o modificar tamaños.');
                 return;
             }
             const tbody = document.querySelector('#itemsTable tbody');
@@ -4985,7 +7131,7 @@
       <td>
         <div class="structured-cell-editor item-spec-editor" data-kind="spec">
           <div class="structured-entry-list">
-            <div class="structured-entry"><input class="item-spec-entry" type="text" placeholder="Ej.: 16 GB de RAM"></div>
+            <div class="structured-entry"><textarea class="item-spec-entry" rows="2" placeholder="Ej.: 16 GB de RAM" oninput="handleSpecificationInput(this)"></textarea></div>
           </div>
           <button type="button" class="structured-add-btn" onclick="addStructuredEntry(this,'spec')">＋ Agregar especificación</button>
         </div>
@@ -4993,7 +7139,7 @@
       <td>
         <div class="structured-cell-editor item-feature-editor" data-kind="feature">
           <div class="structured-entry-list">
-            <div class="structured-entry"><input class="item-feature-entry" type="text" placeholder="Ej.: compatible con red 5G"></div>
+            <div class="structured-entry"><textarea class="item-feature-entry" rows="2" placeholder="Ej.: compatible con red 5G"></textarea></div>
           </div>
           <button type="button" class="structured-add-btn" onclick="addStructuredEntry(this,'feature')">＋ Agregar característica</button>
         </div>
@@ -5003,11 +7149,12 @@
       <td><div class="money-input"><span>$</span><input class="unit-price" type="text" inputmode="numeric" placeholder="0" oninput="sanitizeCurrencyInput(this); calcTotals()"></div></td>
       <td class="subtotal right">$0</td>
       <td class="cotiz-cell">
-        <div class="cotiz-wrap">
-          <button type="button" class="icon-btn attach" title="Adjuntar o gestionar cotizaciones de esta fila" onclick="openAttachmentManager(this)">📎</button>
-          <button type="button" class="icon-btn quote-view-btn" title="Visualizar cotizaciones vinculadas a esta fila" onclick="openRowQuoteViewer(this)" disabled>👁</button>
+        <div class="cotiz-wrap evidence-actions">
+          <button type="button" class="icon-btn attach evidence-btn quote-attach-btn" title="Adjuntar cotización o documento a este ítem" onclick="openAttachmentManager(this)">📄</button>
+          <button type="button" class="icon-btn attach evidence-btn image-attach-btn" title="Adjuntar imagen o fotografía a este ítem" onclick="openRowImageManager(this)">🖼️</button>
+          <button type="button" class="icon-btn quote-view-btn evidence-view-btn" title="Visualizar cotizaciones e imágenes vinculadas a este ítem" onclick="openRowEvidenceViewer(this)" disabled>👁</button>
         </div>
-        <div class="quote-linked quote-info">Sin cotización vinculada</div>
+        <div class="quote-linked quote-info evidence-info">Sin adjuntos vinculados</div>
         <button type="button" class="trash-row" title="Eliminar esta fila" onclick="removeItemRow(this)">🗑</button>
       </td>`;
             tbody.appendChild(tr);
@@ -5015,6 +7162,7 @@
             refreshQuoteIndicators();
             if (!document.getElementById('attachmentModal')?.classList.contains('hidden')) renderManagerItemList();
             if (!document.getElementById('refImageModal')?.classList.contains('hidden')) renderRefImageItemList();
+            initializeStructuredTextEntries(tr);
             calcTotals();
         }
 
@@ -5106,6 +7254,7 @@
             renderAttachmentRegister();
             renderReferenceImageSummary();
             renderReferenceImageRegister();
+            refreshDocumentSummary();
 
             if (!document.getElementById('attachmentModal')?.classList.contains('hidden')) renderManagerItemList();
             if (!document.getElementById('refImageModal')?.classList.contains('hidden')) renderRefImageItemList();
@@ -5116,8 +7265,7 @@
         function removeItemRow(button) {
             if (tableStructureLocked) {
                 alert(
-                    'La estructura de la tabla está bloqueada. Desbloquee el candado para eliminar filas o modificar tamaños.'
-                );
+                    'La estructura de la tabla está bloqueada. Desbloquee el candado para eliminar filas o modificar tamaños.');
                 return;
             }
 
@@ -5164,7 +7312,10 @@
                     name: file.name,
                     displayName: file.name,
                     objectUrl,
-                    previewUrl: fileLooksLikeImage(file) ? objectUrl : null
+                    previewUrl: fileLooksLikeImage(file) ? objectUrl : null,
+                    uploadedAt: new Date().toISOString(),
+                    uploadedBy: (document.getElementById('requestingResponsible')?.value ||
+                        'Área requirente').trim() || 'Área requirente'
                 });
             });
 
@@ -5176,6 +7327,10 @@
 
             status.textContent = `${files.length} cotización(es) de lote adjunta(s)`;
             if (viewBtn) viewBtn.disabled = false;
+            addWorkflowAudit('Área requirente', 'Adjuntó cotización(es) por lote', `${files.length} archivo(s).`,
+                'Documentos');
+            refreshDocumentSummary();
+            refreshEstimateSources();
         }
 
         function updateReferenceImagesInfo(input) {
@@ -6204,7 +8359,7 @@
             return linkedDrafts
                 .map(file =>
                     `<span class="draft-link-pill">${escapeHtml(file.displayName||file.file.name)}<button type="button" class="draft-link-pill-remove" title="Quitar vínculo" data-file-id="${file.id}" data-item-key="${itemKey}">×</button></span>`
-                )
+                    )
                 .join('');
         }
 
@@ -6243,7 +8398,11 @@
 
         function handleManagerFile(input) {
             const incoming = [...(input.files || [])];
-            incoming.forEach(file => managerPendingFiles.push(makePendingFileEntry(file, 'quote')));
+            incoming.forEach(file => {
+                const entry = makePendingFileEntry(file, 'quote');
+                if (currentAttachmentOriginKey) entry.draftItemKeys = [currentAttachmentOriginKey];
+                managerPendingFiles.push(entry);
+            });
             input.value = '';
             renderPendingQuoteFiles();
             renderManagerItemList();
@@ -6489,8 +8648,7 @@
             const ready = managerPendingFiles.filter(x => (x.draftItemKeys || []).length > 0);
             if (!ready.length) {
                 alert(
-                    'Vincule al menos una cotización con un ítem. Puede hacerlo seleccionando archivo(s) e ítem(s), o arrastrando el archivo sobre el ítem —o el ítem sobre el archivo.'
-                );
+                    'Vincule al menos una cotización con un ítem. Puede hacerlo seleccionando archivo(s) e ítem(s), o arrastrando el archivo sobre el ítem —o el ítem sobre el archivo.');
                 return;
             }
 
@@ -6502,13 +8660,20 @@
                     type: entry.file.type || 'archivo',
                     itemKeys: [...new Set(entry.draftItemKeys)],
                     objectUrl: entry.objectUrl,
-                    previewUrl: entry.previewUrl
+                    previewUrl: entry.previewUrl,
+                    uploadedAt: new Date().toISOString(),
+                    uploadedBy: (document.getElementById('requestingResponsible')?.value ||
+                        'Área requirente').trim() || 'Área requirente'
                 });
             });
 
+            addWorkflowAudit('Área requirente', 'Adjuntó cotización(es)', `${ready.length} archivo(s) vinculados a ítems.`,
+                'Documentos');
             managerPendingFiles = managerPendingFiles.filter(x => (x.draftItemKeys || []).length === 0);
             currentAttachmentOriginKey = null;
             refreshQuoteIndicators();
+            refreshEstimateSources();
+            refreshDocumentSummary();
             renderPendingQuoteFiles();
             renderAttachmentRegister();
             renderManagerItemList();
@@ -6517,28 +8682,48 @@
         function refreshQuoteIndicators() {
             currentItemRows().forEach(row => {
                 const key = row.dataset.itemKey;
-                const linked = attachmentsRegistry.filter(a => a.itemKeys.includes(key));
+                const quotes = attachmentsRegistry.filter(a => (a.itemKeys || []).includes(key));
+                const images = referenceImagesRegistry.filter(a => (a.itemKeys || []).includes(key));
+                const total = quotes.length + images.length;
                 const box = row.querySelector('.quote-info');
                 const viewBtn = row.querySelector('.quote-view-btn');
-                if (viewBtn) viewBtn.disabled = linked.length === 0;
+                if (viewBtn) viewBtn.disabled = total === 0;
                 if (!box) return;
-                if (!linked.length) {
-                    box.textContent = 'Sin cotización vinculada';
+                if (!total) {
+                    box.textContent = 'Sin adjuntos vinculados';
                     box.style.color = '';
                     return;
                 }
-                box.textContent = `${linked.length} cotización(es)`;
+                const parts = [];
+                if (quotes.length) parts.push(`${quotes.length} cotiz.`);
+                if (images.length) parts.push(`${images.length} img.`);
+                box.textContent = parts.join(' · ');
                 box.style.color = 'var(--green-dark)';
             });
         }
 
-        function openRowQuoteViewer(button) {
+        function openRowEvidenceViewer(button) {
             const row = button?.closest('tr');
             const key = row?.dataset?.itemKey;
             if (!key) return;
-            const linked = attachmentsRegistry.filter(a => (a.itemKeys || []).includes(key));
+            const quotes = attachmentsRegistry
+                .filter(a => (a.itemKeys || []).includes(key))
+                .map(a => ({
+                    ...a,
+                    evidenceKind: 'Cotización / documento'
+                }));
+            const images = referenceImagesRegistry
+                .filter(a => (a.itemKeys || []).includes(key))
+                .map(a => ({
+                    ...a,
+                    evidenceKind: 'Imagen'
+                }));
             const num = visibleItemNumberForKey(key);
-            openQuoteViewer(linked, `Cotizaciones vinculadas · Ítem ${num ?? ''}`);
+            openQuoteViewer([...quotes, ...images], `Adjuntos vinculados · Ítem ${num ?? ''}`);
+        }
+
+        function openRowQuoteViewer(button) {
+            openRowEvidenceViewer(button);
         }
 
         function openLotQuoteViewer() {
@@ -6552,7 +8737,7 @@
             const empty = document.getElementById('quoteViewerEmpty');
             if (!modal || !title || !list || !empty) return;
 
-            title.textContent = titleText || 'Cotizaciones';
+            title.textContent = titleText || 'Adjuntos';
             list.innerHTML = '';
 
             if (!records?.length) {
@@ -6568,8 +8753,9 @@
                     const name = record.displayName || record.name || record.file?.name || 'Cotización';
 
                     const info = document.createElement('div');
-                    info.innerHTML = `<div class="quote-view-name">${escapeHtml(name)}</div>
-        <div class="quote-view-meta">${escapeHtml(type)}${kb ? ` · ${kb} KB` : ''}</div>`;
+                    info.innerHTML =
+                        `<div class="quote-view-name">${escapeHtml(name)}</div>
+        <div class="quote-view-meta">${record.evidenceKind ? `${escapeHtml(record.evidenceKind)} · ` : ''}${escapeHtml(type)}${kb ? ` · ${kb} KB` : ''}</div>`;
 
                     const actions = document.createElement('div');
                     const view = document.createElement('button');
@@ -6688,6 +8874,11 @@
         let refImagePendingFiles = [];
         const referenceImagesRegistry = [];
 
+        function openRowImageManager(button) {
+            const row = button?.closest('tr');
+            openReferenceImageManager(row?.dataset?.itemKey || null);
+        }
+
         function openReferenceImageManager(originKey = null) {
             currentRefImageOriginKey = originKey;
             const input = document.getElementById('refImageManagerInput');
@@ -6696,6 +8887,7 @@
             renderRefImageItemList();
             renderReferenceImageSummary();
             renderReferenceImageRegister();
+            refreshDocumentSummary();
             document.getElementById('refImageModal').classList.remove('hidden');
         }
 
@@ -6706,9 +8898,14 @@
 
         function handleRefImageManagerFile(input) {
             const incoming = [...(input.files || [])];
-            incoming.forEach(file => refImagePendingFiles.push(makePendingFileEntry(file, 'refimg')));
+            incoming.forEach(file => {
+                const entry = makePendingFileEntry(file, 'refimg');
+                if (currentRefImageOriginKey) entry.draftItemKeys = [currentRefImageOriginKey];
+                refImagePendingFiles.push(entry);
+            });
             input.value = '';
             renderPendingReferenceImages();
+            renderRefImageItemList();
         }
 
         function togglePendingRefImage(id, force = null) {
@@ -6780,7 +8977,7 @@
             return linkedDrafts
                 .map(img =>
                     `<span class="draft-link-pill">${escapeHtml(img.displayName||img.file.name)}<button type="button" class="draft-link-pill-remove" title="Quitar vínculo" data-image-id="${img.id}" data-item-key="${itemKey}">×</button></span>`
-                )
+                    )
                 .join('');
         }
 
@@ -6991,8 +9188,7 @@
             const ready = refImagePendingFiles.filter(x => (x.draftItemKeys || []).length > 0);
             if (!ready.length) {
                 alert(
-                    'Vincule al menos una imagen con un ítem. Puede hacerlo seleccionando imagen(es) e ítem(s), o arrastrando la imagen sobre el ítem —o el ítem sobre la imagen.'
-                );
+                    'Vincule al menos una imagen con un ítem. Puede hacerlo seleccionando imagen(es) e ítem(s), o arrastrando la imagen sobre el ítem —o el ítem sobre la imagen.');
                 return;
             }
 
@@ -7003,17 +9199,24 @@
                     name: (entry.displayName || entry.file.name).trim() || entry.file.name,
                     type: entry.file.type || 'imagen',
                     itemKeys: [...new Set(entry.draftItemKeys)],
-                    previewUrl: entry.previewUrl
+                    previewUrl: entry.previewUrl,
+                    uploadedAt: new Date().toISOString(),
+                    uploadedBy: (document.getElementById('requestingResponsible')?.value ||
+                        'Área requirente').trim() || 'Área requirente'
                 });
             });
 
+            addWorkflowAudit('Área requirente', 'Adjuntó imagen(es) referenciales',
+                `${ready.length} archivo(s) vinculados a ítems.`, 'Documentos');
             refImagePendingFiles = refImagePendingFiles.filter(x => (x.draftItemKeys || []).length === 0);
             currentRefImageOriginKey = null;
 
             renderPendingReferenceImages();
             renderReferenceImageSummary();
             renderReferenceImageRegister();
+            refreshDocumentSummary();
             renderRefImageItemList();
+            refreshQuoteIndicators();
         }
 
         function renderReferenceImageSummary() {
@@ -7149,7 +9352,9 @@
             currentRefImageOriginKey = null;
             renderReferenceImageSummary();
             renderReferenceImageRegister();
+            refreshDocumentSummary();
             renderRefImageItemList();
+            refreshQuoteIndicators();
         }
 
         let tableStructureLocked = false;
@@ -7696,14 +9901,14 @@
 
             window.addEventListener('resize', () => {
                 if (euiHelpCurrentLabel && !document.getElementById('euiHelpPopover')?.classList.contains(
-                        'hidden')) {
+                    'hidden')) {
                     positionEuiHelpPopover(euiHelpCurrentLabel);
                 }
             });
 
             window.addEventListener('scroll', () => {
                 if (euiHelpCurrentLabel && !document.getElementById('euiHelpPopover')?.classList.contains(
-                        'hidden')) {
+                    'hidden')) {
                     positionEuiHelpPopover(euiHelpCurrentLabel);
                 }
             }, true);
@@ -7796,44 +10001,9 @@
         ];
 
         function openEmergencyEvidenceManager() {
-
             const modal = document.getElementById('emergencyEvidenceModal');
-
             if (!modal) return;
-
-            document.body.appendChild(modal);
-
-            // Obtener posición del iframe en la página principal
-            const iframe = window.frameElement;
-            const iframeRect = iframe.getBoundingClientRect();
-
-            // Centro visible de la pantalla principal
-            const parentHeight = window.parent.innerHeight;
-
-            const visibleTop = Math.max(0, iframeRect.top);
-            const visibleBottom = Math.min(parentHeight, iframeRect.bottom);
-
-            // Convertir al sistema de coordenadas del iframe
-            const centerY = (
-                (visibleTop + visibleBottom) / 2
-            ) - iframeRect.top;
-
-            // Mostrar modal
             modal.classList.remove('hidden');
-
-            // Ubicar la ventana blanca en el centro visible
-            const card = modal.querySelector('.modal-card');
-
-            if (card) {
-                card.style.position = 'absolute';
-                card.style.top = centerY + 'px';
-                card.style.left = '50%';
-                card.style.transform = 'translate(-50%, -50%)';
-                card.style.margin = '0';
-                card.style.maxHeight = (visibleBottom - visibleTop - 40) + 'px';
-                card.style.overflowY = 'auto';
-            }
-
             renderEmergencyEvidencePendingGrid();
             renderEmergencyEvidenceCategoryList();
         }
@@ -7867,7 +10037,7 @@
             return (entry.draftCategoryKeys || [])
                 .map(key =>
                     `<span class="draft-link-pill">${escapeHtml(getEmergencyCategoryTitle(key))}<button type="button" title="Quitar vínculo" data-file-id="${entry.id}" data-category-key="${key}">×</button></span>`
-                )
+                    )
                 .join('');
         }
 
@@ -7875,7 +10045,7 @@
             return getDraftLinkedEmergencyFilesForCategory(categoryKey)
                 .map(entry =>
                     `<span class="draft-link-pill">${escapeHtml(entry.displayName || entry.name || entry.file?.name || 'Archivo')}<button type="button" title="Quitar vínculo" data-file-id="${entry.id}" data-category-key="${categoryKey}">×</button></span>`
-                )
+                    )
                 .join('');
         }
 
@@ -8043,7 +10213,7 @@
                 nameInput.addEventListener('click', e => e.stopPropagation());
                 nameInput.addEventListener('mousedown', e => e.stopPropagation());
                 nameInput.addEventListener('input', () => renamePendingEmergencyEvidence(entry.id, nameInput
-                    .value));
+                .value));
 
                 const removeBtn = card.querySelector('.pending-remove');
                 removeBtn.addEventListener('click', e => {
@@ -8063,7 +10233,7 @@
                     btn.addEventListener('click', e => {
                         e.stopPropagation();
                         unlinkEmergencyFileFromCategory(btn.dataset.fileId, btn.dataset
-                            .categoryKey);
+                        .categoryKey);
                         renderEmergencyEvidencePendingGrid();
                         renderEmergencyEvidenceCategoryList();
                     });
@@ -8140,7 +10310,7 @@
                     btn.addEventListener('click', e => {
                         e.stopPropagation();
                         unlinkEmergencyFileFromCategory(btn.dataset.fileId, btn.dataset
-                            .categoryKey);
+                        .categoryKey);
                         renderEmergencyEvidencePendingGrid();
                         renderEmergencyEvidenceCategoryList();
                     });
@@ -8150,40 +10320,15 @@
             });
         }
 
-
         function saveEmergencyEvidenceLinks() {
-
-            // PRUEBA 1: No existen archivos cargados
-            if (emergencyEvidencePendingFiles.length === 0) {
-
-                mostrarAlertaAntecedentes(
-                    'Falta adjuntar documentos',
-                    'Debes adjuntar al menos un documento antes de guardar.'
-                );
-
-                return;
-            }
-
-            // Aplicar los vínculos seleccionados manualmente
             applySelectedEmergencyLinks();
 
-            // Obtener archivos que tienen al menos una categoría vinculada
-            const ready = emergencyEvidencePendingFiles.filter(
-                x => (x.draftCategoryKeys || []).length > 0
-            );
-
-            // PRUEBA 2: Hay archivos, pero ninguno está vinculado
+            const ready = emergencyEvidencePendingFiles.filter(x => (x.draftCategoryKeys || []).length > 0);
             if (!ready.length) {
-
-                mostrarAlertaAntecedentes(
-                    'Falta vincular antecedentes',
-                    'Debes vincular al menos un archivo a una categoría antes de guardar.'
-                );
-
+                alert('Primero debe seleccionar al menos un archivo y vincularlo a una o más categorías de antecedente.');
                 return;
             }
 
-            // PRUEBA 3: Guardar los archivos vinculados
             ready.forEach(entry => {
                 emergencyEvidenceRegistry.push({
                     id: `emg_saved_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
@@ -8192,401 +10337,45 @@
                     previewUrl: entry.previewUrl,
                     name: entry.name,
                     displayName: entry.displayName,
-                    categoryKeys: [...(entry.draftCategoryKeys || [])]
+                    categoryKeys: [...(entry.draftCategoryKeys || [])],
+                    uploadedAt: new Date().toISOString(),
+                    uploadedBy: (document.getElementById('requestingResponsible')?.value ||
+                        'Área requirente').trim() || 'Área requirente'
                 });
             });
 
-            // Mantener pendientes los archivos que no fueron vinculados
-            emergencyEvidencePendingFiles = emergencyEvidencePendingFiles.filter(
-                x => (x.draftCategoryKeys || []).length === 0
-            );
-
-            // Actualizar la interfaz
+            addWorkflowAudit('Área requirente', 'Adjuntó antecedentes E/U/I', `${ready.length} archivo(s) de respaldo.`,
+                'Documentos');
+            emergencyEvidencePendingFiles = emergencyEvidencePendingFiles.filter(x => (x.draftCategoryKeys || []).length ===
+                0);
             summarizeEmergencyEvidencePending();
             renderEmergencyEvidencePendingGrid();
             renderEmergencyEvidenceCategoryList();
             renderEmergencyEvidenceRegister();
             refreshEmergencyEvidenceIndicators();
+            refreshDocumentSummary();
         }
 
-
-        let antecedenteModalFocus = null;
-
-        function crearModalAccionAntecedente() {
-            const doc = window.parent.document;
-            let modal = doc.getElementById('przModalAccionAntecedente');
-
-            if (modal) return modal;
-
-            const estilos = doc.createElement('style');
-            estilos.id = 'przModalAccionAntecedenteStyles';
-            estilos.textContent = `
-        #przModalAccionAntecedente {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 2147483001 !important;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            background: rgba(17,28,23,.55);
-            font-family: Inter, "Segoe UI", Arial, sans-serif;
-            box-sizing: border-box;
-        }
-
-        #przModalAccionAntecedente.hidden {
-            display: none !important;
-        }
-
-        #przModalAccionAntecedente .prz-accion-card {
-            width: min(480px, 100%);
-            max-height: calc(100dvh - 40px);
-            overflow-y: auto;
-            background: white;
-            border: 1px solid #d8e0dc;
-            border-radius: 14px;
-            box-shadow: 0 18px 55px rgba(0,0,0,.25);
-            color: #17211d;
-            font-size: 13px;
-        }
-
-        #przModalAccionAntecedente .modal-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            background: #fafcfb;
-            border-bottom: 1px solid #d8e0dc;
-        }
-
-        #przModalAccionAntecedente .modal-head h3 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 700;
-            color: #17211d;
-        }
-
-        #przModalAccionAntecedente .modal-close {
-            width: 30px;
-            height: 30px;
-            border: 0;
-            background: transparent;
-            color: #44514b;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 21px;
-        }
-
-        #przModalAccionAntecedente .modal-close:hover {
-            background: #eef2f0;
-        }
-
-        #przModalAccionAntecedente .modal-body {
-            padding: 22px 20px;
-            line-height: 1.5;
-            color: #44514b;
-        }
-
-        #przModalAccionAntecedente .modal-body label {
-            display: block;
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        #przModalAccionAntecedente input {
-            box-sizing: border-box;
-            width: 100%;
-            padding: 11px 12px;
-            border: 1px solid #cbd5d0;
-            border-radius: 8px;
-            background: white;
-            color: #17211d;
-            font-size: 13px;
-        }
-
-        #przModalAccionAntecedente input:focus {
-            outline: none;
-            border-color: #176b4a;
-            box-shadow: 0 0 0 3px rgba(23,107,74,.10);
-        }
-
-        #przModalAccionAntecedente .prz-error {
-            display: none;
-            margin-top: 8px;
-            color: #9d2f2f;
-            font-size: 12px;
-        }
-
-        #przModalAccionAntecedente .prz-error.visible {
-            display: block;
-        }
-
-        #przModalAccionAntecedente .prz-aviso {
-            padding: 12px;
-            border: 1px solid #f0d39c;
-            background: #fff6e5;
-            border-radius: 9px;
-            color: #684000;
-            overflow-wrap: anywhere;
-        }
-
-        #przModalAccionAntecedente .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            padding: 14px 20px;
-            background: #fafcfb;
-            border-top: 1px solid #d8e0dc;
-        }
-
-        #przModalAccionAntecedente .modal-footer button {
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid #d8e0dc;
-            background: white;
-            color: #17211d;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        #przModalAccionAntecedente .modal-footer .primary {
-            background: #176b4a;
-            border-color: #176b4a;
-            color: white;
-        }
-
-        #przModalAccionAntecedente .modal-footer .primary:hover {
-            background: #0f4e37;
-        }
-
-        #przModalAccionAntecedente .modal-footer .danger {
-            background: #fff7f7;
-            border-color: #d6a9a9;
-            color: #8b3c3c;
-        }
-
-        #przModalAccionAntecedente .modal-footer .danger:hover {
-            background: #fbecec;
-        }
-    `;
-            doc.head.appendChild(estilos);
-
-            modal = doc.createElement('div');
-            modal.id = 'przModalAccionAntecedente';
-            modal.className = 'hidden';
-            modal.setAttribute('role', 'dialog');
-            modal.setAttribute('aria-modal', 'true');
-            modal.setAttribute('aria-labelledby', 'przAccionTitulo');
-
-            modal.innerHTML = `
-        <div class="prz-accion-card">
-            <div class="modal-head">
-                <h3 id="przAccionTitulo"></h3>
-                <button type="button" class="modal-close"
-                        aria-label="Cerrar">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div id="przAccionContenido"></div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" id="przAccionCancelar">
-                    Cancelar
-                </button>
-                <button type="button" id="przAccionConfirmar"
-                        class="primary">
-                    Guardar cambios
-                </button>
-            </div>
-        </div>
-    `;
-
-            doc.body.appendChild(modal);
-
-            const cerrar = () => cerrarModalAccionAntecedente();
-
-            modal.querySelector('.modal-close')
-                .addEventListener('click', cerrar);
-
-            modal.querySelector('#przAccionCancelar')
-                .addEventListener('click', cerrar);
-
-            modal.addEventListener('click', event => {
-                if (event.target === modal) cerrar();
-            });
-
-            modal.addEventListener('keydown', event => {
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    cerrar();
-                }
-            });
-
-            return modal;
-        }
-
-        function cerrarModalAccionAntecedente() {
-            const modal = window.parent.document.getElementById(
-                'przModalAccionAntecedente'
-            );
-
-            if (!modal) return;
-
-            modal.classList.add('hidden');
-
-            const confirmar = modal.querySelector('#przAccionConfirmar');
-            confirmar.onclick = null;
-
-            if (antecedenteModalFocus?.isConnected) {
-                antecedenteModalFocus.focus();
-            }
-
-            antecedenteModalFocus = null;
-        }
-
-
-        // MODAL RENOMBRAR
         function renameEmergencyEvidence(id) {
             const entry = emergencyEvidenceRegistry.find(x => x.id === id);
             if (!entry) return;
-
-            const doc = window.parent.document;
-            const modal = crearModalAccionAntecedente();
-
-            antecedenteModalFocus = document.activeElement;
-
-            modal.querySelector('#przAccionTitulo').textContent =
-                'Renombrar antecedente';
-
-            const contenido = modal.querySelector('#przAccionContenido');
-            contenido.replaceChildren();
-
-            const label = doc.createElement('label');
-            label.textContent = 'Nombre del documento';
-            label.htmlFor = 'przNuevoNombre';
-
-            const input = doc.createElement('input');
-            input.type = 'text';
-            input.id = 'przNuevoNombre';
-            input.maxLength = 255;
-            input.value = entry.displayName || entry.file?.name || entry.name || '';
-
-            const error = doc.createElement('div');
-            error.className = 'prz-error';
-            error.textContent = 'Debe ingresar un nombre para el documento.';
-
-            contenido.append(label, input, error);
-
-            const confirmar = modal.querySelector('#przAccionConfirmar');
-            confirmar.textContent = 'Guardar cambios';
-            confirmar.className = 'primary';
-
-            const guardar = () => {
-                const nuevoNombre = input.value.trim();
-
-                if (!nuevoNombre) {
-                    error.classList.add('visible');
-                    input.focus();
-                    return;
-                }
-
-                entry.displayName = nuevoNombre;
-
-                renderEmergencyEvidenceRegister();
-                refreshEmergencyEvidenceIndicators();
-                cerrarModalAccionAntecedente();
-            };
-
-            confirmar.onclick = guardar;
-
-            input.addEventListener('input', () => {
-                error.classList.remove('visible');
-            });
-
-            input.addEventListener('keydown', event => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    guardar();
-                }
-            });
-
-            modal.classList.remove('hidden');
-            input.focus();
-            input.select();
+            const value = prompt('Nuevo nombre del archivo:', entry.displayName || entry.file?.name || entry.name || '');
+            if (value === null) return;
+            entry.displayName = (value || '').trim() || entry.file?.name || entry.name;
+            renderEmergencyEvidenceRegister();
         }
 
-
-        // MODAL ELIMINAR
         function removeEmergencyEvidence(id) {
-            const entry = emergencyEvidenceRegistry.find(x => x.id === id);
-            if (!entry) return;
-
-            const doc = window.parent.document;
-            const modal = crearModalAccionAntecedente();
-
-            antecedenteModalFocus = document.activeElement;
-
-            modal.querySelector('#przAccionTitulo').textContent =
-                'Eliminar antecedente';
-
-            const contenido = modal.querySelector('#przAccionContenido');
-            contenido.replaceChildren();
-
-            const aviso = doc.createElement('div');
-            aviso.className = 'prz-aviso';
-
-            const pregunta = doc.createElement('div');
-            pregunta.textContent =
-                '¿Está seguro de que desea eliminar el siguiente antecedente?';
-
-            const nombre = doc.createElement('strong');
-            nombre.textContent = entry.displayName || entry.name || entry.file?.name || '';
-            nombre.style.display = 'block';
-            nombre.style.marginTop = '8px';
-
-            aviso.append(pregunta, nombre);
-
-            const detalle = doc.createElement('p');
-            detalle.textContent =
-                'Al confirmar se eliminará el antecedente y todos sus vínculos del formulario.';
-            detalle.style.margin = '12px 0 0';
-            detalle.style.fontSize = '12px';
-
-            contenido.append(aviso, detalle);
-
-            const confirmar = modal.querySelector('#przAccionConfirmar');
-            confirmar.textContent = 'Sí, eliminar';
-            confirmar.className = 'danger';
-
-            confirmar.onclick = () => {
-                const idx = emergencyEvidenceRegistry.findIndex(x => x.id === id);
-                if (idx === -1) {
-                    cerrarModalAccionAntecedente();
-                    return;
-                }
-
-                const registro = emergencyEvidenceRegistry[idx];
-
-                if (registro.objectUrl) {
-                    URL.revokeObjectURL(registro.objectUrl);
-                }
-
-                emergencyEvidenceRegistry.splice(idx, 1);
-
-                renderEmergencyEvidenceRegister();
-                refreshEmergencyEvidenceIndicators();
-
-                cerrarModalAccionAntecedente();
-            };
-
-            modal.classList.remove('hidden');
-            confirmar.focus();
+            const idx = emergencyEvidenceRegistry.findIndex(x => x.id === id);
+            if (idx === -1) return;
+            const entry = emergencyEvidenceRegistry[idx];
+            const ok = confirm(`¿Eliminar el antecedente "${entry.displayName || entry.name}" y sus vínculos?`);
+            if (!ok) return;
+            if (entry.objectUrl) URL.revokeObjectURL(entry.objectUrl);
+            emergencyEvidenceRegistry.splice(idx, 1);
+            renderEmergencyEvidenceRegister();
+            refreshEmergencyEvidenceIndicators();
         }
-
 
         function removeEmergencyEvidenceCategory(id, categoryKey) {
             const entry = emergencyEvidenceRegistry.find(x => x.id === id);
@@ -8619,7 +10408,7 @@
 
                 const tags = (entry.categoryKeys || []).map(key =>
                     `<span class="link-pill">${escapeHtml(getEmergencyCategoryTitle(key))}<button type="button" title="Quitar vínculo" data-id="${entry.id}" data-category-key="${key}" style="margin-left:6px;border:0;background:none;color:inherit;cursor:pointer;font-weight:700;">×</button></span>`
-                ).join('');
+                    ).join('');
 
                 const card = document.createElement('div');
                 card.className = 'attachment-card';
@@ -8674,10 +10463,6 @@
         let currentFillMode = 'form';
         let currentStepIndex = 0;
         let lastMissingControls = [];
-
-        function getStepSections() {
-            return [...document.querySelectorAll('main > .form-step')];
-        }
 
         function isVisibleForValidation(el) {
             if (!el) return false;
@@ -8915,6 +10700,11 @@
             document.getElementById('stepPrevBtn').disabled = currentStepIndex === 0;
             document.getElementById('stepNextBtn').textContent = currentStepIndex === sections.length - 1 ?
                 'Finalizar y validar' : 'Siguiente →';
+            const submit = document.getElementById('requestSubmissionArea');
+            if (submit) submit.classList.toggle('hidden', currentFillMode === 'step' && currentStepIndex !== sections
+                .length - 1);
+            refreshInheritedExecutionSummary();
+            refreshDocumentSummary();
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
@@ -8983,6 +10773,22 @@
             formAnalytics.helpInteractions = 0;
             formAnalytics.submissionCount = 0;
             formAnalytics.lastSubmissionSnapshot = null;
+            workflowState.status = 'draft';
+            workflowState.requesterSubmittedAt = null;
+            workflowState.chiefDecision = null;
+            workflowState.chiefDecisionAt = null;
+            workflowState.chiefReviewerName = '';
+            workflowState.chiefReviewerRole = '';
+            workflowState.chiefComment = '';
+            workflowState.procurementOpenedAt = null;
+            workflowState.audit.length = 0;
+            selectedPacRecord = null;
+            dafControlledEdit = false;
+            selectedDirectoryPersonId = null;
+            clearTimeout(counterpartDirectorySaveTimer);
+            closeCounterpartDirectory();
+            currentRoleView = 'requester';
+            renderWorkflowAudit();
             document.getElementById('submissionStatisticsPanel')?.classList.add('hidden');
             const submitBtn = document.getElementById('submitRequestBtn');
             if (submitBtn) {
@@ -9017,16 +10823,36 @@
             calcTotals();
             updateProgress();
             renderFillMode();
+            document.getElementById('chiefReviewerName') && (document.getElementById('chiefReviewerName').value = '');
+            document.getElementById('chiefReviewerRole') && (document.getElementById('chiefReviewerRole').value = '');
+            document.getElementById('chiefDecisionComment') && (document.getElementById('chiefDecisionComment').value = '');
+            document.getElementById('chiefDecisionDate') && (document.getElementById('chiefDecisionDate').value = '');
+            applyRoleVisibility();
+            scheduleNormalizeFieldAlignment();
         }
-        document.addEventListener('input', () => {
+        document.addEventListener('input', (event) => {
+            if (event.target?.classList?.contains('item-spec-entry') || event.target?.classList?.contains(
+                    'item-feature-entry')) {
+                resizeStructuredField(event.target);
+            }
             updateProgress();
             renderFillModeStatusOnly();
+            scheduleNormalizeFieldAlignment();
         });
         document.addEventListener('change', () => {
             updateProgress();
             renderFillModeStatusOnly();
+            scheduleNormalizeFieldAlignment();
+        });
+        document.addEventListener('focusin', (event) => {
+            if (event.target?.classList?.contains('item-spec-entry') || event.target?.classList?.contains(
+                    'item-feature-entry')) {
+                resizeStructuredField(event.target);
+            }
         });
         document.addEventListener('click', (event) => {
+            if (!event.target.closest('.spec-priority')) closeAllSpecPriorityMenus();
+            if (!event.target.closest('#counterpartDirectoryCombo')) closeCounterpartDirectory();
             if (!event.target.closest('.eui-help-label') && !event.target.closest('#euiHelpPopover')) {
                 hideEuiFieldHelp(true);
             }
@@ -9053,14 +10879,24 @@
                 closeReceptionCriteriaDropdown();
         });
         setTodayOnRequestDate();
+        loadPeopleDirectory();
+        syncRequesterProfileToDirectory();
         updateFormElapsedTimer();
         setFillMode('form');
-        ['requestingResponsible', 'requestingUnit'].forEach(id => {
+        applyRoleVisibility();
+        scheduleNormalizeFieldAlignment();
+        refreshDocumentSummary();
+        refreshEstimateSources();
+        refreshInheritedExecutionSummary();
+        ['requestingResponsible', 'requestingUnit', 'requestingRole', 'requestingContact'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', () => {
                 if (document.querySelector('input[name="technicalCounterpartMode"]:checked')?.value ===
                     'same') {
                     autofillTechnicalCounterpart();
+                    renderSameRequesterCounterpartSummary();
                 }
+                clearTimeout(counterpartDirectorySaveTimer);
+                counterpartDirectorySaveTimer = setTimeout(syncRequesterProfileToDirectory, 700);
             });
         });
         initEuiFieldHelp();
@@ -9077,200 +10913,11 @@
                 }
             }
         });
-
-        let emergencyAlertPreviousFocus = null;
-
-        function mostrarAlertaAntecedentes(titulo, mensaje) {
-
-            const parentDoc = window.parent.document;
-
-            const modal =
-                parentDoc.getElementById('emergencyEvidenceAlert') ||
-                document.getElementById('emergencyEvidenceAlert');
-
-            if (!modal) {
-                console.error('No se encontró emergencyEvidenceAlert');
-                return;
-            }
-
-            // Guardar el foco anterior
-            emergencyAlertPreviousFocus = document.activeElement;
-
-            // Incorporar los estilos al documento principal de Filament
-            if (!parentDoc.getElementById('prz-emergency-alert-styles')) {
-
-                const estilos = parentDoc.createElement('style');
-
-                estilos.id = 'prz-emergency-alert-styles';
-
-                estilos.textContent = `
-            #emergencyEvidenceAlert {
-                position: fixed !important;
-                inset: 0 !important;
-                z-index: 2147483000 !important;
-
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-
-                padding: 20px !important;
-                background: rgba(17, 28, 23, 0.55) !important;
-                box-sizing: border-box;
-            }
-
-            #emergencyEvidenceAlert.hidden {
-                display: none !important;
-            }
-
-            #emergencyEvidenceAlert .emergency-alert-card {
-                width: min(460px, 100%);
-                max-height: calc(100dvh - 40px);
-                overflow-y: auto;
-
-                background: white;
-                border: 1px solid #d8e0dc;
-                border-radius: 14px;
-                box-shadow: 0 18px 55px rgba(0,0,0,0.25);
-
-                color: #17211d;
-                font-family: Inter, "Segoe UI", Arial, sans-serif;
-                font-size: 13px;
-            }
-
-            #emergencyEvidenceAlert .modal-head {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-
-                padding: 16px 20px;
-                background: #fafcfb;
-                border-bottom: 1px solid #d8e0dc;
-            }
-
-            #emergencyEvidenceAlert .modal-head h3 {
-                margin: 0;
-                font-size: 16px;
-                font-weight: 700;
-                color: #17211d;
-            }
-
-            #emergencyEvidenceAlert .modal-close {
-                position: static !important;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-
-                width: 30px;
-                height: 30px;
-                padding: 0;
-                margin: 0;
-
-                border: 0;
-                border-radius: 50%;
-                background: transparent;
-                color: #34423d;
-                font-size: 22px;
-                cursor: pointer;
-            }
-
-            #emergencyEvidenceAlert .modal-close:hover {
-                background: #eef2f0;
-            }
-
-            #emergencyEvidenceAlert .modal-body {
-                padding: 22px 20px;
-                color: #44514b;
-                line-height: 1.6;
-            }
-
-            #emergencyEvidenceAlert .modal-body p {
-                margin: 0;
-            }
-
-            #emergencyEvidenceAlert .modal-footer {
-                display: flex;
-                justify-content: flex-end;
-                padding: 14px 20px;
-
-                background: #fafcfb;
-                border-top: 1px solid #d8e0dc;
-            }
-
-            #emergencyEvidenceAlert .modal-footer .primary {
-                padding: 10px 18px;
-
-                background: #176b4a;
-                color: white;
-                border: 1px solid #176b4a;
-                border-radius: 8px;
-
-                font-size: 13px;
-                font-weight: 700;
-                cursor: pointer;
-            }
-
-            #emergencyEvidenceAlert .modal-footer .primary:hover {
-                background: #0f4e37;
-            }
-        `;
-
-                parentDoc.head.appendChild(estilos);
-            }
-
-            // Mover la alerta al documento principal
-            if (modal.parentElement !== parentDoc.body) {
-                parentDoc.body.appendChild(modal);
-            }
-
-            // Asignar correctamente los eventos a los botones
-            if (!modal.dataset.eventosConfigurados) {
-
-                modal.querySelectorAll(
-                    '.modal-close, .modal-footer .primary'
-                ).forEach(boton => {
-
-                    boton.removeAttribute('onclick');
-
-                    boton.addEventListener('click', function() {
-                        cerrarAlertaAntecedentes();
-                    });
-                });
-
-                modal.dataset.eventosConfigurados = 'true';
-            }
-
-            // Actualizar textos
-            modal.querySelector('#emergencyAlertTitle').textContent = titulo;
-            modal.querySelector('#emergencyAlertMessage').textContent = mensaje;
-
-            // Mostrar advertencia
-            modal.classList.remove('hidden');
-
-            // Enfocar el botón Entendido
-            modal.querySelector('.modal-footer .primary')?.focus();
-        }
-
-
-        function cerrarAlertaAntecedentes() {
-
-            const modal = window.parent.document.getElementById(
-                'emergencyEvidenceAlert'
-            );
-
-            if (!modal) return;
-
-            modal.classList.add('hidden');
-
-            if (emergencyAlertPreviousFocus?.isConnected) {
-                emergencyAlertPreviousFocus.focus();
-            }
-        }
-
         toggleOtherFrequency();
         toggleOtherDeliveryPlace();
         toggleEmergencyNeed();
         applyFieldHelp();
+        initializeStructuredTextEntries();
         calcTotals();
         refreshQuoteIndicators();
         renderEmergencyEvidenceRegister();
@@ -9368,15 +11015,14 @@
         <div class="modal-card" style="width:min(760px,94vw);max-height:86vh;" onclick="event.stopPropagation()">
             <div class="modal-head">
                 <div>
-                    <h3 id="quoteViewerTitle">Cotizaciones</h3>
-                    <p>Revise los archivos adjuntos directamente desde el formulario.</p>
+                    <h3 id="quoteViewerTitle">Adjuntos del ítem</h3>
+                    <p>Revise cotizaciones, documentos e imágenes asociados directamente al ítem.</p>
                 </div>
                 <button type="button" class="modal-close" title="Cerrar"
                     onclick="closeQuoteViewer()">×</button>
             </div>
             <div class="modal-body">
-                <div id="quoteViewerEmpty" class="hint hidden">No hay cotizaciones disponibles para visualizar.
-                </div>
+                <div id="quoteViewerEmpty" class="hint hidden">No hay adjuntos disponibles para visualizar.</div>
                 <div id="quoteViewerList" class="quote-view-list"></div>
             </div>
             <div class="modal-footer">
@@ -9439,37 +11085,6 @@
         </div>
     </div>
 
-    <!-- Modal de advertencia para antecedentes -->
-    <div id="emergencyEvidenceAlert" class="emergency-alert-backdrop hidden" role="alertdialog"
-        aria-modal="true" aria-labelledby="emergencyAlertTitle" aria-describedby="emergencyAlertMessage">
-
-        <div class="emergency-alert-card">
-
-            <div class="modal-head">
-                <div>
-                    <h3 id="emergencyAlertTitle">
-                        Atención
-                    </h3>
-                </div>
-
-                <button type="button" class="modal-close" onclick="cerrarAlertaAntecedentes()"
-                    aria-label="Cerrar">
-                    &times;
-                </button>
-            </div>
-
-            <div class="modal-body">
-                <p id="emergencyAlertMessage"></p>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="primary" onclick="cerrarAlertaAntecedentes()">
-                    Entendido
-                </button>
-            </div>
-
-        </div>
-    </div>
 
     <div id="emergencyEvidenceModal" class="modal-backdrop hidden" onclick="closeEmergencyEvidenceManager(event)">
         <div class="modal-card" style="width:min(1120px,96vw);max-height:90vh;" onclick="event.stopPropagation()">
@@ -9479,10 +11094,8 @@
                     <p>Cargue uno o varios archivos y vincule cada antecedente al tipo de respaldo que corresponda para
                         la evaluación de la solicitud.</p>
                 </div>
-                <button type="button" class="modal-close" onclick="closeEmergencyEvidenceManager()"
-                    aria-label="Cerrar ventana">
-                    &times;
-                </button>
+                <button type="button" class="modal-close" title="Cerrar"
+                    onclick="closeEmergencyEvidenceManager()">×</button>
             </div>
 
             <div class="modal-body">
@@ -9621,7 +11234,7 @@
         <div class="modal-card" style="width:min(760px,94vw);max-height:88vh;" onclick="event.stopPropagation()">
             <div class="modal-head">
                 <div>
-                    <h3>Requerimiento finalizado</h3>
+                    <h3>Requerimiento enviado</h3>
                     <p>Se generó el registro estadístico interno de confección.</p>
                 </div>
                 <button type="button" class="modal-close" onclick="closeSubmissionMetricsModal()">×</button>
@@ -9639,6 +11252,71 @@
                 <button type="button" onclick="downloadSubmissionMetrics()">Descargar registro</button>
                 <button type="button" class="primary" onclick="closeSubmissionMetricsModal()">Aceptar</button>
             </div>
+        </div>
+    </div>
+
+    <div id="pacSelectorModal" class="modal-backdrop hidden" onclick="if(event.target===this) closePacSelector()">
+        <div class="modal-card" style="width:min(920px,95vw);max-height:88vh" onclick="event.stopPropagation()">
+            <div class="modal-head">
+                <div>
+                    <h3>Seleccionar compra del Plan Anual de Compras</h3>
+                    <p>El requerimiento quedará vinculado al registro seleccionado. En producción, los datos provendrán
+                        directamente del módulo PAC del sistema integrado.</p>
+                </div><button type="button" class="modal-close" onclick="closePacSelector()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="field"><label>Buscar en PAC</label><input id="pacSearchInput" type="text"
+                        placeholder="Buscar por código, descripción, área o mes" oninput="renderPacSelector()">
+                </div>
+                <div id="pacSelectorList" class="pac-selector-list"></div>
+                <div class="hint" style="margin-top:10px">Los registros PAC mostrados en este prototipo son
+                    demostrativos. La integración final utilizará el ID único real del módulo PAC.</div>
+            </div>
+            <div class="modal-footer"><button type="button" onclick="closePacSelector()">Cerrar</button></div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal-backdrop hidden" onclick="if(event.target===this) closeHistoryModal()">
+        <div class="modal-card" style="width:min(980px,96vw);max-height:90vh" onclick="event.stopPropagation()">
+            <div class="modal-head">
+                <div>
+                    <h3>Historial operativo del expediente</h3>
+                    <p>Se registran hitos con efecto de negocio, no cada clic. Puede filtrar por usuario/rol, etapa,
+                        acción y período.</p>
+                </div><button type="button" class="modal-close" onclick="closeHistoryModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="history-filter-grid">
+                    <div class="field"><label>Rol</label><select id="historyRoleFilter"
+                            onchange="renderHistoryModal()">
+                            <option value="">Todos</option>
+                            <option value="Área requirente">Área requirente</option>
+                            <option value="Jefatura">Jefatura</option>
+                            <option value="DAF">DAF</option>
+                        </select></div>
+                    <div class="field"><label>Etapa</label><select id="historyStageFilter"
+                            onchange="renderHistoryModal()">
+                            <option value="">Todas</option>
+                            <option>Requerimiento</option>
+                            <option>Jefatura</option>
+                            <option>DAF</option>
+                            <option>Documentos</option>
+                        </select></div>
+                    <div class="field"><label>Buscar acción / usuario</label><input id="historyTextFilter"
+                            type="text" placeholder="Escriba para filtrar" oninput="renderHistoryModal()">
+                    </div>
+                    <div class="field"><label>Desde</label><input id="historyDateFilter" type="date"
+                            onchange="renderHistoryModal()"></div>
+                </div>
+                <div id="historyModalEmpty" class="hint" style="margin-top:12px">Aún no hay hitos registrados.
+                </div>
+                <div id="historyModalList"
+                    style="margin-top:10px;border:1px solid #e1e7e4;border-radius:9px;overflow:hidden"></div>
+                <div class="norm-note">La trazabilidad de cambios sustantivos se conserva además como versionado
+                    técnico. La analítica de uso (tiempos, errores, ayudas) se mantiene separada del historial
+                    operativo.</div>
+            </div>
+            <div class="modal-footer"><button type="button" onclick="closeHistoryModal()">Cerrar</button></div>
         </div>
     </div>
 </body>
