@@ -32,6 +32,7 @@ use App\Filament\Pages\FormularioRequerimientoCompra;
 use App\Filament\Pages\CajaChica;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\DocumentoCarpetas\DocumentoCarpetaResource;
+use App\Filament\Resources\Documentos\DocumentoResource;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -121,6 +122,7 @@ class AdminPanelProvider extends PanelProvider
                         ->label('Documentos')
                         ->items([
                             ...DocumentoCarpetaResource::getNavigationItems(),
+                            ...DocumentoResource::getNavigationItems(),
                         ]),
 
                     // SEGUNDO: MANTENEDORES

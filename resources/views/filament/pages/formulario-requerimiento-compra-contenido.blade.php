@@ -3756,8 +3756,6 @@
                             @php
                                 $usuario = auth()->user();
                                 $nombreCompleto = trim(($usuario?->name ?? '') . ' ' . ($usuario?->apellido ?? ''));
-                                $cargo = $usuario?->cargo;
-                                $responsable = $nombreCompleto . ($cargo?->nombre ? ' / ' . $cargo->nombre : '');
                             @endphp
                             <input  class="essential" 
                                     id="requestingResponsible"

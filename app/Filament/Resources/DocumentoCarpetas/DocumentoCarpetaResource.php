@@ -25,7 +25,7 @@ class DocumentoCarpetaResource extends Resource
 
     protected static ?string $pluralModelLabel = 'carpetas';
 
-    protected static ?string $navigationLabel = 'Documentos';
+    protected static ?string $navigationLabel = 'Carpetas';
 
     public static function form(Schema $schema): Schema
     {
