@@ -3761,7 +3761,7 @@
                                     id="requestingResponsible"
                                     name="responsable_requerimiento"
                                     type="text"
-                                    value="{{ $responsable }}"
+                                    value="{{ $nombreCompleto }}"
                                     placeholder="Nombre del usuario"
                                     readonly 
                                     required>

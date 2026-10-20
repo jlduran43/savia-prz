@@ -1,3 +1,4 @@
+
 <x-filament-panels::page>
 
     <div class="w-full">
@@ -9,7 +10,7 @@
             scrolling="no"
             style="
                 width: 100%;
-                min-height: 800px;
+                height: 800px;
                 border: none;
                 border-radius: 12px;
                 background: #ffffff;
@@ -21,50 +22,72 @@
     </div>
 
     <script>
-        function ajustarAlturaFormulario() {
+        document.addEventListener('DOMContentLoaded', function () {
 
             const iframe = document.getElementById('iframe-compras');
 
             if (!iframe) return;
 
-            try {
-                const documento = iframe.contentDocument
-                    || iframe.contentWindow.document;
+            let observer = null;
+            let ajustePendiente = false;
 
-                if (!documento || !documento.body) return;
+            function ajustarAlturaFormulario() {
 
-                const altura = Math.max(
-                    documento.body.scrollHeight,
-                    documento.documentElement.scrollHeight
-                );
+                if (ajustePendiente) return;
 
-                iframe.style.height = altura + 30 + 'px';
+                ajustePendiente = true;
 
-            } catch (error) {
-                console.error(
-                    'No se pudo ajustar la altura del formulario:',
-                    error
-                );
+                requestAnimationFrame(() => {
+
+                    ajustePendiente = false;
+
+                    try {
+                        const doc = iframe.contentDocument;
+
+                        if (!doc || !doc.body) return;
+
+                        const altura = Math.max(
+                            doc.body.scrollHeight,
+                            doc.documentElement.scrollHeight
+                        );
+
+                        const nuevaAltura = Math.max(800, altura);
+
+                        if (Math.abs(iframe.offsetHeight - nuevaAltura) > 2) {
+                            iframe.style.height = nuevaAltura + 'px';
+                        }
+
+                    } catch (error) {
+                        console.error('Error ajustando iframe:', error);
+                    }
+                });
             }
-        }
 
-        document.getElementById('iframe-compras')
-            .addEventListener('load', function () {
+            iframe.addEventListener('load', function () {
+
+                if (observer) {
+                    observer.disconnect();
+                }
 
                 ajustarAlturaFormulario();
 
-                const documento = this.contentDocument;
+                try {
+                    const doc = iframe.contentDocument;
 
-                if (!documento || !documento.body) return;
+                    if (!doc || !doc.body) return;
 
-                const observer = new ResizeObserver(() => {
-                    ajustarAlturaFormulario();
-                });
+                    observer = new ResizeObserver(() => {
+                        ajustarAlturaFormulario();
+                    });
 
-                observer.observe(documento.body);
-                observer.observe(documento.documentElement);
+                    observer.observe(doc.body);
 
+                } catch (error) {
+                    console.error('Error observando formulario:', error);
+                }
             });
+
+        });
     </script>
 
 </x-filament-panels::page>
