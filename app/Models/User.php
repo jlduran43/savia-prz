@@ -68,4 +68,22 @@ class User extends Authenticatable implements FilamentUser
     {
         return true;
     }
+
+    // Carpetas creadas por el usuario
+    public function carpetasCreadas()
+    {
+        return $this->hasMany(
+            DocumentoCarpeta::class,
+            'creado_por'
+        );
+    }
+
+    // Documentos subidos por el usuario
+    public function documentosSubidos()
+    {
+        return $this->hasMany(
+            Documento::class,
+            'subido_por'
+        );
+    }
 }

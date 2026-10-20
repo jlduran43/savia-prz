@@ -31,6 +31,7 @@ use App\Filament\Resources\Users\UserResource;
 use App\Filament\Pages\FormularioRequerimientoCompra;
 use App\Filament\Pages\CajaChica;
 use App\Filament\Pages\Auth\EditProfile;
+use App\Filament\Resources\DocumentoCarpetas\DocumentoCarpetaResource;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -113,6 +114,14 @@ class AdminPanelProvider extends PanelProvider
                                     )
                                 ),
 
+                        ]),
+
+                    // SEGUNDO: DOCUMENTOS
+                    NavigationGroup::make()
+                        ->label('Documentos')
+                        ->icon('heroicon-o-folder-open')
+                        ->items([
+                            ...DocumentoCarpetaResource::getNavigationItems(),
                         ]),
 
                     // SEGUNDO: MANTENEDORES
@@ -204,7 +213,7 @@ class AdminPanelProvider extends PanelProvider
                         background-color: #dc2626 !important;
                         border-color: #dc2626 !important;
                         color: #ffffff !important;
-                    s}
+                    }
                 </style>'
             )
 

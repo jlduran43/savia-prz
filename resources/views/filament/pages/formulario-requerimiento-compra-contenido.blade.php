@@ -3749,19 +3749,67 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="field c4"><label class="req">Nombre del requirente <span
-                                    class="source-chip">perfil</span></label><input class="essential"
-                                id="requestingResponsible" type="text" placeholder="Nombre del usuario"></div>
-                        <div class="field c4"><label>Cargo <span class="source-chip">perfil</span></label><input
-                                id="requestingRole" type="text" placeholder="Cargo del usuario"></div>
-                        <div class="field c4"><label>Correo institucional <span
-                                    class="source-chip">perfil</span></label><input id="requestingContact"
-                                type="text" placeholder="correo@institucion.cl"></div>
-                        <div class="field c4"><label>Jefatura del área <span
-                                    class="source-chip">estructura</span></label><input id="requestingChief"
-                                type="text" placeholder="Se obtiene de la estructura organizacional"></div>
-                        <div class="field c4"><label class="req">Fecha de solicitud</label><input
-                                class="essential" id="requestDate" type="date"></div>
+                        <div class="field c4">
+                            <label class="req">Nombre del requirente 
+                                <span class="source-chip">perfil</span>
+                            </label>
+                            @php
+                                $usuario = auth()->user();
+                                $nombreCompleto = trim(($usuario?->name ?? '') . ' ' . ($usuario?->apellido ?? ''));
+                                $cargo = $usuario?->cargo;
+                                $responsable = $nombreCompleto . ($cargo?->nombre ? ' / ' . $cargo->nombre : '');
+                            @endphp
+                            <input  class="essential" 
+                                    id="requestingResponsible"
+                                    name="responsable_requerimiento"
+                                    type="text"
+                                    value="{{ $responsable }}"
+                                    placeholder="Nombre del usuario"
+                                    readonly 
+                                    required>
+                        </div>
+                        <div class="field c4">
+                            <label>Cargo
+                                <span class="source-chip">perfil</span>
+                            </label>
+                            <input  class="essential"
+                                    id="requestingRole" 
+                                    name="cargo"
+                                    type="text"
+                                    value="{{ auth()->user()?->cargo?->nombre ?? '' }}"
+                                    placeholder="Cargo del usuario"
+                                    readonly
+                                    required>
+                        </div>
+                        <div class="field c4">
+                            <label>Correo institucional
+                                <span class="source-chip">perfil</span>
+                            </label>
+                            @php
+                                $usuario = auth()->user();
+                            @endphp
+                            <input  class="essential"
+                                    id="requestingContact"
+                                    name="correo" 
+                                    type="email"
+                                    value="{{ $usuario?->email ?? '' }}"
+                                    readonly
+                                    required
+                                    placeholder="correo@institucion.cl">
+                        </div>
+                        <div class="field c4">
+                            <label>Jefatura del área
+                                <spanclass="source-chip">estructura</span>
+                            </label>
+                            <input id="requestingChief" type="text" placeholder="Se obtiene de la estructura organizacional">
+                        </div>
+                        
+                        <div class="field c4">
+                            <label  class="req">Fecha de solicitud</label>
+                            <input  class="essential" 
+                                    id="requestDate" 
+                                    type="date">
+                        </div>
                         <div class="field c6"><label class="req">Fecha en que se requiere</label><input
                                 class="essential" id="requiredNeedDate" type="date"></div>
 
