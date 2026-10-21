@@ -1,0 +1,11 @@
+/* Botón Crear o cargar */
+.prz-crear-cargar {
+    background-color: #176B45 !important;
+    color: #ffffff !important;
+}
+
+/* Ícono + en blanco */
+.prz-crear-cargar svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}

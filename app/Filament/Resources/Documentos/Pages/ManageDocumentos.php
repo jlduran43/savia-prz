@@ -95,9 +95,7 @@ class ManageDocumentos extends ManageRecords
                 ->label('Crear o cargar')
                 ->icon('heroicon-o-plus')
                 ->button()
-                ->color(Color::hex('#176B45'))
                 ->extraAttributes([
-                    'style' => 'background-color: #176B45 !important; color: white !important; --fi-btn-icon-color: white;',
                     'class' => 'prz-crear-cargar',
                 ]),
         ];

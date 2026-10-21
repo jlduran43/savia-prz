@@ -33,6 +33,7 @@ use App\Filament\Pages\CajaChica;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\DocumentoCarpetas\DocumentoCarpetaResource;
 use App\Filament\Resources\Documentos\DocumentoResource;
+use Filament\Support\Assets\Css;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -52,7 +53,12 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('3rem')
             ->topNavigation()
             ->profile(EditProfile::class, isSimple: false)
-
+            ->assets([
+                Css::make(
+                    'documentos-estilos',
+                    public_path('css/documentos.css')
+                ),
+            ])
             ->colors([
                 'primary' => Color::hex('#176B45'),
             ])
