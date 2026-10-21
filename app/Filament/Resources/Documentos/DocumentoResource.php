@@ -20,7 +20,7 @@ class DocumentoResource extends Resource
     protected static ?string $model = Documento::class;
 
     protected static string|BackedEnum|null $navigationIcon =
-        Heroicon::OutlinedDocumentText;
+    Heroicon::OutlinedDocumentText;
 
     protected static ?string $recordTitleAttribute = 'nombre_original';
 
@@ -36,7 +36,8 @@ class DocumentoResource extends Resource
 
             Select::make('carpeta_id')
                 ->label('Carpeta de destino')
-                ->options(fn () =>
+                ->options(
+                    fn() =>
                     DocumentoCarpeta::query()
                         ->orderBy('nombre')
                         ->pluck('nombre', 'id')
@@ -88,7 +89,16 @@ class DocumentoResource extends Resource
                     ->label('Carpeta'),
 
                 TextColumn::make('usuario.name')
-                    ->label('Subido por'),
+                    ->label('Subido por')
+                    ->formatStateUsing(
+                        fn($record) => $record->subidoPor
+                            ? trim(
+                                $record->subidoPor->name . ' ' .
+                                    $record->subidoPor->apellido
+                            )
+                            : 'Sin usuario'
+                    )
+                    ->searchable(),
 
                 TextColumn::make('extension')
                     ->label('Tipo')
