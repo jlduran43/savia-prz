@@ -84,3 +84,39 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
 })
     ->middleware('auth')
     ->name('documentos.descargar');
+
+
+Route::get('/documentos/{documento}/ver', function (Documento $documento) {
+
+    $disco = Storage::disk('documentos_privados');
+
+    if (!$disco->exists($documento->ruta_archivo)) {
+        abort(404, 'El documento no existe.');
+    }
+
+    // Vista preliminar para PDF e imágenes
+    $tiposPermitidos = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+    ];
+
+    $mime = $disco->mimeType($documento->ruta_archivo);
+
+    if (!in_array($mime, $tiposPermitidos, true)) {
+        abort(415, 'Este tipo de archivo no admite vista previa.');
+    }
+
+    return response()->file(
+        $disco->path($documento->ruta_archivo),
+        [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
+        ]
+    );
+
+})
+->middleware('auth')
+->name('documentos.ver');

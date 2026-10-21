@@ -104,6 +104,30 @@ class DocumentoResource extends Resource
                     ->label('Tipo')
                     ->badge(),
 
+                TextColumn::make('ver')
+                    ->label('Ver')
+                    ->state(fn() => 'Ver')
+                    ->icon('heroicon-o-eye')
+                    ->color('primary')
+                    ->url(
+                        fn(Documento $record): string =>
+                        route('documentos.ver', [
+                            'documento' => $record->id,
+                        ])
+                    )
+                    ->openUrlInNewTab()
+                    ->disabledClick(
+                        fn(Documento $record): bool =>
+                        !in_array(
+                            strtolower($record->extension ?? ''),
+                            ['pdf', 'png', 'jpg', 'jpeg'],
+                            true
+                        )
+                    )
+                    ->visible(
+                        fn(): bool => true
+                    ),
+
                 TextColumn::make('descargar')
                     ->label('Descargar')
                     ->state(fn() => 'Descargar')
