@@ -66,11 +66,25 @@ class ManageDocumentos extends ManageRecords
                             ->send();
                     }),
 
+
                 CreateAction::make()
                     ->label('Subir archivo')
                     ->icon('heroicon-o-document-arrow-up')
                     ->modalHeading('Subir documento')
                     ->modalSubmitActionLabel('Subir documento')
+
+                    // Ocultar "Crear y crear otro"
+                    ->createAnother(false)
+
+                    // Color del botón principal del formulario
+                    ->modalSubmitAction(
+                        fn(Action $action) => $action
+                            ->extraAttributes([
+                                'style' => 'background-color: #176B45 !important; color: white !important;',
+                            ])
+                    )
+
+                    // Registrar usuario que sube el documento
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['subido_por'] = auth()->id();
 
@@ -83,7 +97,8 @@ class ManageDocumentos extends ManageRecords
                 ->button()
                 ->color(Color::hex('#176B45'))
                 ->extraAttributes([
-                    'style' => 'background-color: #176B45 !important; color: white !important;',
+                    'style' => 'background-color: #176B45 !important; color: white !important; --fi-btn-icon-color: white;',
+                    'class' => 'prz-crear-cargar',
                 ]),
         ];
     }
