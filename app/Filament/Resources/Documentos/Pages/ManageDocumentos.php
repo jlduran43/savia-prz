@@ -30,11 +30,12 @@ class ManageDocumentos extends ManageRecords
                             ->label('Nombre de la carpeta')
                             ->required()
                             ->maxLength(255),
-                            
+
                         Select::make('carpeta_padre_id')
                             ->label('Crear dentro de')
                             ->placeholder('Carpeta principal')
-                            ->options(fn () =>
+                            ->options(
+                                fn() =>
                                 DocumentoCarpeta::query()
                                     ->orderBy('nombre')
                                     ->pluck('nombre', 'id')
@@ -44,11 +45,15 @@ class ManageDocumentos extends ManageRecords
                     ])
                     ->modalHeading('Crear nueva carpeta')
                     ->modalSubmitActionLabel('Crear carpeta')
+                    ->modalSubmitAction(
+                        fn(Action $action) => $action
+                            ->color(\Filament\Support\Colors\Color::hex('#176B45'))
+                    )
                     ->action(function (array $data): void {
                         DocumentoCarpeta::create([
                             'nombre' => $data['nombre'],
                             'carpeta_padre_id' =>
-                                $data['carpeta_padre_id'] ?? null,
+                            $data['carpeta_padre_id'] ?? null,
                         ]);
 
                         Notification::make()
@@ -61,13 +66,18 @@ class ManageDocumentos extends ManageRecords
                     ->label('Subir archivo')
                     ->icon('heroicon-o-document-arrow-up')
                     ->modalHeading('Subir documento')
-                    ->modalSubmitActionLabel('Subir documento'),
+                    ->modalSubmitActionLabel('Subir documento')
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['subido_por'] = auth()->id();
+
+                        return $data;
+                    }),
 
             ])
                 ->label('Crear o cargar')
                 ->icon('heroicon-o-plus')
                 ->button()
-                ->color('primary'),
+                ->color(\Filament\Support\Colors\Color::hex('#176B45')),
         ];
     }
 }

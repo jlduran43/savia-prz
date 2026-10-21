@@ -91,10 +91,10 @@ class DocumentoResource extends Resource
                 TextColumn::make('usuario.name')
                     ->label('Subido por')
                     ->formatStateUsing(
-                        fn($record) => $record->subidoPor
+                        fn($record) => $record->usuario
                             ? trim(
-                                $record->subidoPor->name . ' ' .
-                                    $record->subidoPor->apellido
+                                $record->usuario->name . ' ' .
+                                    $record->usuario->apellido
                             )
                             : 'Sin usuario'
                     )
