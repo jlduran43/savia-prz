@@ -4,14 +4,19 @@ namespace App\Filament\Resources\Documentos\Pages;
 
 use App\Filament\Resources\Documentos\DocumentoResource;
 use App\Models\DocumentoCarpeta;
+use App\Models\Documento;
 use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Support\Colors\Color;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ManageDocumentos extends ManageRecords
 {
@@ -67,16 +72,14 @@ class ManageDocumentos extends ManageRecords
                     }),
 
 
-                CreateAction::make()
-                    ->label('Subir archivo')
+
+                Action::make('subirDocumentos')
+                    ->label('Subir archivos')
                     ->icon('heroicon-o-document-arrow-up')
-                    ->modalHeading('Subir documento')
-                    ->modalSubmitActionLabel('Subir documento')
 
-                    // Ocultar "Crear y crear otro"
-                    ->createAnother(false)
+                    ->modalHeading('Subir documentos')
+                    ->modalSubmitActionLabel('Subir documentos')
 
-                    // Color del botón principal del formulario
                     ->modalSubmitAction(
                         fn(Action $action) => $action
                             ->extraAttributes([
@@ -84,12 +87,136 @@ class ManageDocumentos extends ManageRecords
                             ])
                     )
 
-                    // Registrar usuario que sube el documento
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $data['subido_por'] = auth()->id();
+                    ->schema([
 
-                        return $data;
+                        Select::make('carpeta_id')
+                            ->label('Carpeta de destino')
+                            ->options(
+                                fn() =>
+                                DocumentoCarpeta::query()
+                                    ->orderBy('nombre')
+                                    ->pluck('nombre', 'id')
+                                    ->all()
+                            )
+                            ->searchable()
+                            ->required(),
+
+                        FileUpload::make('archivos')
+                            ->label('Seleccionar documentos')
+                            ->disk('documentos_privados')
+                            ->visibility('private')
+
+                            // Permitir varios archivos
+                            ->multiple()
+                            ->maxFiles(20)
+
+                            // Los guardaremos manualmente,
+                            // uno por cada registro
+                            ->storeFiles(false)
+
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'image/jpeg',
+                                'image/png',
+                            ])
+
+                            ->maxSize(10240)
+                            ->previewable(false)
+                            ->required(),
+
+                        Textarea::make('descripcion')
+                            ->label('Descripción')
+                            ->rows(3)
+                            ->maxLength(1000),
+
+                    ])
+
+                    ->action(function (array $data): void {
+
+                        $archivos = $data['archivos'] ?? [];
+                        $rutasGuardadas = [];
+
+                        try {
+                            DB::transaction(function () use (
+                                $archivos,
+                                $data,
+                                &$rutasGuardadas
+                            ): void {
+
+                                foreach ($archivos as $archivo) {
+
+                                    $ruta = $archivo->store(
+                                        'archivos',
+                                        'documentos_privados'
+                                    );
+
+                                    if (!$ruta) {
+                                        throw new \RuntimeException(
+                                            'No se pudo guardar un archivo.'
+                                        );
+                                    }
+
+                                    $rutasGuardadas[] = $ruta;
+
+                                    Documento::create([
+
+                                        'carpeta_id' => $data['carpeta_id'],
+
+                                        'nombre_original' =>
+                                        $archivo->getClientOriginalName(),
+
+                                        'nombre_almacenado' =>
+                                        basename($ruta),
+
+                                        'ruta_archivo' => $ruta,
+
+                                        'disco' => 'documentos_privados',
+
+                                        'extension' =>
+                                        strtolower(pathinfo(
+                                            $ruta,
+                                            PATHINFO_EXTENSION
+                                        )),
+
+                                        'tipo_mime' =>
+                                        $archivo->getMimeType(),
+
+                                        'tamano' =>
+                                        $archivo->getSize(),
+
+                                        'descripcion' =>
+                                        $data['descripcion'] ?? null,
+
+                                        'subido_por' => auth()->id(),
+
+                                    ]);
+                                }
+                            });
+                        } catch (\Throwable $e) {
+
+                            // Si falla algún archivo, eliminar los
+                            // nuevos archivos que ya se almacenaron
+                            Storage::disk('documentos_privados')
+                                ->delete($rutasGuardadas);
+
+                            throw $e;
+                        }
+
+                        Notification::make()
+                            ->title('Documentos subidos correctamente')
+                            ->body(
+                                'Se subieron ' .
+                                    count($archivos) .
+                                    ' archivo(s).'
+                            )
+                            ->success()
+                            ->send();
                     }),
+
 
             ])
                 ->label('Crear o cargar')
