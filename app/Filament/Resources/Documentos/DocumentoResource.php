@@ -104,6 +104,19 @@ class DocumentoResource extends Resource
                     ->label('Tipo')
                     ->badge(),
 
+
+                TextColumn::make('descargar')
+                    ->label('Descargar')
+                    ->state(fn() => 'Descargar')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('primary')
+                    ->url(
+                        fn(Documento $record): string =>
+                        route('documentos.descargar', [
+                            'documento' => $record->id,
+                        ])
+                    ),
+
                 TextColumn::make('created_at')
                     ->label('Fecha de subida')
                     ->dateTime('d/m/Y H:i')
