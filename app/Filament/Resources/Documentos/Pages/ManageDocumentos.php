@@ -3,35 +3,109 @@
 namespace App\Filament\Resources\Documentos\Pages;
 
 use App\Filament\Resources\Documentos\DocumentoResource;
-use App\Models\DocumentoCarpeta;
 use App\Models\Documento;
+use App\Models\DocumentoCarpeta;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\CreateAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Support\Colors\Color;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Url;
 
 class ManageDocumentos extends ManageRecords
 {
     protected static string $resource = DocumentoResource::class;
+
+    // Vista personalizada del explorador
+    protected string $view =
+        'filament.resources.documentos.pages.explorador';
+
+    // Carpeta seleccionada desde la URL.
+    // NULL significa carpeta principal.
+    #[Url(as: 'carpeta')]
+    public ?int $carpetaId = null;
+
+    // Mostrar solamente documentos de la carpeta actual
+    public function table(Table $table): Table
+    {
+        return parent::table($table)
+            ->modifyQueryUsing(
+                fn (Builder $query) =>
+                    $query->where(
+                        'carpeta_id',
+                        $this->carpetaId
+                    )
+            );
+    }
+
+    // Carpetas que pertenecen a la ubicación actual
+    public function carpetasVisibles()
+    {
+        return DocumentoCarpeta::query()
+            ->where('carpeta_padre_id', $this->carpetaId)
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    // Construir la ruta de navegación
+    public function rutaCarpetas(): array
+    {
+        $ruta = [];
+        $actual = $this->carpetaId;
+        $visitadas = [];
+
+        while ($actual !== null) {
+
+            if (in_array($actual, $visitadas, true)) {
+                break;
+            }
+
+            $visitadas[] = $actual;
+
+            $carpeta = DocumentoCarpeta::find($actual);
+
+            if (!$carpeta) {
+                break;
+            }
+
+            array_unshift($ruta, $carpeta);
+
+            $actual = $carpeta->carpeta_padre_id;
+        }
+
+        return $ruta;
+    }
+
+    // Enlaces para navegar
+    public function urlCarpeta(?int $id = null): string
+    {
+        return DocumentoResource::getUrl(
+            'index',
+            $id === null ? [] : ['carpeta' => $id]
+        );
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             ActionGroup::make([
 
+                // NUEVA CARPETA
                 Action::make('nuevaCarpeta')
                     ->label('Nueva carpeta')
                     ->icon('heroicon-o-folder-plus')
                     ->color('warning')
+
                     ->schema([
+
                         TextInput::make('nombre')
                             ->label('Nombre de la carpeta')
                             ->required()
@@ -41,28 +115,34 @@ class ManageDocumentos extends ManageRecords
                             ->label('Crear dentro de')
                             ->placeholder('Carpeta principal')
                             ->options(
-                                fn() =>
-                                DocumentoCarpeta::query()
+                                fn () => DocumentoCarpeta::query()
                                     ->orderBy('nombre')
                                     ->pluck('nombre', 'id')
                                     ->all()
                             )
+                            ->default(fn () => $this->carpetaId)
                             ->searchable(),
+
                     ])
+
                     ->modalHeading('Crear nueva carpeta')
                     ->modalSubmitActionLabel('Crear carpeta')
+
                     ->modalSubmitAction(
-                        fn(Action $action) => $action
+                        fn (Action $action) => $action
                             ->color(Color::hex('#176B45'))
                             ->extraAttributes([
-                                'style' => 'background-color: #176B45 !important; color: white !important;',
+                                'style' =>
+                                    'background-color: #176B45 !important; color: white !important;',
                             ])
                     )
+
                     ->action(function (array $data): void {
+
                         DocumentoCarpeta::create([
                             'nombre' => $data['nombre'],
                             'carpeta_padre_id' =>
-                            $data['carpeta_padre_id'] ?? null,
+                                $data['carpeta_padre_id'] ?? null,
                         ]);
 
                         Notification::make()
@@ -71,8 +151,7 @@ class ManageDocumentos extends ManageRecords
                             ->send();
                     }),
 
-
-
+                // SUBIR DOCUMENTOS
                 Action::make('subirDocumentos')
                     ->label('Subir archivos')
                     ->icon('heroicon-o-document-arrow-up')
@@ -81,9 +160,10 @@ class ManageDocumentos extends ManageRecords
                     ->modalSubmitActionLabel('Subir documentos')
 
                     ->modalSubmitAction(
-                        fn(Action $action) => $action
+                        fn (Action $action) => $action
                             ->extraAttributes([
-                                'style' => 'background-color: #176B45 !important; color: white !important;',
+                                'style' =>
+                                    'background-color: #176B45 !important; color: white !important;',
                             ])
                     )
 
@@ -92,12 +172,12 @@ class ManageDocumentos extends ManageRecords
                         Select::make('carpeta_id')
                             ->label('Carpeta de destino')
                             ->options(
-                                fn() =>
-                                DocumentoCarpeta::query()
+                                fn () => DocumentoCarpeta::query()
                                     ->orderBy('nombre')
                                     ->pluck('nombre', 'id')
                                     ->all()
                             )
+                            ->default(fn () => $this->carpetaId)
                             ->searchable()
                             ->required(),
 
@@ -105,15 +185,9 @@ class ManageDocumentos extends ManageRecords
                             ->label('Seleccionar documentos')
                             ->disk('documentos_privados')
                             ->visibility('private')
-
-                            // Permitir varios archivos
                             ->multiple()
                             ->maxFiles(20)
-
-                            // Los guardaremos manualmente,
-                            // uno por cada registro
                             ->storeFiles(false)
-
                             ->acceptedFileTypes([
                                 'application/pdf',
                                 'application/msword',
@@ -123,7 +197,6 @@ class ManageDocumentos extends ManageRecords
                                 'image/jpeg',
                                 'image/png',
                             ])
-
                             ->maxSize(10240)
                             ->previewable(false)
                             ->required(),
@@ -141,6 +214,7 @@ class ManageDocumentos extends ManageRecords
                         $rutasGuardadas = [];
 
                         try {
+
                             DB::transaction(function () use (
                                 $archivos,
                                 $data,
@@ -164,42 +238,44 @@ class ManageDocumentos extends ManageRecords
 
                                     Documento::create([
 
-                                        'carpeta_id' => $data['carpeta_id'],
+                                        'carpeta_id' =>
+                                            $data['carpeta_id'],
 
                                         'nombre_original' =>
-                                        $archivo->getClientOriginalName(),
+                                            $archivo->getClientOriginalName(),
 
                                         'nombre_almacenado' =>
-                                        basename($ruta),
+                                            basename($ruta),
 
                                         'ruta_archivo' => $ruta,
 
                                         'disco' => 'documentos_privados',
 
-                                        'extension' =>
-                                        strtolower(pathinfo(
-                                            $ruta,
-                                            PATHINFO_EXTENSION
-                                        )),
+                                        'extension' => strtolower(
+                                            pathinfo(
+                                                $ruta,
+                                                PATHINFO_EXTENSION
+                                            )
+                                        ),
 
                                         'tipo_mime' =>
-                                        $archivo->getMimeType(),
+                                            $archivo->getMimeType(),
 
                                         'tamano' =>
-                                        $archivo->getSize(),
+                                            $archivo->getSize(),
 
                                         'descripcion' =>
-                                        $data['descripcion'] ?? null,
+                                            $data['descripcion'] ?? null,
 
                                         'subido_por' => auth()->id(),
 
                                     ]);
                                 }
+
                             });
+
                         } catch (\Throwable $e) {
 
-                            // Si falla algún archivo, eliminar los
-                            // nuevos archivos que ya se almacenaron
                             Storage::disk('documentos_privados')
                                 ->delete($rutasGuardadas);
 
@@ -210,13 +286,12 @@ class ManageDocumentos extends ManageRecords
                             ->title('Documentos subidos correctamente')
                             ->body(
                                 'Se subieron ' .
-                                    count($archivos) .
-                                    ' archivo(s).'
+                                count($archivos) .
+                                ' archivo(s).'
                             )
                             ->success()
                             ->send();
                     }),
-
 
             ])
                 ->label('Crear o cargar')
