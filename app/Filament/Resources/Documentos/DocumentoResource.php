@@ -104,7 +104,6 @@ class DocumentoResource extends Resource
                     ->label('Tipo')
                     ->badge(),
 
-
                 TextColumn::make('descargar')
                     ->label('Descargar')
                     ->state(fn() => 'Descargar')
