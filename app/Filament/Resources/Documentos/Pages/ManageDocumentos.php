@@ -11,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
+use Filament\Support\Colors\Color;
 
 class ManageDocumentos extends ManageRecords
 {
@@ -47,7 +48,10 @@ class ManageDocumentos extends ManageRecords
                     ->modalSubmitActionLabel('Crear carpeta')
                     ->modalSubmitAction(
                         fn(Action $action) => $action
-                            ->color(\Filament\Support\Colors\Color::hex('#176B45'))
+                            ->color(Color::hex('#176B45'))
+                            ->extraAttributes([
+                                'style' => 'background-color: #176B45 !important; color: white !important;',
+                            ])
                     )
                     ->action(function (array $data): void {
                         DocumentoCarpeta::create([
@@ -77,7 +81,10 @@ class ManageDocumentos extends ManageRecords
                 ->label('Crear o cargar')
                 ->icon('heroicon-o-plus')
                 ->button()
-                ->color(\Filament\Support\Colors\Color::hex('#176B45')),
+                ->color(Color::hex('#176B45'))
+                ->extraAttributes([
+                    'style' => 'background-color: #176B45 !important; color: white !important;',
+                ]),
         ];
     }
 }
