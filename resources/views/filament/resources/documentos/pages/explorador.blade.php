@@ -1,127 +1,434 @@
 
 <x-filament-panels::page>
 
-    {{-- Navegación entre carpetas --}}
-    <div style="
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 20px;
-        font-size: 14px;
-    ">
-
-        <a
-            href="{{ $this->urlCarpeta() }}"
-            style="color: #176B45; font-weight: 600;"
-        >
-            Inicio
-        </a>
-
-        @foreach ($this->rutaCarpetas() as $carpeta)
-
-            <span style="color: #9ca3af;">/</span>
-
-            <a
-                href="{{ $this->urlCarpeta($carpeta->id) }}"
-                style="color: #176B45;"
-            >
-                {{ $carpeta->nombre }}
-            </a>
-
-        @endforeach
-
-    </div>
-
-    {{-- Carpetas de la ubicación actual --}}
     @php
-        $carpetas = $this->carpetasVisibles();
+        $elementos = $this->elementosExplorador();
     @endphp
 
-    @if ($carpetas->isNotEmpty())
+    <div style="display: flex; flex-direction: column; gap: 20px;">
 
-        <div style="margin-bottom: 16px;">
+        {{-- NAVEGACIÓN DE CARPETAS --}}
 
-            <h3 style="
-                font-size: 16px;
-                font-weight: 600;
-                margin-bottom: 15px;
-            ">
-                Carpetas
-            </h3>
+        <nav style="
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 14px;
+        ">
+
+            <a
+                href="{{ $this->urlCarpeta() }}"
+                style="
+                    color: #176B45;
+                    text-decoration: none;
+                    font-weight: 600;
+                "
+            >
+                Inicio
+            </a>
+
+            @foreach ($this->rutaCarpetas() as $carpeta)
+
+                <span style="color: #9ca3af;">
+                    /
+                </span>
+
+                <a
+                    href="{{ $this->urlCarpeta($carpeta->id) }}"
+                    style="
+                        color: #176B45;
+                        text-decoration: none;
+                        font-weight: 600;
+                    "
+                >
+                    {{ $carpeta->nombre }}
+                </a>
+
+            @endforeach
+
+        </nav>
+
+
+        {{-- TABLA UNIFICADA TIPO ONEDRIVE --}}
+
+        <div style="
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        ">
+
+            {{-- BUSCADOR --}}
 
             <div style="
-                display: grid;
-                grid-template-columns:
-                    repeat(auto-fill, minmax(220px, 1fr));
-                gap: 15px;
+                padding: 16px;
+                display: flex;
+                justify-content: flex-end;
+                border-bottom: 1px solid #e5e7eb;
             ">
 
-                @foreach ($carpetas as $carpeta)
+                <form
+                    method="GET"
+                    action="{{ $this->urlCarpeta($this->carpetaId) }}"
+                    style="
+                        display: flex;
+                        gap: 8px;
+                        width: 100%;
+                        max-width: 380px;
+                    "
+                >
 
-                    <a
-                        href="{{ $this->urlCarpeta($carpeta->id) }}"
-                        wire:key="carpeta-{{ $carpeta->id }}"
+                    <input
+                        type="text"
+                        name="buscar"
+                        value="{{ $this->buscar }}"
+                        placeholder="Buscar archivos o carpetas..."
+                        aria-label="Buscar archivos o carpetas"
                         style="
-                            display: flex;
-                            align-items: center;
-                            gap: 12px;
-                            padding: 17px;
-                            border: 1px solid #e5e7eb;
-                            border-radius: 12px;
-                            text-decoration: none;
-                            background: #ffffff;
-                            color: #1f2937;
-                            box-shadow:
-                                0 1px 3px rgba(0,0,0,0.05);
+                            flex: 1;
+                            min-width: 0;
+                            border: 1px solid #d1d5db;
+                            border-radius: 8px;
+                            padding: 10px 12px;
+                            color: #374151;
+                            background: white;
                         "
                     >
 
-                        <svg
-                            width="27"
-                            height="27"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="#D99A16"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            style="flex-shrink: 0;"
-                        >
-                            <path
-                                d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-                            />
-                        </svg>
-
-                        <span style="
-                            font-size: 14px;
+                    <button
+                        type="submit"
+                        style="
+                            background: #176B45;
+                            color: white;
+                            border: none;
+                            padding: 10px 16px;
+                            border-radius: 8px;
+                            cursor: pointer;
                             font-weight: 600;
-                            overflow-wrap: anywhere;
-                        ">
-                            {{ $carpeta->nombre }}
-                        </span>
+                        "
+                    >
+                        Buscar
+                    </button>
 
-                    </a>
+                </form>
 
-                @endforeach
+            </div>
+
+
+            {{-- LISTADO --}}
+
+            <div style="overflow-x: auto;">
+
+                <table style="
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 14px;
+                    text-align: left;
+                ">
+
+                    <thead style="
+                        background: #f9fafb;
+                        color: #374151;
+                    ">
+
+                        <tr>
+
+                            <th style="padding: 17px; min-width: 250px;">
+                                Nombre
+                            </th>
+
+                            <th style="padding: 17px; min-width: 160px;">
+                                Subido por
+                            </th>
+
+                            <th style="padding: 17px; min-width: 95px;">
+                                Tipo
+                            </th>
+
+                            <th style="padding: 17px; min-width: 90px;">
+                                Ver
+                            </th>
+
+                            <th style="padding: 17px; min-width: 120px;">
+                                Descargar
+                            </th>
+
+                            <th style="padding: 17px; min-width: 145px;">
+                                Fecha de subida
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @forelse ($elementos as $elemento)
+
+                            <tr
+                                wire:key="elemento-{{ $elemento['tipo'] }}-{{ $elemento['id'] }}"
+                                style="
+                                    border-top: 1px solid #e5e7eb;
+                                "
+                            >
+
+                                {{-- NOMBRE --}}
+
+                                <td style="padding: 17px;">
+
+                                    @if ($elemento['tipo'] === 'carpeta')
+
+                                        <a
+                                            href="{{ $this->urlCarpeta($elemento['id']) }}"
+                                            style="
+                                                display: flex;
+                                                align-items: center;
+                                                gap: 12px;
+                                                color: #111827;
+                                                text-decoration: none;
+                                                font-weight: 600;
+                                            "
+                                        >
+
+                                            <svg
+                                                width="24"
+                                                height="24"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="#D99A16"
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                style="flex-shrink: 0;"
+                                            >
+                                                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                            </svg>
+
+                                            <span style="overflow-wrap: anywhere;">
+                                                {{ $elemento['nombre'] }}
+                                            </span>
+
+                                        </a>
+
+                                    @else
+
+                                        <div style="
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 12px;
+                                            color: #111827;
+                                        ">
+
+                                            <svg
+                                                width="22"
+                                                height="22"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="#9ca3af"
+                                                stroke-width="1.8"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                style="flex-shrink: 0;"
+                                            >
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                <path d="M14 2v6h6"/>
+                                                <path d="M8 13h8M8 17h8"/>
+                                            </svg>
+
+                                            <span style="overflow-wrap: anywhere;">
+                                                {{ $elemento['nombre'] }}
+                                            </span>
+
+                                        </div>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- SUBIDO POR --}}
+
+                                <td style="
+                                    padding: 17px;
+                                    color: #4b5563;
+                                ">
+
+                                    {{ $elemento['tipo'] === 'carpeta'
+                                        ? '—'
+                                        : $elemento['usuario'] }}
+
+                                </td>
+
+
+                                {{-- TIPO --}}
+
+                                <td style="padding: 17px;">
+
+                                    @if ($elemento['tipo'] === 'carpeta')
+
+                                        <span style="color: #6b7280;">
+                                            Carpeta
+                                        </span>
+
+                                    @else
+
+                                        <span style="
+                                            display: inline-block;
+                                            padding: 3px 8px;
+                                            border-radius: 6px;
+                                            background: #ecfdf5;
+                                            color: #047857;
+                                            font-size: 12px;
+                                            font-weight: 600;
+                                        ">
+
+                                            {{ $elemento['extension'] ?: 'Archivo' }}
+
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- VER --}}
+
+                                <td style="padding: 17px;">
+
+                                    @if (
+                                        $elemento['tipo'] === 'archivo'
+                                        && in_array(
+                                            $elemento['extension'],
+                                            ['pdf', 'png', 'jpg', 'jpeg']
+                                        )
+                                    )
+
+                                        <a
+                                            href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style="
+                                                color: #176B45;
+                                                text-decoration: underline;
+                                            "
+                                        >
+                                            Ver
+                                        </a>
+
+                                    @else
+
+                                        <span style="color: #9ca3af;">
+                                            —
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- DESCARGAR --}}
+
+                                <td style="padding: 17px;">
+
+                                    @if ($elemento['tipo'] === 'archivo')
+
+                                        <a
+                                            href="{{ route('documentos.descargar', ['documento' => $elemento['id']]) }}"
+                                            style="
+                                                color: #176B45;
+                                                text-decoration: underline;
+                                            "
+                                        >
+                                            Descargar
+                                        </a>
+
+                                    @else
+
+                                        <span style="color: #9ca3af;">
+                                            —
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- FECHA --}}
+
+                                <td style="
+                                    padding: 17px;
+                                    color: #6b7280;
+                                    white-space: nowrap;
+                                ">
+
+                                    {{ $elemento['fecha']
+                                        ? $elemento['fecha']->format('d/m/Y H:i')
+                                        : '—' }}
+
+                                </td>
+
+                            </tr>
+
+                        @empty
+
+                            <tr>
+
+                                <td
+                                    colspan="6"
+                                    style="
+                                        padding: 50px;
+                                        text-align: center;
+                                        color: #6b7280;
+                                    "
+                                >
+
+                                    No hay carpetas ni archivos
+                                    en esta ubicación.
+
+                                </td>
+
+                            </tr>
+
+                        @endforelse
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            {{-- PAGINACIÓN --}}
+
+            @if ($elementos->hasPages())
+
+                <div style="
+                    padding: 18px;
+                    border-top: 1px solid #e5e7eb;
+                ">
+
+                    {{ $elementos->links() }}
+
+                </div>
+
+            @endif
+
+            <div style="
+                padding: 14px 18px;
+                border-top: 1px solid #e5e7eb;
+                color: #6b7280;
+                font-size: 13px;
+            ">
+
+                Mostrando {{ $elementos->firstItem() ?? 0 }}
+                a {{ $elementos->lastItem() ?? 0 }}
+                de {{ $elementos->total() }} elementos
 
             </div>
 
         </div>
 
-    @endif
-
-    {{-- Documentos de la carpeta seleccionada --}}
-    <div>
-        <h3 style="
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        ">
-            Archivos
-        </h3>
-
-        {{ $this->table }}
     </div>
 
 </x-filament-panels::page>

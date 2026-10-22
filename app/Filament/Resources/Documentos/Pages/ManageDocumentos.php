@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class ManageDocumentos extends ManageRecords
 {
@@ -26,23 +28,26 @@ class ManageDocumentos extends ManageRecords
 
     // Vista personalizada del explorador
     protected string $view =
-        'filament.resources.documentos.pages.explorador';
+    'filament.resources.documentos.pages.explorador';
 
     // Carpeta seleccionada desde la URL.
     // NULL significa carpeta principal.
     #[Url(as: 'carpeta')]
     public ?int $carpetaId = null;
 
+    #[Url(as: 'buscar')]
+    public string $buscar = '';
+
     // Mostrar solamente documentos de la carpeta actual
     public function table(Table $table): Table
     {
         return parent::table($table)
             ->modifyQueryUsing(
-                fn (Builder $query) =>
-                    $query->where(
-                        'carpeta_id',
-                        $this->carpetaId
-                    )
+                fn(Builder $query) =>
+                $query->where(
+                    'carpeta_id',
+                    $this->carpetaId
+                )
             );
     }
 
@@ -93,6 +98,119 @@ class ManageDocumentos extends ManageRecords
         );
     }
 
+
+    public function elementosExplorador(): LengthAwarePaginator
+    {
+        $buscar = trim($this->buscar);
+
+        // 1. Obtener las carpetas de la ubicación actual
+        $carpetas = DocumentoCarpeta::query()
+            ->where('carpeta_padre_id', $this->carpetaId)
+            ->when($buscar !== '', function ($query) use ($buscar) {
+                $query->where('nombre', 'like', "%{$buscar}%");
+            })
+            ->get()
+            ->map(function ($carpeta) {
+
+                return [
+                    'id' => $carpeta->id,
+                    'nombre' => $carpeta->nombre,
+                    'tipo' => 'carpeta',
+                    'extension' => null,
+                    'usuario' => null,
+                    'fecha' => $carpeta->created_at,
+                ];
+            });
+
+        // 2. Obtener los documentos de la ubicación actual
+        $documentos = Documento::query()
+            ->with('usuario')
+            ->where('carpeta_id', $this->carpetaId)
+            ->when($buscar !== '', function ($query) use ($buscar) {
+                $query->where(
+                    'nombre_original',
+                    'like',
+                    "%{$buscar}%"
+                );
+            })
+            ->get()
+            ->map(function ($documento) {
+
+                $usuario = $documento->usuario;
+
+                $nombreUsuario = $usuario
+                    ? trim(
+                        ($usuario->name ?? '') . ' ' .
+                            ($usuario->apellido ?? '')
+                    )
+                    : 'Sin usuario';
+
+                return [
+                    'id' => $documento->id,
+                    'nombre' => $documento->nombre_original,
+                    'tipo' => 'archivo',
+                    'extension' => strtolower(
+                        $documento->extension ?? ''
+                    ),
+                    'usuario' => $nombreUsuario,
+                    'fecha' => $documento->created_at,
+                ];
+            });
+
+        // 3. Unir ambos grupos en una única lista
+        $elementos = $carpetas
+            ->concat($documentos)
+            ->sort(function ($a, $b) {
+
+                // Primero las carpetas
+                if ($a['tipo'] !== $b['tipo']) {
+                    return $a['tipo'] === 'carpeta' ? -1 : 1;
+                }
+
+                // Después, ordenar por nombre
+                return strnatcasecmp(
+                    $a['nombre'],
+                    $b['nombre']
+                );
+            })
+            ->values();
+
+        // 4. Paginar el resultado combinado
+        $porPagina = 20;
+
+        $pagina = max(
+            1,
+            LengthAwarePaginator::resolveCurrentPage('pagina')
+        );
+
+        $total = $elementos->count();
+
+        $resultado = $elementos
+            ->forPage($pagina, $porPagina)
+            ->values();
+
+        $paginador = new LengthAwarePaginator(
+            $resultado,
+            $total,
+            $porPagina,
+            $pagina,
+            [
+                'path' => request()->url(),
+                'pageName' => 'pagina',
+            ]
+        );
+
+        // Conservar carpeta y búsqueda al cambiar página
+        $paginador->appends(
+            array_filter([
+                'carpeta' => $this->carpetaId,
+                'buscar' => $this->buscar,
+            ], fn($valor) => $valor !== null && $valor !== '')
+        );
+
+        return $paginador;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -115,12 +233,12 @@ class ManageDocumentos extends ManageRecords
                             ->label('Crear dentro de')
                             ->placeholder('Carpeta principal')
                             ->options(
-                                fn () => DocumentoCarpeta::query()
+                                fn() => DocumentoCarpeta::query()
                                     ->orderBy('nombre')
                                     ->pluck('nombre', 'id')
                                     ->all()
                             )
-                            ->default(fn () => $this->carpetaId)
+                            ->default(fn() => $this->carpetaId)
                             ->searchable(),
 
                     ])
@@ -129,11 +247,11 @@ class ManageDocumentos extends ManageRecords
                     ->modalSubmitActionLabel('Crear carpeta')
 
                     ->modalSubmitAction(
-                        fn (Action $action) => $action
+                        fn(Action $action) => $action
                             ->color(Color::hex('#176B45'))
                             ->extraAttributes([
                                 'style' =>
-                                    'background-color: #176B45 !important; color: white !important;',
+                                'background-color: #176B45 !important; color: white !important;',
                             ])
                     )
 
@@ -142,7 +260,7 @@ class ManageDocumentos extends ManageRecords
                         DocumentoCarpeta::create([
                             'nombre' => $data['nombre'],
                             'carpeta_padre_id' =>
-                                $data['carpeta_padre_id'] ?? null,
+                            $data['carpeta_padre_id'] ?? null,
                         ]);
 
                         Notification::make()
@@ -160,10 +278,10 @@ class ManageDocumentos extends ManageRecords
                     ->modalSubmitActionLabel('Subir documentos')
 
                     ->modalSubmitAction(
-                        fn (Action $action) => $action
+                        fn(Action $action) => $action
                             ->extraAttributes([
                                 'style' =>
-                                    'background-color: #176B45 !important; color: white !important;',
+                                'background-color: #176B45 !important; color: white !important;',
                             ])
                     )
 
@@ -172,12 +290,12 @@ class ManageDocumentos extends ManageRecords
                         Select::make('carpeta_id')
                             ->label('Carpeta de destino')
                             ->options(
-                                fn () => DocumentoCarpeta::query()
+                                fn() => DocumentoCarpeta::query()
                                     ->orderBy('nombre')
                                     ->pluck('nombre', 'id')
                                     ->all()
                             )
-                            ->default(fn () => $this->carpetaId)
+                            ->default(fn() => $this->carpetaId)
                             ->searchable()
                             ->required(),
 
@@ -239,13 +357,13 @@ class ManageDocumentos extends ManageRecords
                                     Documento::create([
 
                                         'carpeta_id' =>
-                                            $data['carpeta_id'],
+                                        $data['carpeta_id'],
 
                                         'nombre_original' =>
-                                            $archivo->getClientOriginalName(),
+                                        $archivo->getClientOriginalName(),
 
                                         'nombre_almacenado' =>
-                                            basename($ruta),
+                                        basename($ruta),
 
                                         'ruta_archivo' => $ruta,
 
@@ -259,21 +377,19 @@ class ManageDocumentos extends ManageRecords
                                         ),
 
                                         'tipo_mime' =>
-                                            $archivo->getMimeType(),
+                                        $archivo->getMimeType(),
 
                                         'tamano' =>
-                                            $archivo->getSize(),
+                                        $archivo->getSize(),
 
                                         'descripcion' =>
-                                            $data['descripcion'] ?? null,
+                                        $data['descripcion'] ?? null,
 
                                         'subido_por' => auth()->id(),
 
                                     ]);
                                 }
-
                             });
-
                         } catch (\Throwable $e) {
 
                             Storage::disk('documentos_privados')
@@ -286,8 +402,8 @@ class ManageDocumentos extends ManageRecords
                             ->title('Documentos subidos correctamente')
                             ->body(
                                 'Se subieron ' .
-                                count($archivos) .
-                                ' archivo(s).'
+                                    count($archivos) .
+                                    ' archivo(s).'
                             )
                             ->success()
                             ->send();
