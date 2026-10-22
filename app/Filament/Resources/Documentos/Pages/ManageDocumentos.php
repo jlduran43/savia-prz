@@ -16,80 +16,91 @@ use Filament\Resources\Pages\ManageRecords;
 use Filament\Support\Colors\Color;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 class ManageDocumentos extends ManageRecords
 {
     protected static string $resource = DocumentoResource::class;
 
-    // Vista personalizada del explorador
-    protected string $view =
-    'filament.resources.documentos.pages.explorador';
+    protected string $view = 'filament.resources.documentos.pages.explorador';
 
-    // Carpeta seleccionada desde la URL.
-    // NULL significa carpeta principal.
     #[Url(as: 'carpeta')]
     public ?int $carpetaId = null;
 
     #[Url(as: 'buscar')]
     public string $buscar = '';
 
-    // Mostrar solamente documentos de la carpeta actual
+    /** Verifica propiedad de la carpeta y de todos sus antecesores. */
+    protected function validarCarpetaPropia(?int $carpetaId): void
+    {
+        abort_unless(auth()->check(), 403);
+
+        $visitadas = [];
+        while ($carpetaId !== null) {
+            abort_if(in_array($carpetaId, $visitadas, true), 403);
+            $visitadas[] = $carpetaId;
+
+            $carpeta = DocumentoCarpeta::query()
+                ->whereKey($carpetaId)
+                ->where('propietario_id', auth()->id())
+                ->first();
+
+            abort_unless($carpeta, 403);
+            $carpetaId = $carpeta->carpeta_padre_id === null
+                ? null
+                : (int) $carpeta->carpeta_padre_id;
+        }
+    }
+
+    /** Mantiene protegida también la tabla interna de Filament. */
     public function table(Table $table): Table
     {
         return parent::table($table)
-            ->modifyQueryUsing(
-                fn(Builder $query) =>
-                $query->where(
-                    'carpeta_id',
-                    $this->carpetaId
-                )
-            );
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                $this->validarCarpetaPropia($this->carpetaId);
+
+                return $query
+                    ->where('subido_por', auth()->id())
+                    ->where('carpeta_id', $this->carpetaId);
+            });
     }
 
-    // Carpetas que pertenecen a la ubicación actual
     public function carpetasVisibles()
     {
+        $this->validarCarpetaPropia($this->carpetaId);
+
         return DocumentoCarpeta::query()
+            ->where('propietario_id', auth()->id())
             ->where('carpeta_padre_id', $this->carpetaId)
             ->orderBy('nombre')
             ->get();
     }
 
-    // Construir la ruta de navegación
     public function rutaCarpetas(): array
     {
+        $this->validarCarpetaPropia($this->carpetaId);
+
         $ruta = [];
         $actual = $this->carpetaId;
-        $visitadas = [];
 
         while ($actual !== null) {
-
-            if (in_array($actual, $visitadas, true)) {
-                break;
-            }
-
-            $visitadas[] = $actual;
-
-            $carpeta = DocumentoCarpeta::find($actual);
-
-            if (!$carpeta) {
-                break;
-            }
+            $carpeta = DocumentoCarpeta::query()
+                ->whereKey($actual)
+                ->where('propietario_id', auth()->id())
+                ->firstOrFail();
 
             array_unshift($ruta, $carpeta);
-
-            $actual = $carpeta->carpeta_padre_id;
+            $actual = $carpeta->carpeta_padre_id === null
+                ? null
+                : (int) $carpeta->carpeta_padre_id;
         }
 
         return $ruta;
     }
 
-    // Enlaces para navegar
     public function urlCarpeta(?int $id = null): string
     {
         return DocumentoResource::getUrl(
@@ -98,115 +109,67 @@ class ManageDocumentos extends ManageRecords
         );
     }
 
-
     public function elementosExplorador(): LengthAwarePaginator
     {
+        $this->validarCarpetaPropia($this->carpetaId);
         $buscar = trim($this->buscar);
 
-        // 1. Obtener las carpetas de la ubicación actual
         $carpetas = DocumentoCarpeta::query()
+            ->where('propietario_id', auth()->id())
             ->where('carpeta_padre_id', $this->carpetaId)
-            ->when($buscar !== '', function ($query) use ($buscar) {
-                $query->where('nombre', 'like', "%{$buscar}%");
-            })
+            ->when($buscar !== '', fn ($q) => $q->where('nombre', 'like', "%{$buscar}%"))
             ->get()
-            ->map(function ($carpeta) {
+            ->map(fn ($carpeta) => [
+                'id' => $carpeta->id,
+                'nombre' => $carpeta->nombre,
+                'tipo' => 'carpeta',
+                'extension' => null,
+                'usuario' => null,
+                'fecha' => $carpeta->created_at,
+            ]);
 
-                return [
-                    'id' => $carpeta->id,
-                    'nombre' => $carpeta->nombre,
-                    'tipo' => 'carpeta',
-                    'extension' => null,
-                    'usuario' => null,
-                    'fecha' => $carpeta->created_at,
-                ];
-            });
-
-        // 2. Obtener los documentos de la ubicación actual
         $documentos = Documento::query()
             ->with('usuario')
+            ->where('subido_por', auth()->id())
             ->where('carpeta_id', $this->carpetaId)
-            ->when($buscar !== '', function ($query) use ($buscar) {
-                $query->where(
-                    'nombre_original',
-                    'like',
-                    "%{$buscar}%"
-                );
-            })
+            ->when($buscar !== '', fn ($q) => $q->where('nombre_original', 'like', "%{$buscar}%"))
             ->get()
             ->map(function ($documento) {
-
                 $usuario = $documento->usuario;
-
-                $nombreUsuario = $usuario
-                    ? trim(
-                        ($usuario->name ?? '') . ' ' .
-                            ($usuario->apellido ?? '')
-                    )
-                    : 'Sin usuario';
-
                 return [
                     'id' => $documento->id,
                     'nombre' => $documento->nombre_original,
                     'tipo' => 'archivo',
-                    'extension' => strtolower(
-                        $documento->extension ?? ''
-                    ),
-                    'usuario' => $nombreUsuario,
+                    'extension' => strtolower($documento->extension ?? ''),
+                    'usuario' => $usuario
+                        ? trim(($usuario->name ?? '') . ' ' . ($usuario->apellido ?? ''))
+                        : 'Sin usuario',
                     'fecha' => $documento->created_at,
                 ];
             });
 
-        // 3. Unir ambos grupos en una única lista
-        $elementos = $carpetas
-            ->concat($documentos)
+        $elementos = $carpetas->concat($documentos)
             ->sort(function ($a, $b) {
-
-                // Primero las carpetas
                 if ($a['tipo'] !== $b['tipo']) {
                     return $a['tipo'] === 'carpeta' ? -1 : 1;
                 }
+                return strnatcasecmp($a['nombre'], $b['nombre']);
+            })->values();
 
-                // Después, ordenar por nombre
-                return strnatcasecmp(
-                    $a['nombre'],
-                    $b['nombre']
-                );
-            })
-            ->values();
-
-        // 4. Paginar el resultado combinado
         $porPagina = 20;
-
-        $pagina = max(
-            1,
-            LengthAwarePaginator::resolveCurrentPage('pagina')
-        );
-
-        $total = $elementos->count();
-
-        $resultado = $elementos
-            ->forPage($pagina, $porPagina)
-            ->values();
-
+        $pagina = max(1, LengthAwarePaginator::resolveCurrentPage('pagina'));
         $paginador = new LengthAwarePaginator(
-            $resultado,
-            $total,
+            $elementos->forPage($pagina, $porPagina)->values(),
+            $elementos->count(),
             $porPagina,
             $pagina,
-            [
-                'path' => request()->url(),
-                'pageName' => 'pagina',
-            ]
+            ['path' => request()->url(), 'pageName' => 'pagina']
         );
 
-        // Conservar carpeta y búsqueda al cambiar página
-        $paginador->appends(
-            array_filter([
-                'carpeta' => $this->carpetaId,
-                'buscar' => $this->buscar,
-            ], fn($valor) => $valor !== null && $valor !== '')
-        );
+        $paginador->appends(array_filter([
+            'carpeta' => $this->carpetaId,
+            'buscar' => $this->buscar,
+        ], fn ($valor) => $valor !== null && $valor !== ''));
 
         return $paginador;
     }
@@ -215,90 +178,71 @@ class ManageDocumentos extends ManageRecords
     {
         return [
             ActionGroup::make([
-
-                // NUEVA CARPETA
                 Action::make('nuevaCarpeta')
                     ->label('Nueva carpeta')
                     ->icon('heroicon-o-folder-plus')
                     ->color('warning')
-
                     ->schema([
-
                         TextInput::make('nombre')
                             ->label('Nombre de la carpeta')
                             ->required()
                             ->maxLength(255),
-
                         Select::make('carpeta_padre_id')
                             ->label('Crear dentro de')
                             ->placeholder('Carpeta principal')
-                            ->options(
-                                fn() => DocumentoCarpeta::query()
-                                    ->orderBy('nombre')
-                                    ->pluck('nombre', 'id')
-                                    ->all()
-                            )
-                            ->default(fn() => $this->carpetaId)
+                            ->options(fn () => DocumentoCarpeta::query()
+                                ->where('propietario_id', auth()->id())
+                                ->orderBy('nombre')
+                                ->pluck('nombre', 'id')
+                                ->all())
+                            ->default(fn () => $this->carpetaId)
                             ->searchable(),
-
                     ])
-
                     ->modalHeading('Crear nueva carpeta')
                     ->modalSubmitActionLabel('Crear carpeta')
-
-                    ->modalSubmitAction(
-                        fn(Action $action) => $action
-                            ->color(Color::hex('#176B45'))
-                            ->extraAttributes([
-                                'style' =>
-                                'background-color: #176B45 !important; color: white !important;',
-                            ])
-                    )
-
+                    ->modalSubmitAction(fn (Action $action) => $action
+                        ->color(Color::hex('#176B45'))
+                        ->extraAttributes([
+                            'style' => 'background-color: #176B45 !important; color: white !important;',
+                        ]))
                     ->action(function (array $data): void {
+                        $padreId = filled($data['carpeta_padre_id'] ?? null)
+                            ? (int) $data['carpeta_padre_id']
+                            : null;
+                        $this->validarCarpetaPropia($padreId);
 
                         DocumentoCarpeta::create([
                             'nombre' => $data['nombre'],
-                            'carpeta_padre_id' =>
-                            $data['carpeta_padre_id'] ?? null,
+                            'carpeta_padre_id' => $padreId,
+                            'propietario_id' => auth()->id(),
                         ]);
 
                         Notification::make()
-                            ->title('Carpeta creada correctamente')
+                            ->title('Carpeta privada creada correctamente')
                             ->success()
                             ->send();
                     }),
 
-                // SUBIR DOCUMENTOS
                 Action::make('subirDocumentos')
                     ->label('Subir archivos')
                     ->icon('heroicon-o-document-arrow-up')
-
                     ->modalHeading('Subir documentos')
                     ->modalSubmitActionLabel('Subir documentos')
-
-                    ->modalSubmitAction(
-                        fn(Action $action) => $action
-                            ->extraAttributes([
-                                'style' =>
-                                'background-color: #176B45 !important; color: white !important;',
-                            ])
-                    )
-
+                    ->modalSubmitAction(fn (Action $action) => $action
+                        ->extraAttributes([
+                            'style' => 'background-color: #176B45 !important; color: white !important;',
+                        ]))
                     ->schema([
-
                         Select::make('carpeta_id')
                             ->label('Carpeta de destino')
-                            ->options(
-                                fn() => DocumentoCarpeta::query()
-                                    ->orderBy('nombre')
-                                    ->pluck('nombre', 'id')
-                                    ->all()
-                            )
-                            ->default(fn() => $this->carpetaId)
+                            ->options(fn () => DocumentoCarpeta::query()
+                                ->where('propietario_id', auth()->id())
+                                ->orderBy('nombre')
+                                ->pluck('nombre', 'id')
+                                ->all())
+                            ->default(fn () => $this->carpetaId)
                             ->searchable()
                             ->required(),
-
                         FileUpload::make('archivos')
                             ->label('Seleccionar documentos')
                             ->disk('documentos_privados')
@@ -318,104 +262,65 @@ class ManageDocumentos extends ManageRecords
                             ->maxSize(10240)
                             ->previewable(false)
                             ->required(),
-
                         Textarea::make('descripcion')
                             ->label('Descripción')
                             ->rows(3)
                             ->maxLength(1000),
-
                     ])
-
                     ->action(function (array $data): void {
+                        $carpetaId = filled($data['carpeta_id'] ?? null)
+                            ? (int) $data['carpeta_id']
+                            : null;
+                        abort_if($carpetaId === null, 422, 'Selecciona una carpeta de destino.');
+                        $this->validarCarpetaPropia($carpetaId);
 
                         $archivos = $data['archivos'] ?? [];
                         $rutasGuardadas = [];
 
                         try {
-
-                            DB::transaction(function () use (
-                                $archivos,
-                                $data,
-                                &$rutasGuardadas
-                            ): void {
-
+                            DB::transaction(function () use ($archivos, $data, $carpetaId, &$rutasGuardadas): void {
                                 foreach ($archivos as $archivo) {
+                                    $nombreOriginal = $archivo->getClientOriginalName();
+                                    $extension = strtolower($archivo->getClientOriginalExtension());
+                                    $mime = $archivo->getMimeType();
+                                    $tamano = $archivo->getSize();
 
-                                    $ruta = $archivo->store(
-                                        'archivos',
-                                        'documentos_privados'
-                                    );
-
+                                    $ruta = $archivo->store('archivos', 'documentos_privados');
                                     if (!$ruta) {
-                                        throw new \RuntimeException(
-                                            'No se pudo guardar un archivo.'
-                                        );
+                                        throw new \RuntimeException('No se pudo guardar un archivo.');
                                     }
-
                                     $rutasGuardadas[] = $ruta;
 
                                     Documento::create([
-
-                                        'carpeta_id' =>
-                                        $data['carpeta_id'],
-
-                                        'nombre_original' =>
-                                        $archivo->getClientOriginalName(),
-
-                                        'nombre_almacenado' =>
-                                        basename($ruta),
-
+                                        'carpeta_id' => $carpetaId,
+                                        'nombre_original' => $nombreOriginal,
+                                        'nombre_almacenado' => basename($ruta),
                                         'ruta_archivo' => $ruta,
-
                                         'disco' => 'documentos_privados',
-
-                                        'extension' => strtolower(
-                                            pathinfo(
-                                                $ruta,
-                                                PATHINFO_EXTENSION
-                                            )
-                                        ),
-
-                                        'tipo_mime' =>
-                                        $archivo->getMimeType(),
-
-                                        'tamano' =>
-                                        $archivo->getSize(),
-
-                                        'descripcion' =>
-                                        $data['descripcion'] ?? null,
-
+                                        'extension' => $extension,
+                                        'tipo_mime' => $mime,
+                                        'tamano' => $tamano,
+                                        'descripcion' => $data['descripcion'] ?? null,
                                         'subido_por' => auth()->id(),
-
                                     ]);
                                 }
                             });
                         } catch (\Throwable $e) {
-
-                            Storage::disk('documentos_privados')
-                                ->delete($rutasGuardadas);
-
+                            Storage::disk('documentos_privados')->delete($rutasGuardadas);
                             throw $e;
                         }
 
                         Notification::make()
                             ->title('Documentos subidos correctamente')
-                            ->body(
-                                'Se subieron ' .
-                                    count($archivos) .
-                                    ' archivo(s).'
-                            )
+                            ->body('Se subieron ' . count($archivos) . ' archivo(s).')
                             ->success()
                             ->send();
                     }),
-
             ])
                 ->label('Crear o cargar')
                 ->icon('heroicon-o-plus')
                 ->button()
-                ->extraAttributes([
-                    'class' => 'prz-crear-cargar',
-                ]),
+                ->extraAttributes(['class' => 'prz-crear-cargar']),
         ];
     }
 }

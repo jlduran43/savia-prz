@@ -18,6 +18,7 @@ class DocumentoCarpeta extends Model
         'carpeta_padre_id',
         'creado_por',
         'descripcion',
+        'propietario_id',
     ];
 
     // Carpeta que contiene esta carpeta

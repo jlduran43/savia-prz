@@ -6,6 +6,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\MicrosoftController;
 use App\Models\Documento;
 use Illuminate\Support\Facades\Storage;
+use App\Support\DocumentoAcceso;
 
 Route::get('/admin/compras/formulario-contenido', function () {
     return view(
@@ -71,6 +72,9 @@ Route::get('/microsoft/subir-excel', [
 
 Route::get('/documentos/{documento}/descargar', function (Documento $documento) {
 
+    // Verificar que el usuario tenga permiso
+    DocumentoAcceso::verificar($documento);
+
     $disco = Storage::disk('documentos_privados');
 
     if (!$disco->exists($documento->ruta_archivo)) {
@@ -81,20 +85,25 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
         $documento->ruta_archivo,
         $documento->nombre_original
     );
+
 })
-    ->middleware('auth')
-    ->name('documentos.descargar');
+->middleware('auth')
+->name('documentos.descargar');
 
 
 Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
+    // Verificar que el usuario tenga permiso
+    DocumentoAcceso::verificar($documento);
+
+    // Acceder al almacenamiento privado
     $disco = Storage::disk('documentos_privados');
 
     if (!$disco->exists($documento->ruta_archivo)) {
         abort(404, 'El documento no existe.');
     }
 
-    // Vista preliminar para PDF e imágenes
+    // Tipos de archivos que podemos visualizar
     $tiposPermitidos = [
         'application/pdf',
         'image/jpeg',
@@ -107,13 +116,15 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         abort(415, 'Este tipo de archivo no admite vista previa.');
     }
 
+    // Mostrar el documento sin descargarlo
     return response()->file(
         $disco->path($documento->ruta_archivo),
         [
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline',
             'X-Content-Type-Options' => 'nosniff',
-            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
+            'Content-Security-Policy' =>
+                "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
         ]
     );
 

@@ -14,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 
 class DocumentoResource extends Resource
 {
@@ -154,5 +155,11 @@ class DocumentoResource extends Resource
         return [
             'index' => ManageDocumentos::route('/'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('subido_por', auth()->id());
     }
 }
