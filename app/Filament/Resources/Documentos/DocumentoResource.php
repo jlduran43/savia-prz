@@ -81,30 +81,77 @@ class DocumentoResource extends Resource
         return $table
             ->columns([
 
+
                 TextColumn::make('nombre_original')
                     ->label('Documento')
-                    ->icon('heroicon-o-document-text')
                     ->searchable()
-                    ->color(
-                        fn(Documento $record): string =>
-                        in_array(
-                            strtolower($record->extension ?? ''),
-                            ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx'],
-                            true
-                        ) ? 'primary' : 'gray'
-                    )
-                    ->url(
-                        fn(Documento $record): ?string =>
-                        in_array(
-                            strtolower($record->extension ?? ''),
-                            ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx'],
-                            true
-                        )
-                            ? route('documentos.ver', [
-                                'documento' => $record->id,
-                            ])
-                            : null
-                    )
+
+                    // Ícono según extensión
+                    ->icon(function (Documento $record): string {
+
+                        $extension = strtolower(
+                            pathinfo($record->nombre_original ?? '', PATHINFO_EXTENSION)
+                        );
+
+                        return match ($extension) {
+                            'pdf' => 'heroicon-o-document-text',
+
+                            'doc', 'docx' => 'heroicon-o-document',
+
+                            'xls', 'xlsx' => 'heroicon-o-table-cells',
+
+                            'jpg', 'jpeg', 'png' => 'heroicon-o-photo',
+
+                            default => 'heroicon-o-document',
+                        };
+                    })
+
+                    // Color del ícono
+                    ->iconColor(function (Documento $record): string {
+
+                        $extension = strtolower(
+                            pathinfo($record->nombre_original ?? '', PATHINFO_EXTENSION)
+                        );
+
+                        return match ($extension) {
+                            'pdf' => 'danger',
+                            'doc', 'docx' => 'info',
+                            'xls', 'xlsx' => 'success',
+                            'jpg', 'jpeg', 'png' => 'warning',
+                            default => 'gray',
+                        };
+                    })
+
+                    // Color del nombre
+                    ->color('primary')
+
+                    // Habilitar enlace de visualización
+                    ->url(function (Documento $record): ?string {
+
+                        $extension = strtolower(
+                            pathinfo($record->nombre_original ?? '', PATHINFO_EXTENSION)
+                        );
+
+                        $permitidos = [
+                            'pdf',
+                            'doc',
+                            'docx',
+                            'xls',
+                            'xlsx',
+                            'jpg',
+                            'jpeg',
+                            'png',
+                        ];
+
+                        if (!in_array($extension, $permitidos, true)) {
+                            return null;
+                        }
+
+                        return route('documentos.ver', [
+                            'documento' => $record->id,
+                        ]);
+                    })
+
                     ->openUrlInNewTab(),
 
                 TextColumn::make('carpeta.nombre')
