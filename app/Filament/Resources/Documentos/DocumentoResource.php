@@ -84,7 +84,28 @@ class DocumentoResource extends Resource
                 TextColumn::make('nombre_original')
                     ->label('Documento')
                     ->icon('heroicon-o-document-text')
-                    ->searchable(),
+                    ->searchable()
+                    ->color(
+                        fn(Documento $record): string =>
+                        in_array(
+                            strtolower($record->extension ?? ''),
+                            ['pdf', 'png', 'jpg', 'jpeg'],
+                            true
+                        ) ? 'primary' : 'gray'
+                    )
+                    ->url(
+                        fn(Documento $record): ?string =>
+                        in_array(
+                            strtolower($record->extension ?? ''),
+                            ['pdf', 'png', 'jpg', 'jpeg'],
+                            true
+                        )
+                            ? route('documentos.ver', [
+                                'documento' => $record->id,
+                            ])
+                            : null
+                    )
+                    ->openUrlInNewTab(),
 
                 TextColumn::make('carpeta.nombre')
                     ->label('Carpeta'),
@@ -104,30 +125,6 @@ class DocumentoResource extends Resource
                 TextColumn::make('extension')
                     ->label('Tipo')
                     ->badge(),
-
-                TextColumn::make('ver')
-                    ->label('Ver')
-                    ->state(fn() => 'Ver')
-                    ->icon('heroicon-o-eye')
-                    ->color('primary')
-                    ->url(
-                        fn(Documento $record): string =>
-                        route('documentos.ver', [
-                            'documento' => $record->id,
-                        ])
-                    )
-                    ->openUrlInNewTab()
-                    ->disabledClick(
-                        fn(Documento $record): bool =>
-                        !in_array(
-                            strtolower($record->extension ?? ''),
-                            ['pdf', 'png', 'jpg', 'jpeg'],
-                            true
-                        )
-                    )
-                    ->visible(
-                        fn(): bool => true
-                    ),
 
                 TextColumn::make('descargar')
                     ->label('Descargar')

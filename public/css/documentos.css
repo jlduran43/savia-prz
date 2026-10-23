@@ -42,3 +42,15 @@
 .prz-boton-documentos:hover {
     opacity: 0.9;
 }
+
+/* Botón confirmar cambio de acceso */
+.fi-modal button.fi-color-success,
+.fi-modal button.fi-color-custom {
+    background-color: #176B45 !important;
+    color: #ffffff !important;
+}
+
+.fi-modal button.fi-color-success:hover,
+.fi-modal button.fi-color-custom:hover {
+    background-color: #125536 !important;
+}

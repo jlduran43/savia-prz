@@ -124,7 +124,7 @@ class ManageDocumentos extends ManageRecords
                     . 'de la intranet podrán verlo y descargarlo.'
             )
             ->modalSubmitActionLabel('Confirmar cambio')
-            ->color('primary')
+            ->color(Color::hex('#176B45'))
             ->requiresConfirmation()
             ->action(function (array $arguments): void {
 
