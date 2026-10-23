@@ -431,9 +431,7 @@
                 font-size: 13px;
                 font-weight: 600;
             ">
-                                            ⋯
-
-                                            {{ $elemento['es_publico'] ? 'Volver a privado' : 'Compartir con todos' }}
+                                            {{ $elemento['es_publico'] ? 'Volver a privado' : 'Compartir Todos' }}
                                         </button>
                                     @elseif ($elemento['tipo'] === 'archivo' && $elemento['es_publico'])
                                         <span

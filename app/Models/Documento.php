@@ -48,4 +48,14 @@ class Documento extends Model
             'subido_por'
         );
     }
+
+    public function usuariosCompartidos()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'documento_usuario',
+            'documento_id',
+            'user_id'
+        )->withTimestamps();
+    }
 }

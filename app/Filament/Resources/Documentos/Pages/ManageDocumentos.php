@@ -20,6 +20,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
+use App\Models\User;
 
 class ManageDocumentos extends ManageRecords
 {
@@ -146,7 +147,7 @@ class ManageDocumentos extends ManageRecords
                     ->title(
                         $documento->es_publico
                             ? 'Documento compartido con todos'
-                            : 'Documento privado'
+                            : 'Acceso general desactivado'
                     )
                     ->success()
                     ->send();
@@ -189,15 +190,27 @@ class ManageDocumentos extends ManageRecords
                 'es_propietario' => true,
             ]);
 
+
         // DOCUMENTOS: propios o compartidos
         $documentos = Documento::query()
             ->with('usuario')
             ->when(
                 $viendoCompartidos,
-                fn($q) => $q
-                    ->where('es_publico', true)
-                    ->where('subido_por', '!=', auth()->id()),
 
+                // Documentos públicos o compartidos individualmente
+                fn($q) => $q
+                    ->where('subido_por', '!=', auth()->id())
+                    ->where(function ($consulta) {
+                        $consulta
+                            ->where('es_publico', true)
+                            ->orWhereHas(
+                                'usuariosCompartidos',
+                                fn($usuarios) => $usuarios
+                                    ->whereKey(auth()->id())
+                            );
+                    }),
+
+                // Documentos propios de la carpeta actual
                 fn($q) => $q
                     ->where('subido_por', auth()->id())
                     ->where('carpeta_id', $this->carpetaId)
@@ -435,5 +448,106 @@ class ManageDocumentos extends ManageRecords
                 ->button()
                 ->extraAttributes(['class' => 'prz-crear-cargar']),
         ];
+    }
+
+
+    public function compartirUsuariosAction(): Action
+    {
+        return Action::make('compartirUsuarios')
+            ->label('Compartir con usuarios')
+            ->modalHeading('Compartir documento')
+            ->modalDescription(
+                'Selecciona los usuarios que podrán ver y descargar '
+                    . 'este documento. Puedes modificar estos permisos después.'
+            )
+            ->modalSubmitActionLabel('Guardar permisos')
+            ->modalWidth('lg')
+            ->color(Color::hex('#176B45'))
+
+            // Cargar los usuarios que ya tienen permiso.
+            ->fillForm(function (array $arguments): array {
+
+                $documento = Documento::query()
+                    ->whereKey((int) ($arguments['documento'] ?? 0))
+                    ->where('subido_por', auth()->id())
+                    ->firstOrFail();
+
+                return [
+                    'usuarios' => $documento
+                        ->usuariosCompartidos()
+                        ->pluck('users.id')
+                        ->all(),
+                ];
+            })
+
+            ->schema([
+                Select::make('usuarios')
+                    ->label('Usuarios autorizados')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->options(
+                        fn(): array =>
+                        User::query()
+                            ->where('activo', true)
+                            ->whereKeyNot(auth()->id())
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn(User $user) => [
+                                $user->id => trim(
+                                    $user->name . ' ' . $user->apellido
+                                ) . ' (' . $user->email . ')',
+                            ])
+                            ->all()
+                    )
+                    ->helperText(
+                        'Selecciona uno o varios usuarios. '
+                            . 'Si quitas un usuario y guardas, perderá el acceso. '
+                            . 'Si dejas la selección vacía, se retirarán todos '
+                            . 'los permisos individuales.'
+                    ),
+            ])
+
+            ->action(function (
+                array $data,
+                array $arguments
+            ): void {
+
+                // Revalidar propiedad al guardar.
+                $documento = Documento::query()
+                    ->whereKey((int) ($arguments['documento'] ?? 0))
+                    ->where('subido_por', auth()->id())
+                    ->firstOrFail();
+
+                // Nunca confiar solamente en las opciones del Select.
+                $solicitados = collect($data['usuarios'] ?? [])
+                    ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values();
+
+                $validos = User::query()
+                    ->where('activo', true)
+                    ->whereKeyNot(auth()->id())
+                    ->whereIn('id', $solicitados->all())
+                    ->pluck('id');
+
+                abort_unless(
+                    $validos->count() === $solicitados->count(),
+                    422,
+                    'La selección contiene usuarios no autorizados.'
+                );
+
+                // Agregar nuevos y quitar los desmarcados.
+                $documento->usuariosCompartidos()
+                    ->sync($validos->all());
+
+                Notification::make()
+                    ->title('Permisos actualizados correctamente')
+                    ->body(
+                        'Usuarios autorizados: ' . $validos->count()
+                    )
+                    ->success()
+                    ->send();
+            });
     }
 }

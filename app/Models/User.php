@@ -86,4 +86,14 @@ class User extends Authenticatable implements FilamentUser
             'subido_por'
         );
     }
+
+    public function documentosCompartidos()
+    {
+        return $this->belongsToMany(
+            Documento::class,
+            'documento_usuario',
+            'user_id',
+            'documento_id'
+        )->withTimestamps();
+    }
 }
