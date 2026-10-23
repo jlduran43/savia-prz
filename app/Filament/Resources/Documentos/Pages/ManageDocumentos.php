@@ -222,7 +222,10 @@ class ManageDocumentos extends ManageRecords
                     'es_propietario' =>
                     (int) $documento->subido_por === (int) auth()->id(),
                     'extension' => strtolower(
-                        $documento->extension ?? ''
+                        pathinfo(
+                            $documento->nombre_original ?? '',
+                            PATHINFO_EXTENSION
+                        )
                     ),
                     'usuario' => $usuario
                         ? trim(

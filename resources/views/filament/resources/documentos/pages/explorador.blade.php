@@ -200,11 +200,21 @@
                                     @else
                                         {{-- ARCHIVO --}}
                                         @php
+                                            $extension = strtolower($elemento['extension'] ?? '');
+
                                             $tieneVistaPrevia = in_array(
-                                                strtolower($elemento['extension'] ?? ''),
-                                                ['pdf', 'jpg', 'jpeg', 'png'],
+                                                $extension,
+                                                ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'],
                                                 true,
                                             );
+
+                                            $colorIcono = match ($extension) {
+                                                'pdf' => '#DC2626',
+                                                'doc', 'docx' => '#2563EB',
+                                                'xls', 'xlsx' => '#16A34A',
+                                                'jpg', 'jpeg', 'png' => '#D97706',
+                                                default => '#9CA3AF',
+                                            };
                                         @endphp
 
                                         <div
@@ -215,13 +225,56 @@
             color: #111827;
         ">
 
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                                stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"
-                                                stroke-linejoin="round" style="flex-shrink: 0;">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                                <path d="M14 2v6h6" />
-                                                <path d="M8 13h8M8 17h8" />
-                                            </svg>
+
+                                            @if (in_array($extension, ['xls', 'xlsx']))
+                                                {{-- EXCEL --}}
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                    stroke="#16A34A" stroke-width="1.8" stroke-linecap="round"
+                                                    stroke-linejoin="round" style="flex-shrink: 0;">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                    <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+                                                </svg>
+                                            @elseif (in_array($extension, ['doc', 'docx']))
+                                                {{-- WORD --}}
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                    stroke="#2563EB" stroke-width="1.8" stroke-linecap="round"
+                                                    stroke-linejoin="round" style="flex-shrink: 0;">
+                                                    <path
+                                                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                    <path d="M14 2v6h6" />
+                                                    <path d="M7 13l2 6 3-6 3 6 2-6" />
+                                                </svg>
+                                            @elseif ($extension === 'pdf')
+                                                {{-- PDF --}}
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                    stroke="#DC2626" stroke-width="1.8" stroke-linecap="round"
+                                                    stroke-linejoin="round" style="flex-shrink: 0;">
+                                                    <path
+                                                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                    <path d="M14 2v6h6" />
+                                                    <path d="M7 17h10" />
+                                                    <path d="M7 13h10" />
+                                                </svg>
+                                            @elseif (in_array($extension, ['jpg', 'jpeg', 'png']))
+                                                {{-- IMAGEN --}}
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                    stroke="#D97706" stroke-width="1.8" stroke-linecap="round"
+                                                    stroke-linejoin="round" style="flex-shrink: 0;">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                                    <path d="m21 15-5-5L5 21" />
+                                                </svg>
+                                            @else
+                                                {{-- OTROS ARCHIVOS --}}
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                    stroke="#9CA3AF" stroke-width="1.8" stroke-linecap="round"
+                                                    stroke-linejoin="round" style="flex-shrink: 0;">
+                                                    <path
+                                                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                    <path d="M14 2v6h6" />
+                                                </svg>
+                                            @endif
+
 
                                             @if ($tieneVistaPrevia)
                                                 <a href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
