@@ -144,8 +144,8 @@
                                 Tipo
                             </th>
 
-                            <th style="padding: 17px; min-width: 120px;">
-                                Descargar
+                            <th style="padding: 17px; min-width: 160px;">
+                                Acciones
                             </th>
 
                             <th style="padding: 17px; min-width: 115px;">
@@ -275,58 +275,14 @@
                                                 </svg>
                                             @endif
 
-
-                                            @if (in_array($extension, ['xls', 'xlsx', 'doc', 'docx'], true))
-                                                @php
-                                                    // El enlace solo se genera desde el explorador,
-                                                    // después de comprobar la autorización del usuario.
-                                                    $urlTemporal = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-                                                        'documentos.office-original',
-                                                        now()->addMinutes(3),
-                                                        ['documento' => $elemento['id']],
-                                                    );
-
-                                                    $protocolo = in_array($extension, ['xls', 'xlsx'], true)
-                                                        ? 'ms-excel:'
-                                                        : 'ms-word:';
-
-                                                    $urlOffice = $protocolo . $urlTemporal;
-                                                @endphp
-
-                                                <a href="{{ $urlOffice }}" class="prz-nombre-documento"
-                                                    style="
-            color: #111827;
-            text-decoration: none;
-            font-weight: 500;
-            overflow-wrap: anywhere;
-        "
-                                                    title="Abrir con Microsoft Office">
-
-                                                    {{ $elemento['nombre'] }}
-
-                                                </a>
-                                            @elseif ($tieneVistaPrevia)
-                                                {{-- PDF E IMÁGENES --}}
-                                                <a href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
-                                                    target="_blank" rel="noopener noreferrer"
-                                                    class="prz-nombre-documento"
-                                                    style="
-            color: #111827;
-            text-decoration: none;
-            font-weight: 500;
-            overflow-wrap: anywhere;
-        ">
-
-                                                    {{ $elemento['nombre'] }}
-
-                                                </a>
-                                            @else
-                                                <span style="overflow-wrap: anywhere;">
-                                                    {{ $elemento['nombre'] }}
-                                                </span>
-                                            @endif
-
-
+                                            <span
+                                                style="
+    color: #111827;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+">
+                                                {{ $elemento['nombre'] }}
+                                            </span>
 
                                         </div>
                                     @endif
@@ -374,25 +330,85 @@
 
                                 </td>
 
-                                {{-- DESCARGAR --}}
+
+                                {{-- ACCIONES DEL ARCHIVO --}}
 
                                 <td style="padding: 17px;">
 
                                     @if ($elemento['tipo'] === 'archivo')
-                                        <a href="{{ route('documentos.descargar', ['documento' => $elemento['id']]) }}"
+                                        @php
+                                            $extensionArchivo = strtolower($elemento['extension'] ?? '');
+
+                                            $puedeVer = in_array(
+                                                $extensionArchivo,
+                                                ['pdf', 'jpg', 'jpeg', 'png'],
+                                                true,
+                                            );
+                                        @endphp
+
+                                        <div
                                             style="
-                                                color: #176B45;
-                                                text-decoration: underline;
-                                            ">
-                                            Descargar
-                                        </a>
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        ">
+
+                                            {{-- BOTÓN VER: SOLO PDF E IMÁGENES --}}
+                                            @if ($puedeVer)
+                                                <a href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
+                                                    target="_blank" rel="noopener noreferrer"
+                                                    style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 5px;
+                        color: #176B45;
+                        font-weight: 600;
+                        text-decoration: none;
+                    ">
+
+                                                    <svg width="17" height="17" viewBox="0 0 24 24"
+                                                        fill="none" stroke="currentColor" stroke-width="1.8"
+                                                        stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                                                        <circle cx="12" cy="12" r="3" />
+                                                    </svg>
+
+                                                    Ver
+                                                </a>
+                                            @endif
+
+                                            {{-- BOTÓN DESCARGAR: TODOS LOS ARCHIVOS --}}
+                                            <a href="{{ route('documentos.descargar', ['documento' => $elemento['id']]) }}"
+                                                style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    color: #176B45;
+                    font-weight: 600;
+                    text-decoration: none;
+                ">
+
+                                                <svg width="17" height="17" viewBox="0 0 24 24"
+                                                    fill="none" stroke="currentColor" stroke-width="1.8"
+                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 3v12" />
+                                                    <path d="m7 10 5 5 5-5" />
+                                                    <path d="M5 17v4h14v-4" />
+                                                </svg>
+
+                                                Descargar
+                                            </a>
+
+                                        </div>
                                     @else
-                                        <span style="color: #9ca3af;">
-                                            —
-                                        </span>
+                                        <span style="color: #9ca3af;">—</span>
                                     @endif
 
                                 </td>
+
+
+
 
 
                                 {{-- OPCIONES DEL DOCUMENTO --}}
