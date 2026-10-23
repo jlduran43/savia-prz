@@ -33,6 +33,9 @@ class ManageDocumentos extends ManageRecords
     #[Url(as: 'buscar')]
     public string $buscar = '';
 
+    #[Url(as: 'vista')]
+    public string $vista = 'mios';
+
     /** Verifica propiedad de la carpeta y de todos sus antecesores. */
     protected function validarCarpetaPropia(?int $carpetaId): void
     {
@@ -109,67 +112,173 @@ class ManageDocumentos extends ManageRecords
         );
     }
 
+
+    public function cambiarVisibilidadAction(): Action
+    {
+        return Action::make('cambiarVisibilidad')
+            ->label('Cambiar visibilidad')
+            ->modalHeading('Cambiar acceso al documento')
+            ->modalDescription(
+                '¿Quieres cambiar la visibilidad de este documento? '
+                    . 'Al compartirlo, todos los usuarios autenticados '
+                    . 'de la intranet podrán verlo y descargarlo.'
+            )
+            ->modalSubmitActionLabel('Confirmar cambio')
+            ->color('primary')
+            ->requiresConfirmation()
+            ->action(function (array $arguments): void {
+
+                $documentoId = (int) ($arguments['documento'] ?? 0);
+
+                // Buscar nuevamente el documento y comprobar
+                // la propiedad antes de modificarlo.
+                $documento = Documento::query()
+                    ->whereKey($documentoId)
+                    ->where('subido_por', auth()->id())
+                    ->firstOrFail();
+
+                // Alternar entre privado y compartido.
+                $documento->es_publico = !$documento->es_publico;
+                $documento->save();
+
+                Notification::make()
+                    ->title(
+                        $documento->es_publico
+                            ? 'Documento compartido con todos'
+                            : 'Documento privado'
+                    )
+                    ->success()
+                    ->send();
+            });
+    }
+
     public function elementosExplorador(): LengthAwarePaginator
     {
-        $this->validarCarpetaPropia($this->carpetaId);
+        $viendoCompartidos = $this->vista === 'compartidos';
+
+        if (!$viendoCompartidos) {
+            $this->validarCarpetaPropia($this->carpetaId);
+        }
+
         $buscar = trim($this->buscar);
 
-        $carpetas = DocumentoCarpeta::query()
+        // CARPETAS: solo aparecen en Mis archivos
+        $carpetas = $viendoCompartidos
+            ? collect()
+            : DocumentoCarpeta::query()
             ->where('propietario_id', auth()->id())
             ->where('carpeta_padre_id', $this->carpetaId)
-            ->when($buscar !== '', fn ($q) => $q->where('nombre', 'like', "%{$buscar}%"))
+            ->when(
+                $buscar !== '',
+                fn($q) => $q->where(
+                    'nombre',
+                    'like',
+                    "%{$buscar}%"
+                )
+            )
             ->get()
-            ->map(fn ($carpeta) => [
+            ->map(fn($carpeta) => [
                 'id' => $carpeta->id,
                 'nombre' => $carpeta->nombre,
                 'tipo' => 'carpeta',
                 'extension' => null,
                 'usuario' => null,
                 'fecha' => $carpeta->created_at,
+                'es_publico' => false,
+                'es_propietario' => true,
             ]);
 
+        // DOCUMENTOS: propios o compartidos
         $documentos = Documento::query()
             ->with('usuario')
-            ->where('subido_por', auth()->id())
-            ->where('carpeta_id', $this->carpetaId)
-            ->when($buscar !== '', fn ($q) => $q->where('nombre_original', 'like', "%{$buscar}%"))
+            ->when(
+                $viendoCompartidos,
+                fn($q) => $q
+                    ->where('es_publico', true)
+                    ->where('subido_por', '!=', auth()->id()),
+
+                fn($q) => $q
+                    ->where('subido_por', auth()->id())
+                    ->where('carpeta_id', $this->carpetaId)
+            )
+            ->when(
+                $buscar !== '',
+                fn($q) => $q->where(
+                    'nombre_original',
+                    'like',
+                    "%{$buscar}%"
+                )
+            )
             ->get()
             ->map(function ($documento) {
+
                 $usuario = $documento->usuario;
+
                 return [
                     'id' => $documento->id,
                     'nombre' => $documento->nombre_original,
                     'tipo' => 'archivo',
-                    'extension' => strtolower($documento->extension ?? ''),
+                    'es_publico' => (bool) $documento->es_publico,
+                    'es_propietario' =>
+                    (int) $documento->subido_por === (int) auth()->id(),
+                    'extension' => strtolower(
+                        $documento->extension ?? ''
+                    ),
                     'usuario' => $usuario
-                        ? trim(($usuario->name ?? '') . ' ' . ($usuario->apellido ?? ''))
+                        ? trim(
+                            ($usuario->name ?? '') . ' ' .
+                                ($usuario->apellido ?? '')
+                        )
                         : 'Sin usuario',
                     'fecha' => $documento->created_at,
+                    'es_publico' => (bool) $documento->es_publico,
+                    'es_propietario' =>
+                    (int) $documento->subido_por === (int) auth()->id(),
                 ];
             });
 
-        $elementos = $carpetas->concat($documentos)
+        // UNIR CARPETAS Y DOCUMENTOS
+        $elementos = $carpetas
+            ->concat($documentos)
             ->sort(function ($a, $b) {
+
                 if ($a['tipo'] !== $b['tipo']) {
                     return $a['tipo'] === 'carpeta' ? -1 : 1;
                 }
-                return strnatcasecmp($a['nombre'], $b['nombre']);
-            })->values();
 
+                return strnatcasecmp(
+                    $a['nombre'],
+                    $b['nombre']
+                );
+            })
+            ->values();
+
+        // PAGINACIÓN
         $porPagina = 20;
-        $pagina = max(1, LengthAwarePaginator::resolveCurrentPage('pagina'));
+
+        $pagina = max(
+            1,
+            LengthAwarePaginator::resolveCurrentPage('pagina')
+        );
+
         $paginador = new LengthAwarePaginator(
             $elementos->forPage($pagina, $porPagina)->values(),
             $elementos->count(),
             $porPagina,
             $pagina,
-            ['path' => request()->url(), 'pageName' => 'pagina']
+            [
+                'path' => request()->url(),
+                'pageName' => 'pagina',
+            ]
         );
 
-        $paginador->appends(array_filter([
-            'carpeta' => $this->carpetaId,
-            'buscar' => $this->buscar,
-        ], fn ($valor) => $valor !== null && $valor !== ''));
+        $paginador->appends(
+            array_filter([
+                'carpeta' => $viendoCompartidos ? null : $this->carpetaId,
+                'buscar' => $this->buscar,
+                'vista' => $this->vista,
+            ], fn($valor) => $valor !== null && $valor !== '')
+        );
 
         return $paginador;
     }
@@ -190,17 +299,17 @@ class ManageDocumentos extends ManageRecords
                         Select::make('carpeta_padre_id')
                             ->label('Crear dentro de')
                             ->placeholder('Carpeta principal')
-                            ->options(fn () => DocumentoCarpeta::query()
+                            ->options(fn() => DocumentoCarpeta::query()
                                 ->where('propietario_id', auth()->id())
                                 ->orderBy('nombre')
                                 ->pluck('nombre', 'id')
                                 ->all())
-                            ->default(fn () => $this->carpetaId)
+                            ->default(fn() => $this->carpetaId)
                             ->searchable(),
                     ])
                     ->modalHeading('Crear nueva carpeta')
                     ->modalSubmitActionLabel('Crear carpeta')
-                    ->modalSubmitAction(fn (Action $action) => $action
+                    ->modalSubmitAction(fn(Action $action) => $action
                         ->color(Color::hex('#176B45'))
                         ->extraAttributes([
                             'style' => 'background-color: #176B45 !important; color: white !important;',
@@ -228,19 +337,19 @@ class ManageDocumentos extends ManageRecords
                     ->icon('heroicon-o-document-arrow-up')
                     ->modalHeading('Subir documentos')
                     ->modalSubmitActionLabel('Subir documentos')
-                    ->modalSubmitAction(fn (Action $action) => $action
+                    ->modalSubmitAction(fn(Action $action) => $action
                         ->extraAttributes([
                             'style' => 'background-color: #176B45 !important; color: white !important;',
                         ]))
                     ->schema([
                         Select::make('carpeta_id')
                             ->label('Carpeta de destino')
-                            ->options(fn () => DocumentoCarpeta::query()
+                            ->options(fn() => DocumentoCarpeta::query()
                                 ->where('propietario_id', auth()->id())
                                 ->orderBy('nombre')
                                 ->pluck('nombre', 'id')
                                 ->all())
-                            ->default(fn () => $this->carpetaId)
+                            ->default(fn() => $this->carpetaId)
                             ->searchable()
                             ->required(),
                         FileUpload::make('archivos')

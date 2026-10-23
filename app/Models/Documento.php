@@ -23,10 +23,12 @@ class Documento extends Model
         'tamano',
         'descripcion',
         'subido_por',
+        'es_publico',
     ];
 
     protected $casts = [
         'tamano' => 'integer',
+        'es_publico' => 'boolean',
     ];
 
     // Carpeta donde se encuentra
