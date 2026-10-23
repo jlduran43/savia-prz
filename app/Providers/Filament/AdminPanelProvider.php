@@ -56,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
             ->assets([
                 Css::make(
                     'documentos-estilos',
-                    public_path('css/documentos.css')
+                    asset('css/documentos.css')
                 ),
             ])
             ->colors([
