@@ -9,3 +9,36 @@
     color: #ffffff !important;
     stroke: #ffffff !important;
 }
+
+/* Estilo uniforme para los botones de Documentos */
+
+.prz-boton-documentos {
+    font-family: inherit !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 20px !important;
+    border-radius: 10px !important;
+    padding: 10px 16px !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Botón activo */
+.prz-boton-documentos.activo {
+    background-color: #176B45 !important;
+    color: white !important;
+}
+
+/* Botón inactivo */
+.prz-boton-documentos.inactivo {
+    background-color: #f3f4f6 !important;
+    color: #374151 !important;
+}
+
+/* Efecto al pasar el mouse */
+.prz-boton-documentos:hover {
+    opacity: 0.9;
+}

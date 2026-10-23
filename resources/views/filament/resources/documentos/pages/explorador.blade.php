@@ -52,26 +52,12 @@
 ">
 
             <a href="{{ \App\Filament\Resources\Documentos\DocumentoResource::getUrl('index') }}"
-                style="
-            padding: 10px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            background: {{ $this->vista !== 'compartidos' ? '#176B45' : '#f3f4f6' }};
-            color: {{ $this->vista !== 'compartidos' ? 'white' : '#374151' }};
-        ">
+                class="prz-boton-documentos {{ $this->vista !== 'compartidos' ? 'activo' : 'inactivo' }}">
                 Mis archivos
             </a>
 
             <a href="{{ \App\Filament\Resources\Documentos\DocumentoResource::getUrl('index', ['vista' => 'compartidos']) }}"
-                style="
-            padding: 10px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            background: {{ $this->vista === 'compartidos' ? '#176B45' : '#f3f4f6' }};
-            color: {{ $this->vista === 'compartidos' ? 'white' : '#374151' }};
-        ">
+                class="prz-boton-documentos {{ $this->vista === 'compartidos' ? 'activo' : 'inactivo' }}">
                 Compartidos conmigo
             </a>
 
@@ -117,16 +103,7 @@
                             background: white;
                         ">
 
-                    <button type="submit"
-                        style="
-                            background: #176B45;
-                            color: white;
-                            border: none;
-                            padding: 10px 16px;
-                            border-radius: 8px;
-                            cursor: pointer;
-                            font-weight: 600;
-                        ">
+                    <button type="submit" class="prz-boton-documentos activo">
                         Buscar
                     </button>
 
