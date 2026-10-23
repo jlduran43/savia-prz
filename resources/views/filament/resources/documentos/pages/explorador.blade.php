@@ -276,23 +276,57 @@
                                             @endif
 
 
-                                            @if ($tieneVistaPrevia)
+                                            @if (in_array($extension, ['xls', 'xlsx', 'doc', 'docx'], true))
+                                                @php
+                                                    // El enlace solo se genera desde el explorador,
+                                                    // después de comprobar la autorización del usuario.
+                                                    $urlTemporal = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                                                        'documentos.office-original',
+                                                        now()->addMinutes(3),
+                                                        ['documento' => $elemento['id']],
+                                                    );
+
+                                                    $protocolo = in_array($extension, ['xls', 'xlsx'], true)
+                                                        ? 'ms-excel:ofv|u|'
+                                                        : 'ms-word:ofv|u|';
+
+                                                    $urlOffice = $protocolo . $urlTemporal;
+                                                @endphp
+
+                                                <a href="{{ $urlOffice }}" class="prz-nombre-documento"
+                                                    style="
+            color: #111827;
+            text-decoration: none;
+            font-weight: 500;
+            overflow-wrap: anywhere;
+        "
+                                                    title="Abrir con Microsoft Office">
+
+                                                    {{ $elemento['nombre'] }}
+
+                                                </a>
+                                            @elseif ($tieneVistaPrevia)
+                                                {{-- PDF E IMÁGENES --}}
                                                 <a href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
                                                     target="_blank" rel="noopener noreferrer"
                                                     class="prz-nombre-documento"
                                                     style="
-                        color: #111827;
-                        text-decoration: none;
-                        font-weight: 500;
-                        overflow-wrap: anywhere;
-                    ">
+            color: #111827;
+            text-decoration: none;
+            font-weight: 500;
+            overflow-wrap: anywhere;
+        ">
+
                                                     {{ $elemento['nombre'] }}
+
                                                 </a>
                                             @else
                                                 <span style="overflow-wrap: anywhere;">
                                                     {{ $elemento['nombre'] }}
                                                 </span>
                                             @endif
+
+
 
                                         </div>
                                     @endif

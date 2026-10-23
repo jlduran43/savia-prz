@@ -10,6 +10,7 @@ use App\Support\DocumentoAcceso;
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory as ExcelIOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Html as ExcelHtmlWriter;
+use Illuminate\Support\Facades\URL;
 
 Route::get('/admin/compras/formulario-contenido', function () {
     return view(
@@ -222,3 +223,49 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 })
 ->middleware('auth')
 ->name('documentos.ver');
+
+Route::get('/documentos/{documento}/office-original', function (Documento $documento) {
+
+    $extension = strtolower(
+        pathinfo($documento->nombre_original ?? '', PATHINFO_EXTENSION)
+    );
+
+    abort_unless(
+        in_array($extension, ['doc', 'docx', 'xls', 'xlsx'], true),
+        415
+    );
+
+    $disco = Storage::disk('documentos_privados');
+
+    abort_unless(
+        $disco->exists($documento->ruta_archivo),
+        404
+    );
+
+    $mime = match ($extension) {
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls' => 'application/vnd.ms-excel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+
+    $response = response()->file(
+        $disco->path($documento->ruta_archivo),
+        [
+            'Content-Type' => $mime,
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]
+    );
+
+    $response->setContentDisposition(
+        'inline',
+        $documento->nombre_original,
+        'documento.' . $extension
+    );
+
+    return $response;
+
+})
+->middleware(['signed', 'throttle:20,1'])
+->name('documentos.office-original');
