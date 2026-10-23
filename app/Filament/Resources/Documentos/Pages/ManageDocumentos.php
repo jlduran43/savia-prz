@@ -124,20 +124,21 @@ class ManageDocumentos extends ManageRecords
                     . 'de la intranet podrán verlo y descargarlo.'
             )
             ->modalSubmitActionLabel('Confirmar cambio')
-            ->color(Color::hex('#176B45'))
+            ->modalSubmitAction(fn(Action $action) => $action
+                ->color(Color::hex('#176B45'))
+                ->extraAttributes([
+                    'style' => 'background-color: #176B45 !important; color: white !important;',
+                ]))
             ->requiresConfirmation()
             ->action(function (array $arguments): void {
 
                 $documentoId = (int) ($arguments['documento'] ?? 0);
 
-                // Buscar nuevamente el documento y comprobar
-                // la propiedad antes de modificarlo.
                 $documento = Documento::query()
                     ->whereKey($documentoId)
                     ->where('subido_por', auth()->id())
                     ->firstOrFail();
 
-                // Alternar entre privado y compartido.
                 $documento->es_publico = !$documento->es_publico;
                 $documento->save();
 
