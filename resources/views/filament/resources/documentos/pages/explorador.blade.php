@@ -287,8 +287,8 @@
                                                     );
 
                                                     $protocolo = in_array($extension, ['xls', 'xlsx'], true)
-                                                        ? 'ms-excel:ofv|u|'
-                                                        : 'ms-word:ofv|u|';
+                                                        ? 'ms-excel:'
+                                                        : 'ms-word:';
 
                                                     $urlOffice = $protocolo . $urlTemporal;
                                                 @endphp
