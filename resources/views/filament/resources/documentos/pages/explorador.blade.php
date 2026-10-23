@@ -144,10 +144,6 @@
                                 Tipo
                             </th>
 
-                            <th style="padding: 17px; min-width: 90px;">
-                                Ver
-                            </th>
-
                             <th style="padding: 17px; min-width: 120px;">
                                 Descargar
                             </th>
@@ -172,20 +168,22 @@
                                     border-top: 1px solid #e5e7eb;
                                 ">
 
+
                                 {{-- NOMBRE --}}
 
                                 <td style="padding: 17px;">
 
                                     @if ($elemento['tipo'] === 'carpeta')
+                                        {{-- CARPETA --}}
                                         <a href="{{ $this->urlCarpeta($elemento['id']) }}"
                                             style="
-                                                display: flex;
-                                                align-items: center;
-                                                gap: 12px;
-                                                color: #111827;
-                                                text-decoration: none;
-                                                font-weight: 600;
-                                            ">
+               display: flex;
+               align-items: center;
+               gap: 12px;
+               color: #111827;
+               text-decoration: none;
+               font-weight: 600;
+           ">
 
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
                                                 stroke="#D99A16" stroke-width="1.8" stroke-linecap="round"
@@ -200,13 +198,22 @@
 
                                         </a>
                                     @else
+                                        {{-- ARCHIVO --}}
+                                        @php
+                                            $tieneVistaPrevia = in_array(
+                                                strtolower($elemento['extension'] ?? ''),
+                                                ['pdf', 'jpg', 'jpeg', 'png'],
+                                                true,
+                                            );
+                                        @endphp
+
                                         <div
                                             style="
-                                            display: flex;
-                                            align-items: center;
-                                            gap: 12px;
-                                            color: #111827;
-                                        ">
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #111827;
+        ">
 
                                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
                                                 stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"
@@ -216,9 +223,23 @@
                                                 <path d="M8 13h8M8 17h8" />
                                             </svg>
 
-                                            <span style="overflow-wrap: anywhere;">
-                                                {{ $elemento['nombre'] }}
-                                            </span>
+                                            @if ($tieneVistaPrevia)
+                                                <a href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
+                                                    target="_blank" rel="noopener noreferrer"
+                                                    class="prz-nombre-documento"
+                                                    style="
+                        color: #111827;
+                        text-decoration: none;
+                        font-weight: 500;
+                        overflow-wrap: anywhere;
+                    ">
+                                                    {{ $elemento['nombre'] }}
+                                                </a>
+                                            @else
+                                                <span style="overflow-wrap: anywhere;">
+                                                    {{ $elemento['nombre'] }}
+                                                </span>
+                                            @endif
 
                                         </div>
                                     @endif
@@ -265,29 +286,6 @@
                                     @endif
 
                                 </td>
-
-
-                                {{-- VER --}}
-
-                                <td style="padding: 17px;">
-
-                                    @if ($elemento['tipo'] === 'archivo' && in_array($elemento['extension'], ['pdf', 'png', 'jpg', 'jpeg']))
-                                        <a href="{{ route('documentos.ver', ['documento' => $elemento['id']]) }}"
-                                            target="_blank" rel="noopener noreferrer"
-                                            style="
-                                                color: #176B45;
-                                                text-decoration: underline;
-                                            ">
-                                            Ver
-                                        </a>
-                                    @else
-                                        <span style="color: #9ca3af;">
-                                            —
-                                        </span>
-                                    @endif
-
-                                </td>
-
 
                                 {{-- DESCARGAR --}}
 
@@ -369,7 +367,7 @@
 
                             <tr>
 
-                                <td colspan="7"
+                                <td colspan="6"
                                     style="
                                         padding: 50px;
                                         text-align: center;
