@@ -7,6 +7,9 @@ use App\Http\Controllers\MicrosoftController;
 use App\Models\Documento;
 use Illuminate\Support\Facades\Storage;
 use App\Support\DocumentoAcceso;
+use PhpOffice\PhpWord\IOFactory as WordIOFactory;
+use PhpOffice\PhpSpreadsheet\IOFactory as ExcelIOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Html as ExcelHtmlWriter;
 
 Route::get('/admin/compras/formulario-contenido', function () {
     return view(
@@ -93,17 +96,24 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
 
 Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
-    // Verificar que el usuario tenga permiso
+    // 1. Verificar permisos
     DocumentoAcceso::verificar($documento);
 
-    // Acceder al almacenamiento privado
+    // 2. Acceder al almacenamiento privado
     $disco = Storage::disk('documentos_privados');
 
     if (!$disco->exists($documento->ruta_archivo)) {
         abort(404, 'El documento no existe.');
     }
 
-    // Tipos de archivos que podemos visualizar
+    $ruta = $disco->path($documento->ruta_archivo);
+
+    $extension = strtolower(
+        $documento->extension
+        ?: pathinfo($documento->nombre_original, PATHINFO_EXTENSION)
+    );
+
+    // 3. Mantener vista previa original de PDF e imágenes
     $tiposPermitidos = [
         'application/pdf',
         'image/jpeg',
@@ -112,21 +122,102 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
     $mime = $disco->mimeType($documento->ruta_archivo);
 
-    if (!in_array($mime, $tiposPermitidos, true)) {
-        abort(415, 'Este tipo de archivo no admite vista previa.');
-    }
-
-    // Mostrar el documento sin descargarlo
-    return response()->file(
-        $disco->path($documento->ruta_archivo),
-        [
+    if (
+        in_array($extension, ['pdf', 'jpg', 'jpeg', 'png'], true)
+        && in_array($mime, $tiposPermitidos, true)
+    ) {
+        return response()->file($ruta, [
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline',
             'X-Content-Type-Options' => 'nosniff',
             'Content-Security-Policy' =>
                 "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
-        ]
-    );
+        ]);
+    }
+
+    // 4. Vista previa Word y Excel
+    if (!in_array($extension, ['doc', 'docx', 'xls', 'xlsx'], true)) {
+        abort(415, 'Este tipo de archivo no admite vista previa.');
+    }
+
+    // Archivo HTML temporal fuera del directorio público
+    $temporal = tempnam(sys_get_temp_dir(), 'savia_preview_');
+
+    if ($temporal === false) {
+        abort(500, 'No fue posible preparar la vista previa.');
+    }
+
+    try {
+
+        if (in_array($extension, ['doc', 'docx'], true)) {
+
+            // Leer Word
+            $lector = $extension === 'doc'
+                ? 'MsDoc'
+                : 'Word2007';
+
+            $word = WordIOFactory::load($ruta, $lector);
+
+            // Convertir Word a HTML
+            $writer = WordIOFactory::createWriter($word, 'HTML');
+            $writer->save($temporal);
+
+        } else {
+
+            // Leer Excel
+            $reader = ExcelIOFactory::createReaderForFile($ruta);
+
+            $excel = $reader->load($ruta);
+
+            try {
+                // Convertir todas las hojas a HTML
+                $writer = new ExcelHtmlWriter($excel);
+
+                $writer->writeAllSheets();
+
+                // Evitar recalcular fórmulas durante la vista previa
+                $writer->setPreCalculateFormulas(false);
+
+                $writer->save($temporal);
+
+            } finally {
+                $excel->disconnectWorksheets();
+            }
+        }
+
+        $html = file_get_contents($temporal);
+
+        if ($html === false) {
+            throw new RuntimeException(
+                'No fue posible leer la vista previa.'
+            );
+        }
+
+    } catch (\Throwable $e) {
+
+        report($e);
+
+        abort(
+            422,
+            'No fue posible generar la vista previa de este documento.'
+        );
+
+    } finally {
+
+        if (file_exists($temporal)) {
+            unlink($temporal);
+        }
+    }
+
+    // 5. Mostrar HTML sin descargar archivo original
+    return response($html, 200, [
+        'Content-Type' => 'text/html; charset=UTF-8',
+        'Content-Disposition' => 'inline',
+        'X-Content-Type-Options' => 'nosniff',
+        'Cache-Control' => 'private, no-store',
+        'Content-Security-Policy' =>
+            "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; object-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+    ]);
 
 })
 ->middleware('auth')

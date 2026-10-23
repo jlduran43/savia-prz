@@ -89,7 +89,7 @@ class DocumentoResource extends Resource
                         fn(Documento $record): string =>
                         in_array(
                             strtolower($record->extension ?? ''),
-                            ['pdf', 'png', 'jpg', 'jpeg'],
+                            ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx'],
                             true
                         ) ? 'primary' : 'gray'
                     )
@@ -97,7 +97,7 @@ class DocumentoResource extends Resource
                         fn(Documento $record): ?string =>
                         in_array(
                             strtolower($record->extension ?? ''),
-                            ['pdf', 'png', 'jpg', 'jpeg'],
+                            ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx'],
                             true
                         )
                             ? route('documentos.ver', [
