@@ -270,8 +270,51 @@
                 align-items: flex-start;
             }
         }
+
+        .drive-encabezado {
+            margin-bottom: 30px;
+        }
+
+        .drive-etiqueta {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #176B45;
+            margin-bottom: 8px;
+        }
+
+        .drive-titulo {
+            font-size: 34px;
+            font-weight: 800;
+            color: #111827;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .drive-descripcion {
+            font-size: 15px;
+            color: #64748b;
+        }
+
+        .dark .drive-titulo {
+            color: #f9fafb;
+        }
     </style>
 
+    <div class="drive-encabezado">
+        <div class="drive-etiqueta">
+            ESPACIO DE TRABAJO
+        </div>
+
+        <h1 class="drive-titulo">
+            Documentos
+        </h1>
+
+        <p class="drive-descripcion">
+            Gestiona y organiza los archivos de tu equipo.
+        </p>
+    </div>
     <div x-data="{
         menu: false,
         x: 0,
