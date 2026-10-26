@@ -20,12 +20,16 @@ class ExploradorDocumentos extends Page
     Heroicon::OutlinedFolderOpen;
 
     protected static ?string $navigationLabel = 'Explorador';
-    protected static ?string $title = 'Explorador documental';
 
     protected string $view =
     'filament.pages.explorador-documentos';
 
     public ?int $carpetaActual = null;
+
+    public function getTitle(): string
+    {
+        return '';
+    }
 
     private function carpetaAutorizada(int $id): DocumentoCarpeta
     {
