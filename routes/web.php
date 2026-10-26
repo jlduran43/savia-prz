@@ -272,3 +272,16 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 ->middleware(['auth', 'signed', 'throttle:20,1'])
 ->name('documentos.office-original');
 
+Route::middleware('auth')->prefix('drive-prz')->name('drive-prz.')->group(function () {
+    Route::get('/', [DrivePrzController::class, 'pantalla'])->name('pantalla');
+    Route::get('/datos', [DrivePrzController::class, 'listar'])->name('listar');
+    Route::post('/carpetas', [DrivePrzController::class, 'crearCarpeta'])->name('carpetas.crear');
+    Route::patch('/carpetas/{id}', [DrivePrzController::class, 'renombrarCarpeta'])->name('carpetas.renombrar');
+    Route::delete('/carpetas/{id}', [DrivePrzController::class, 'eliminarCarpeta'])->name('carpetas.eliminar');
+    Route::post('/documentos', [DrivePrzController::class, 'subir'])->name('documentos.subir');
+    Route::patch('/documentos/{id}', [DrivePrzController::class, 'renombrarDocumento'])->name('documentos.renombrar');
+    Route::delete('/documentos/{id}', [DrivePrzController::class, 'eliminarDocumento'])->name('documentos.eliminar');
+    Route::get('/documentos/{id}/descargar', [DrivePrzController::class, 'descargar'])->name('documentos.descargar');
+});
+
+
