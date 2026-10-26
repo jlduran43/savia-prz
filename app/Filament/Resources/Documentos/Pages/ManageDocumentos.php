@@ -129,6 +129,11 @@ class ManageDocumentos extends ManageRecords
             ->modalSubmitAction(
                 fn(Action $action) => $action
                     ->color(Color::hex('#176B45'))
+                    ->extraAttributes([
+                        'style' => 'background-color: #176B45 !important;
+                    border-color: #176B45 !important;
+                    color: #ffffff !important;',
+                    ])
             )
 
             ->fillForm(function (array $arguments): array {
@@ -695,5 +700,4 @@ class ManageDocumentos extends ManageRecords
                 ->extraAttributes(['class' => 'prz-crear-cargar']),
         ];
     }
-
 }
