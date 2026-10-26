@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 class ManageDocumentos extends ManageRecords
 {
@@ -113,41 +115,285 @@ class ManageDocumentos extends ManageRecords
         );
     }
 
-
-    public function cambiarVisibilidadAction(): Action
+    public function compartirDocumentoAction(): Action
     {
-        return Action::make('cambiarVisibilidad')
-            ->label('Cambiar visibilidad')
-            ->modalHeading('Cambiar acceso al documento')
+        return Action::make('compartirDocumento')
+            ->label('Compartir')
+            ->icon('heroicon-o-share')
+            ->modalHeading('Compartir documento')
             ->modalDescription(
-                '¿Quieres cambiar la visibilidad de este documento? '
-                    . 'Al compartirlo, todos los usuarios autenticados '
-                    . 'de la intranet podrán verlo y descargarlo.'
+                'Configura quién puede ver y descargar este documento.'
             )
-            ->modalSubmitActionLabel('Confirmar cambio')
-            ->modalSubmitAction(fn(Action $action) => $action
-                ->color(Color::hex('#176B45'))
-                ->extraAttributes([
-                    'style' => 'background-color: #176B45 !important; color: white !important;',
-                ]))
-            ->requiresConfirmation()
-            ->action(function (array $arguments): void {
+            ->modalWidth('lg')
+            ->modalSubmitActionLabel('Guardar y compartir')
+            ->modalSubmitAction(
+                fn(Action $action) => $action
+                    ->color(Color::hex('#176B45'))
+            )
 
-                $documentoId = (int) ($arguments['documento'] ?? 0);
+            ->fillForm(function (array $arguments): array {
 
                 $documento = Documento::query()
-                    ->whereKey($documentoId)
+                    ->whereKey((int) ($arguments['documento'] ?? 0))
                     ->where('subido_por', auth()->id())
                     ->firstOrFail();
 
-                $documento->es_publico = !$documento->es_publico;
-                $documento->save();
+                $usuarios = $documento
+                    ->usuariosCompartidos()
+                    ->pluck('users.id')
+                    ->all();
+
+                $modo = $documento->es_publico
+                    ? 'todos'
+                    : (count($usuarios) > 0 ? 'usuarios' : 'privado');
+
+                return [
+                    'modo' => $modo,
+                    'correo' => '',
+                    'usuarios' => $usuarios,
+                ];
+            })
+
+            ->schema([
+
+                Select::make('modo')
+                    ->label('¿Quién puede acceder?')
+                    ->options([
+                        'privado' => 'Solo yo (privado)',
+                        'todos' => 'Todos los usuarios de SAVIA PRZ',
+                        'usuarios' => 'Personas específicas',
+                    ])
+                    ->required()
+                    ->native(false)
+                    ->helperText(
+                        'Selecciona una modalidad de acceso.'
+                    ),
+
+                TextInput::make('correo')
+                    ->label('Agregar persona por correo')
+                    ->placeholder('usuario@prz.cl')
+                    ->email()
+                    ->maxLength(255)
+                    ->helperText(
+                        'Opcional. El correo debe pertenecer '
+                            . 'a un usuario activo de SAVIA PRZ.'
+                    ),
+
+                Select::make('usuarios')
+                    ->label('Personas autorizadas')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->options(
+                        fn(): array =>
+                        User::query()
+                            ->where('activo', true)
+                            ->whereKeyNot(auth()->id())
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn(User $user) => [
+                                $user->id => trim(
+                                    $user->name . ' ' . $user->apellido
+                                ) . ' (' . $user->email . ')',
+                            ])
+                            ->all()
+                    )
+                    ->helperText(
+                        'Selecciona los usuarios que tendrán acceso. '
+                            . 'Puedes agregar o quitar personas.'
+                    ),
+            ])
+
+            ->action(function (
+                array $data,
+                array $arguments
+            ): void {
+
+                $documento = Documento::query()
+                    ->whereKey((int) ($arguments['documento'] ?? 0))
+                    ->where('subido_por', auth()->id())
+                    ->firstOrFail();
+
+                $modo = $data['modo'] ?? 'privado';
+
+                if (!in_array(
+                    $modo,
+                    ['privado', 'todos', 'usuarios'],
+                    true
+                )) {
+                    throw ValidationException::withMessages([
+                        'modo' => 'Selecciona una modalidad válida.',
+                    ]);
+                }
+
+                // Usuarios previamente autorizados.
+                $anteriores = $documento
+                    ->usuariosCompartidos()
+                    ->pluck('users.id')
+                    ->map(fn($id) => (int) $id)
+                    ->all();
+
+                // PRIVADO O TODOS
+                if ($modo !== 'usuarios') {
+
+                    DB::transaction(function () use (
+                        $documento,
+                        $modo
+                    ): void {
+
+                        // Retirar permisos individuales anteriores.
+                        $documento->usuariosCompartidos()
+                            ->sync([]);
+
+                        $documento->es_publico = $modo === 'todos';
+                        $documento->save();
+                    });
+
+                    Notification::make()
+                        ->title(
+                            $modo === 'todos'
+                                ? 'Documento compartido con toda la intranet'
+                                : 'Documento configurado como privado'
+                        )
+                        ->success()
+                        ->send();
+
+                    return;
+                }
+
+                // USUARIOS ESPECÍFICOS
+                $solicitados = collect($data['usuarios'] ?? [])
+                    ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values();
+
+                $correo = trim($data['correo'] ?? '');
+
+                if ($correo !== '') {
+
+                    $usuarioCorreo = User::query()
+                        ->where('email', $correo)
+                        ->where('activo', true)
+                        ->first();
+
+                    if (!$usuarioCorreo) {
+                        throw ValidationException::withMessages([
+                            'correo' =>
+                            'El correo no pertenece a un usuario activo.',
+                        ]);
+                    }
+
+                    if ((int) $usuarioCorreo->id === (int) auth()->id()) {
+                        throw ValidationException::withMessages([
+                            'correo' =>
+                            'Ya tienes acceso porque eres el propietario.',
+                        ]);
+                    }
+
+                    $solicitados->push((int) $usuarioCorreo->id);
+                }
+
+                $solicitados = $solicitados
+                    ->unique()
+                    ->values();
+
+                $validos = User::query()
+                    ->where('activo', true)
+                    ->whereKeyNot(auth()->id())
+                    ->whereIn('id', $solicitados->all())
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id);
+
+                if ($validos->count() !== $solicitados->count()) {
+                    throw ValidationException::withMessages([
+                        'usuarios' =>
+                        'La selección contiene usuarios no autorizados.',
+                    ]);
+                }
+
+                if ($validos->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'usuarios' =>
+                        'Selecciona al menos un destinatario '
+                            . 'o utiliza la modalidad privada.',
+                    ]);
+                }
+
+                // Guardar de manera consistente.
+                DB::transaction(function () use (
+                    $documento,
+                    $validos
+                ): void {
+
+                    // Desactivar acceso público primero.
+                    $documento->es_publico = false;
+                    $documento->save();
+
+                    // Agregar y revocar permisos individuales.
+                    $documento->usuariosCompartidos()
+                        ->sync($validos->all());
+                });
+
+                // Notificar solamente a los nuevos usuarios.
+                $nuevosIds = array_values(
+                    array_diff(
+                        $validos->all(),
+                        $anteriores
+                    )
+                );
+
+                $nuevos = User::query()
+                    ->whereIn('id', $nuevosIds)
+                    ->where('activo', true)
+                    ->get();
+
+                $enlace = route('documentos.ver', [
+                    'documento' => $documento->id,
+                ]);
+
+                $enviados = 0;
+                $fallidos = 0;
+
+                foreach ($nuevos as $usuario) {
+
+                    try {
+
+                        Mail::raw(
+                            "Hola {$usuario->name},\n\n"
+                                . "Han compartido contigo un documento "
+                                . "en SAVIA PRZ.\n\n"
+                                . "Documento: {$documento->nombre_original}\n\n"
+                                . "Para visualizarlo, ingresa aquí:\n"
+                                . "{$enlace}\n\n"
+                                . "Debes iniciar sesión en SAVIA PRZ "
+                                . "con tu cuenta autorizada.\n\n"
+                                . "Saludos,\nSAVIA PRZ",
+
+                            function ($mensaje) use ($usuario) {
+                                $mensaje
+                                    ->to($usuario->email)
+                                    ->subject(
+                                        'SAVIA PRZ - Documento compartido'
+                                    );
+                            }
+                        );
+
+                        $enviados++;
+                    } catch (\Throwable $e) {
+
+                        report($e);
+                        $fallidos++;
+                    }
+                }
 
                 Notification::make()
-                    ->title(
-                        $documento->es_publico
-                            ? 'Documento compartido con todos'
-                            : 'Acceso general desactivado'
+                    ->title('Permisos actualizados correctamente')
+                    ->body(
+                        'Usuarios autorizados: ' . $validos->count()
+                            . '. Invitaciones enviadas: ' . $enviados
+                            . ($fallidos > 0
+                                ? '. Envíos fallidos: ' . $fallidos
+                                : '')
                     )
                     ->success()
                     ->send();
@@ -450,21 +696,22 @@ class ManageDocumentos extends ManageRecords
         ];
     }
 
-
-    public function compartirUsuariosAction(): Action
+    public function compartirDocumentoAction(): Action
     {
-        return Action::make('compartirUsuarios')
-            ->label('Compartir con usuarios')
+        return Action::make('compartirDocumento')
+            ->label('Compartir')
+            ->icon('heroicon-o-share')
             ->modalHeading('Compartir documento')
             ->modalDescription(
-                'Selecciona los usuarios que podrán ver y descargar '
-                    . 'este documento. Puedes modificar estos permisos después.'
+                'Configura quién puede ver y descargar este documento.'
             )
-            ->modalSubmitActionLabel('Guardar permisos')
             ->modalWidth('lg')
-            ->color(Color::hex('#176B45'))
+            ->modalSubmitActionLabel('Guardar y compartir')
+            ->modalSubmitAction(
+                fn(Action $action) => $action
+                    ->color(Color::hex('#176B45'))
+            )
 
-            // Cargar los usuarios que ya tienen permiso.
             ->fillForm(function (array $arguments): array {
 
                 $documento = Documento::query()
@@ -472,17 +719,49 @@ class ManageDocumentos extends ManageRecords
                     ->where('subido_por', auth()->id())
                     ->firstOrFail();
 
+                $usuarios = $documento
+                    ->usuariosCompartidos()
+                    ->pluck('users.id')
+                    ->all();
+
+                $modo = $documento->es_publico
+                    ? 'todos'
+                    : (count($usuarios) > 0 ? 'usuarios' : 'privado');
+
                 return [
-                    'usuarios' => $documento
-                        ->usuariosCompartidos()
-                        ->pluck('users.id')
-                        ->all(),
+                    'modo' => $modo,
+                    'correo' => '',
+                    'usuarios' => $usuarios,
                 ];
             })
 
             ->schema([
+
+                Select::make('modo')
+                    ->label('¿Quién puede acceder?')
+                    ->options([
+                        'privado' => 'Solo yo (privado)',
+                        'todos' => 'Todos los usuarios de SAVIA PRZ',
+                        'usuarios' => 'Personas específicas',
+                    ])
+                    ->required()
+                    ->native(false)
+                    ->helperText(
+                        'Selecciona una modalidad de acceso.'
+                    ),
+
+                TextInput::make('correo')
+                    ->label('Agregar persona por correo')
+                    ->placeholder('usuario@prz.cl')
+                    ->email()
+                    ->maxLength(255)
+                    ->helperText(
+                        'Opcional. El correo debe pertenecer '
+                            . 'a un usuario activo de SAVIA PRZ.'
+                    ),
+
                 Select::make('usuarios')
-                    ->label('Usuarios autorizados')
+                    ->label('Personas autorizadas')
                     ->multiple()
                     ->searchable()
                     ->preload()
@@ -501,10 +780,8 @@ class ManageDocumentos extends ManageRecords
                             ->all()
                     )
                     ->helperText(
-                        'Selecciona uno o varios usuarios. '
-                            . 'Si quitas un usuario y guardas, perderá el acceso. '
-                            . 'Si dejas la selección vacía, se retirarán todos '
-                            . 'los permisos individuales.'
+                        'Selecciona los usuarios que tendrán acceso. '
+                            . 'Puedes agregar o quitar personas.'
                     ),
             ])
 
@@ -513,15 +790,91 @@ class ManageDocumentos extends ManageRecords
                 array $arguments
             ): void {
 
-                // Revalidar propiedad al guardar.
                 $documento = Documento::query()
                     ->whereKey((int) ($arguments['documento'] ?? 0))
                     ->where('subido_por', auth()->id())
                     ->firstOrFail();
 
-                // Nunca confiar solamente en las opciones del Select.
+                $modo = $data['modo'] ?? 'privado';
+
+                if (!in_array(
+                    $modo,
+                    ['privado', 'todos', 'usuarios'],
+                    true
+                )) {
+                    throw ValidationException::withMessages([
+                        'modo' => 'Selecciona una modalidad válida.',
+                    ]);
+                }
+
+                // Usuarios previamente autorizados.
+                $anteriores = $documento
+                    ->usuariosCompartidos()
+                    ->pluck('users.id')
+                    ->map(fn($id) => (int) $id)
+                    ->all();
+
+                // PRIVADO O TODOS
+                if ($modo !== 'usuarios') {
+
+                    DB::transaction(function () use (
+                        $documento,
+                        $modo
+                    ): void {
+
+                        // Retirar permisos individuales anteriores.
+                        $documento->usuariosCompartidos()
+                            ->sync([]);
+
+                        $documento->es_publico = $modo === 'todos';
+                        $documento->save();
+                    });
+
+                    Notification::make()
+                        ->title(
+                            $modo === 'todos'
+                                ? 'Documento compartido con toda la intranet'
+                                : 'Documento configurado como privado'
+                        )
+                        ->success()
+                        ->send();
+
+                    return;
+                }
+
+                // USUARIOS ESPECÍFICOS
                 $solicitados = collect($data['usuarios'] ?? [])
                     ->map(fn($id) => (int) $id)
+                    ->unique()
+                    ->values();
+
+                $correo = trim($data['correo'] ?? '');
+
+                if ($correo !== '') {
+
+                    $usuarioCorreo = User::query()
+                        ->where('email', $correo)
+                        ->where('activo', true)
+                        ->first();
+
+                    if (!$usuarioCorreo) {
+                        throw ValidationException::withMessages([
+                            'correo' =>
+                            'El correo no pertenece a un usuario activo.',
+                        ]);
+                    }
+
+                    if ((int) $usuarioCorreo->id === (int) auth()->id()) {
+                        throw ValidationException::withMessages([
+                            'correo' =>
+                            'Ya tienes acceso porque eres el propietario.',
+                        ]);
+                    }
+
+                    $solicitados->push((int) $usuarioCorreo->id);
+                }
+
+                $solicitados = $solicitados
                     ->unique()
                     ->values();
 
@@ -529,22 +882,99 @@ class ManageDocumentos extends ManageRecords
                     ->where('activo', true)
                     ->whereKeyNot(auth()->id())
                     ->whereIn('id', $solicitados->all())
-                    ->pluck('id');
+                    ->pluck('id')
+                    ->map(fn($id) => (int) $id);
 
-                abort_unless(
-                    $validos->count() === $solicitados->count(),
-                    422,
-                    'La selección contiene usuarios no autorizados.'
+                if ($validos->count() !== $solicitados->count()) {
+                    throw ValidationException::withMessages([
+                        'usuarios' =>
+                        'La selección contiene usuarios no autorizados.',
+                    ]);
+                }
+
+                if ($validos->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'usuarios' =>
+                        'Selecciona al menos un destinatario '
+                            . 'o utiliza la modalidad privada.',
+                    ]);
+                }
+
+                // Guardar de manera consistente.
+                DB::transaction(function () use (
+                    $documento,
+                    $validos
+                ): void {
+
+                    // Desactivar acceso público primero.
+                    $documento->es_publico = false;
+                    $documento->save();
+
+                    // Agregar y revocar permisos individuales.
+                    $documento->usuariosCompartidos()
+                        ->sync($validos->all());
+                });
+
+                // Notificar solamente a los nuevos usuarios.
+                $nuevosIds = array_values(
+                    array_diff(
+                        $validos->all(),
+                        $anteriores
+                    )
                 );
 
-                // Agregar nuevos y quitar los desmarcados.
-                $documento->usuariosCompartidos()
-                    ->sync($validos->all());
+                $nuevos = User::query()
+                    ->whereIn('id', $nuevosIds)
+                    ->where('activo', true)
+                    ->get();
+
+                $enlace = route('documentos.ver', [
+                    'documento' => $documento->id,
+                ]);
+
+                $enviados = 0;
+                $fallidos = 0;
+
+                foreach ($nuevos as $usuario) {
+
+                    try {
+
+                        Mail::raw(
+                            "Hola {$usuario->name},\n\n"
+                                . "Han compartido contigo un documento "
+                                . "en SAVIA PRZ.\n\n"
+                                . "Documento: {$documento->nombre_original}\n\n"
+                                . "Para visualizarlo, ingresa aquí:\n"
+                                . "{$enlace}\n\n"
+                                . "Debes iniciar sesión en SAVIA PRZ "
+                                . "con tu cuenta autorizada.\n\n"
+                                . "Saludos,\nSAVIA PRZ",
+
+                            function ($mensaje) use ($usuario) {
+                                $mensaje
+                                    ->to($usuario->email)
+                                    ->subject(
+                                        'SAVIA PRZ - Documento compartido'
+                                    );
+                            }
+                        );
+
+                        $enviados++;
+                    } catch (\Throwable $e) {
+
+                        report($e);
+                        $fallidos++;
+                    }
+                }
 
                 Notification::make()
                     ->title('Permisos actualizados correctamente')
                     ->body(
                         'Usuarios autorizados: ' . $validos->count()
+                            . '. Invitaciones enviadas: ' . $enviados
+                            . ($fallidos > 0
+                                ? '. Envíos fallidos: ' . $fallidos
+                                : '')
                     )
                     ->success()
                     ->send();

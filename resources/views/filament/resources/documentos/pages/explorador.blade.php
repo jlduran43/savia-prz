@@ -417,34 +417,28 @@
 
                                     @if ($elemento['tipo'] === 'archivo' && $elemento['es_propietario'])
                                         <button type="button"
-                                            wire:click="mountAction('cambiarVisibilidad', { documento: {{ $elemento['id'] }} })"
+                                            wire:click="mountAction('compartirDocumento', { documento: {{ $elemento['id'] }} })"
                                             style="
                 display: inline-flex;
                 align-items: center;
                 gap: 7px;
-                padding: 7px 10px;
-                background: #f3f4f6;
-                border: 1px solid #e5e7eb;
+                padding: 9px 14px;
+                background: #176B45;
+                border: 1px solid #176B45;
                 border-radius: 8px;
-                color: #176B45;
+                color: #ffffff;
                 cursor: pointer;
                 font-size: 13px;
                 font-weight: 600;
             ">
-                                            {{ $elemento['es_publico'] ? 'Volver a privado' : 'Compartir Todos' }}
+                                            Compartir
                                         </button>
                                     @elseif ($elemento['tipo'] === 'archivo' && $elemento['es_publico'])
-                                        <span
-                                            style="
-            color: #176B45;
-            font-size: 12px;
-        ">
-                                            Compartido
+                                        <span style="color: #176B45; font-size: 12px;">
+                                            Compartido con todos
                                         </span>
                                     @else
-                                        <span style="color: #9ca3af;">
-                                            —
-                                        </span>
+                                        <span style="color: #9ca3af;">—</span>
                                     @endif
 
                                 </td>

@@ -226,6 +226,8 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 Route::get('/documentos/{documento}/office-original', function (Documento $documento) {
 
+    DocumentoAcceso::verificar($documento);
+
     $extension = strtolower(
         pathinfo($documento->nombre_original ?? '', PATHINFO_EXTENSION)
     );
@@ -267,5 +269,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
     return $response;
 
 })
-->middleware(['signed', 'throttle:20,1'])
+->middleware(['auth', 'signed', 'throttle:20,1'])
 ->name('documentos.office-original');
+
