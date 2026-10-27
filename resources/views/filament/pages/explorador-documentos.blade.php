@@ -735,19 +735,137 @@
                                 vacías. Los documentos se eliminan lógicamente si el modelo usa SoftDeletes.</small>
                         </div>
                     </template>
-                    <template x-if="modal==='move'">
-                        <div><label>Carpeta de destino</label><select x-model="destination">
-                                <option value="">Selecciona destino</option><template x-for="f in destinations"
-                                    :key="f.id">
-                                    <option :value="String(f.id)" x-text="f.nombre"></option>
+                    <template x-if="modal === 'move'">
+                        <div>
+
+                            <p style="margin-bottom:16px;color:#64748b">
+                                Vas a mover
+                                <strong x-text="selected?.name"></strong>.
+                                Selecciona una carpeta de destino:
+                            </p>
+
+                            <div
+                                style="
+            border:1px solid #d5e2eb;
+            border-radius:12px;
+            padding:8px;
+            max-height:320px;
+            overflow-y:auto;
+        ">
+
+                                <!-- Carpeta raíz -->
+                                <button type="button" class="btn"
+                                    style="
+                    width:100%;
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-bottom:5px;
+                    text-align:left;
+                "
+                                    :style="destination === 'root'
+                                        ?
+                                        'background:#e3f1ff;border-color:#93c5fd;' :
+                                        ''"
+                                    @click="destination = 'root'">
+
+                                    <span>📁 Mis archivos</span>
+
+                                    <span x-show="destination === 'root'">
+                                        ✓
+                                    </span>
+                                </button>
+
+                                <!-- Carpetas disponibles -->
+                                <template x-for="folder in moveOptions" :key="folder.id">
+
+                                    <button type="button" class="btn"
+                                        style="
+                        width:100%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:space-between;
+                        margin-bottom:5px;
+                        text-align:left;
+                    "
+                                        :style="destination === String(folder.id) ?
+                                            'background:#e3f1ff;border-color:#93c5fd;' :
+                                            ''"
+                                        @click="destination = String(folder.id)">
+
+                                        <span style="display:flex;align-items:center;gap:8px"
+                                            :style="'padding-left:' + (folder.depth * 20) + 'px'">
+
+                                            <span>📁</span>
+                                            <span x-text="folder.name"></span>
+
+                                        </span>
+
+                                        <span x-show="destination === String(folder.id)">
+                                            ✓
+                                        </span>
+
+                                    </button>
+
                                 </template>
-                            </select></div>
+
+                            </div>
+
+                            <!-- Destino seleccionado -->
+                            <div
+                                style="
+            background:#eff6ff;
+            border-radius:10px;
+            padding:15px;
+            margin-top:15px;
+            color:#335c80;
+        ">
+
+                                <strong>Destino elegido:</strong>
+                                <span x-text="moveDestinationName"></span>
+
+                                <p
+                                    style="
+                font-size:12px;
+                color:#8297ad;
+                margin-top:6px;
+            ">
+                                    Los documentos conservarán su propietario
+                                    y sus permisos de acceso.
+                                </p>
+
+                            </div>
+
+                            <p x-show="!canConfirmMove" style="margin-top:12px;color:#b45309;font-size:13px">
+                                Selecciona una carpeta de destino diferente
+                                a la ubicación actual.
+                            </p>
+
+                        </div>
                     </template>
                 </div>
-                <div class="modalFoot"><button class="btn" @click="modal=null">Cerrar</button><button
-                        class="btn primary" :disabled="busy || (modal === 'months' && !newMonths.length)"
+                <div class="modalFoot">
+
+                    <button type="button" class="btn" @click="modal = null">
+                        Cerrar
+                    </button>
+
+                    <button type="button" class="btn primary"
+                        :disabled="busy ||
+                            (modal === 'move' && !canConfirmMove) ||
+                            (modal === 'months' && !newMonths.length)"
                         @click="confirmModal()"
-                        x-text="busy?'Guardando...':modal==='months'?'Crear '+newMonths.length+' carpetas':'Guardar'"></button>
+                        x-text="
+            busy
+                ? 'Guardando...'
+                : modal === 'move'
+                    ? 'Mover aquí'
+                    : modal === 'months'
+                        ? 'Crear ' + newMonths.length + ' carpetas'
+                        : 'Guardar'
+        ">
+                    </button>
+
                 </div>
             </div>
         </div>
@@ -874,6 +992,8 @@
                 selected: null,
                 destinations: [],
                 destination: '',
+                moveOrigin: null,
+                movePath: [],
                 mostrarAyuda: false,
                 ctx: {
                     show: false,
@@ -1059,6 +1179,119 @@
                         this.notice = 'Carpeta creada correctamente.';
                     });
                 },
+
+                async beginMove(item) {
+                    if (this.busy) return;
+
+                    this.selected = item;
+                    this.moveOrigin = this.current;
+                    this.destination = this.current === null ?
+                        'root' :
+                        String(this.current);
+
+                    try {
+                        const data = await this.request('/destinations');
+
+                        this.destinations = data.folders ?? [];
+                        this.modal = 'move';
+                    } catch (error) {
+                        alert(error.message);
+                    }
+                },
+
+                get moveOptions() {
+                    const folders = this.destinations;
+                    const excluded = new Set();
+
+                    if (this.selected?.type === 'folder') {
+                        const selectedId = Number(this.selected.id);
+                        excluded.add(selectedId);
+
+                        // Excluir todos sus descendientes.
+                        let changed = true;
+
+                        while (changed) {
+                            changed = false;
+
+                            for (const folder of folders) {
+                                if (
+                                    folder.carpeta_padre_id !== null &&
+                                    excluded.has(Number(folder.carpeta_padre_id)) &&
+                                    !excluded.has(Number(folder.id))
+                                ) {
+                                    excluded.add(Number(folder.id));
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+
+                    const result = [];
+
+                    function visit(parentId, depth, visited = new Set()) {
+                        if (depth > 100) return;
+
+                        for (const folder of folders) {
+                            const parent = folder.carpeta_padre_id === null ?
+                                null :
+                                Number(folder.carpeta_padre_id);
+
+                            if (parent !== parentId) continue;
+
+                            const id = Number(folder.id);
+
+                            if (excluded.has(id) || visited.has(id)) continue;
+
+                            result.push({
+                                id,
+                                name: folder.nombre,
+                                depth,
+                            });
+
+                            const nextVisited = new Set(visited);
+                            nextVisited.add(id);
+
+                            visit(id, depth + 1, nextVisited);
+                        }
+                    }
+
+                    visit(null, 0);
+
+                    return result;
+                },
+
+                get moveDestinationName() {
+                    if (this.destination === 'root') {
+                        return 'Mis archivos';
+                    }
+
+                    const folder = this.destinations.find(
+                        f => String(f.id) === this.destination
+                    );
+
+                    return folder?.nombre ?? 'Selecciona una carpeta';
+                },
+
+                get canConfirmMove() {
+                    if (!this.selected || this.busy) return false;
+
+                    const target = this.destination === 'root' ?
+                        null :
+                        Number(this.destination);
+
+                    const origin = this.moveOrigin === null ?
+                        null :
+                        Number(this.moveOrigin);
+
+                    if (target === origin) return false;
+
+                    if (target === null) return true;
+
+                    return this.moveOptions.some(
+                        folder => folder.id === target
+                    );
+                },
+
                 async confirmModal() {
                     if (this.modal === 'folder')
                         return this.makeFolder();
@@ -1097,19 +1330,32 @@
                     }
 
                     if (this.modal === 'move') {
+
+                        if (!this.canConfirmMove) {
+                            alert('Selecciona una carpeta de destino válida.');
+                            return;
+                        }
+
                         return this.run(async () => {
+
                             const kind = this.selected.type === 'folder' ?
                                 'folders' :
                                 'files';
 
-                            await this.request(
+                            const destinoId = this.destination === 'root' ?
+                                null :
+                                Number(this.destination);
+
+                            const resultado = await this.request(
                                 '/' + kind + '/' + this.selected.id + '/move',
                                 'POST', {
-                                    destino_id: Number(this.destination)
+                                    destino_id: destinoId
                                 }
                             );
 
-                            this.notice = 'Elemento movido.';
+                            this.notice = resultado.message ??
+                                'Elemento movido correctamente.';
+
                         });
                     }
                 },

@@ -240,33 +240,122 @@ class DrivePrzController extends Controller
     public function move(Request $request, string $kind, int $id)
     {
         abort_unless(in_array($kind, ['folders', 'files'], true), 404);
-        $d = $request->validate(['destino_id' => ['required', 'integer']]);
-        $dest = $this->folder((int)$d['destino_id']);
-        if ($kind === 'folders') {
-            $c = $this->folder($id);
-            abort_if($c->id === $dest->id, 422, 'No puedes mover una carpeta dentro de sí misma.');
-            $cursor = $dest;
-            $seen = [];
-            while ($cursor && !isset($seen[$cursor->id])) {
-                abort_if($cursor->id === $c->id, 422, 'No puedes mover una carpeta a una subcarpeta propia.');
-                $seen[$cursor->id] = true;
-                $cursor = $cursor->carpeta_padre_id ? $this->folder((int)$cursor->carpeta_padre_id) : null;
+
+        $data = $request->validate([
+            'destino_id' => ['present', 'nullable', 'integer', 'min:1'],
+        ]);
+
+        $destinoId = $data['destino_id'] === null
+            ? null
+            : (int) $data['destino_id'];
+
+        return DB::transaction(function () use ($kind, $id, $destinoId) {
+
+            // Validar que el destino pertenece al usuario.
+            if ($destinoId !== null) {
+                $this->folder($destinoId);
             }
-            if ($this->uniqueFolder($c->nombre, $dest->id, $c->id)) throw ValidationException::withMessages(['nombre' => 'Ya existe esa carpeta en el destino.']);
-            $c->carpeta_padre_id = $dest->id;
-            $c->save();
-        } else {
-            $f = $this->file($id);
-            $f->carpeta_id = $dest->id;
-            $f->save();
-        }
-        return response()->json(['ok' => true]);
+
+            if ($kind === 'folders') {
+
+                $carpeta = $this->folder($id);
+
+                $origenId = $carpeta->carpeta_padre_id === null
+                    ? null
+                    : (int) $carpeta->carpeta_padre_id;
+
+                if ($origenId === $destinoId) {
+                    throw ValidationException::withMessages([
+                        'destino_id' => 'La carpeta ya se encuentra en este destino.',
+                    ]);
+                }
+
+                if ($destinoId === (int) $carpeta->id) {
+                    throw ValidationException::withMessages([
+                        'destino_id' => 'No puedes mover una carpeta dentro de sí misma.',
+                    ]);
+                }
+
+                // Evitar mover una carpeta dentro de sus descendientes.
+                $cursorId = $destinoId;
+                $visitados = [];
+
+                while ($cursorId !== null) {
+
+                    if (isset($visitados[$cursorId])) {
+                        throw ValidationException::withMessages([
+                            'destino_id' => 'Se detectó una estructura circular de carpetas.',
+                        ]);
+                    }
+
+                    $visitados[$cursorId] = true;
+
+                    if ($cursorId === (int) $carpeta->id) {
+                        throw ValidationException::withMessages([
+                            'destino_id' => 'No puedes mover una carpeta dentro de una de sus subcarpetas.',
+                        ]);
+                    }
+
+                    $actual = $this->folder($cursorId);
+
+                    $cursorId = $actual->carpeta_padre_id === null
+                        ? null
+                        : (int) $actual->carpeta_padre_id;
+                }
+
+                // Evitar carpetas duplicadas.
+                if ($this->uniqueFolder(
+                    $carpeta->nombre,
+                    $destinoId,
+                    $carpeta->id
+                )) {
+                    throw ValidationException::withMessages([
+                        'destino_id' => 'Ya existe una carpeta con ese nombre en el destino.',
+                    ]);
+                }
+
+                $carpeta->carpeta_padre_id = $destinoId;
+                $carpeta->save();
+            } else {
+
+                $archivo = $this->file($id);
+
+                $origenId = $archivo->carpeta_id === null
+                    ? null
+                    : (int) $archivo->carpeta_id;
+
+                if ($origenId === $destinoId) {
+                    throw ValidationException::withMessages([
+                        'destino_id' => 'El archivo ya se encuentra en esta carpeta.',
+                    ]);
+                }
+
+                $archivo->carpeta_id = $destinoId;
+                $archivo->save();
+            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Elemento movido correctamente.',
+                'destino_id' => $destinoId,
+            ]);
+        });
     }
 
     public function destinations()
     {
-        $folders = DocumentoCarpeta::query()->where('creado_por', auth()->id())->orderBy('nombre')->get(['id', 'nombre', 'carpeta_padre_id']);
-        return response()->json(['folders' => $folders]);
+        $folders = DocumentoCarpeta::query()
+            ->where('creado_por', auth()->id())
+            ->orderBy('nombre')
+            ->get([
+                'id',
+                'nombre',
+                'carpeta_padre_id',
+            ]);
+
+        return response()->json([
+            'folders' => $folders,
+        ]);
     }
 
     public function download(int $id)
