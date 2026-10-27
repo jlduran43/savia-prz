@@ -46,7 +46,9 @@ class DrivePrzController extends Controller
 
     public function screen()
     {
-        return view('drive-prz-v5.panel');
+        return response()->file(
+            resource_path('drive-prz/index.html')
+        );
     }
 
     public function listing(Request $request)
