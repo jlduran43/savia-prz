@@ -42,16 +42,97 @@ function drivePrzV5(){return {
  toggleMonth(n){this.chosen=this.chosen.includes(n)?this.chosen.filter(v=>v!==n):[...this.chosen,n].sort((a,b)=>a-b)},
  size(v){if(v==null)return '—';return v<1024?v+' B':v<1048576?(v/1024).toFixed(1)+' KB':(v/1048576).toFixed(1)+' MB'},date(v){return v?new Date(v).toLocaleDateString('es-CL'):'—'},
  async request(path,method='GET',data=null){const isForm=data instanceof FormData;let response=await fetch(this.api+path,{method,headers:{'Accept':'application/json','X-CSRF-TOKEN':this.csrf,...(data&&!isForm?{'Content-Type':'application/json'}:{})},body:data?(isForm?data:JSON.stringify(data)):undefined,credentials:'same-origin'});if(!response.ok){let problem=await response.json().catch(()=>({}));throw new Error(Object.values(problem.errors||{}).flat()[0]||problem.message||'Error HTTP '+response.status)}return response.json()},
- async load(){try{let data=await this.request('/items'+(this.current?'?carpeta_id='+this.current:''));this.items=data.items;this.trail=data.trail}catch(e){alert(e.message)}},
+ async load() {
+    try {
+        const data = await this.request(
+            '/data' +
+            (this.current !== null
+                ? '?carpeta_id=' + this.current
+                : '')
+        );
+
+        this.items = data.items ?? [];
+        this.trail = data.trail ?? [];
+
+    } catch (e) {
+        console.error('Error cargando archivos:', e);
+        alert(e.message);
+    }
+},
  navigate(id){this.current=id;this.search='';this.load()},open(item){if(item.type==='folder')this.navigate(item.id);else window.open(this.api+'/files/'+item.id+'/preview','_blank','noopener')},download(item){window.location.href=this.api+'/files/'+item.id+'/download'},
  async run(fn){this.busy=true;try{await fn();this.modal=null;await this.load()}catch(e){alert(e.message)}finally{this.busy=false}},
- makeFolder(){this.run(async()=>{await this.request('/folders','POST',{nombre:this.name,carpeta_padre_id:this.current});this.notice='Carpeta creada correctamente.'})},
- async confirmModal(){if(this.modal==='folder')return this.makeFolder();if(this.modal==='months')return this.run(async()=>{let data=await this.request('/months','POST',{carpeta_padre_id:this.current,meses:this.newMonths});this.notice=data.created+' carpetas creadas, '+data.skipped+' omitidas.'});if(this.modal==='bulk')return this.run(async()=>{let d=await this.request('/bulk','POST',{carpeta_padre_id:this.current,estructura:this.outline});this.notice=d.created+' carpetas creadas.'});if(this.modal==='rename')return this.run(async()=>{await this.request('/'+(this.selected.type==='folder'?'folders':'files')+'/'+this.selected.id+'/rename','PATCH',{nombre:this.name});this.notice='Nombre actualizado.'});if(this.modal==='move')return this.run(async()=>{await this.request('/'+(this.selected.type==='folder'?'folders':'files')+'/'+this.selected.id+'/move','PATCH',{destino_id:Number(this.destination)});this.notice='Elemento movido.'})},
- beginRename(item){this.selected=item;this.name=item.name;this.modal='rename'},async beginMove(item){this.selected=item;try{this.destinations=(await this.request('/destinations')).folders.filter(f=>!(item.type==='folder'&&f.id===item.id));this.destination='';this.modal='move'}catch(e){alert(e.message)}},
+ makeFolder() {
+    const nombre = this.name.trim();
+
+    if (!nombre) {
+        alert('Debes ingresar un nombre para la carpeta.');
+        return;
+    }
+
+    if (this.busy) return;
+
+    this.run(async () => {
+        await this.request('/folders', 'POST', {
+            nombre: nombre,
+            carpeta_padre_id: this.current
+        });
+
+        this.notice = 'Carpeta creada correctamente.';
+    });
+},
+ async confirmModal(){
+    if(this.modal==='folder')
+        return this.makeFolder();
+    if(this.modal==='months')
+        return this.run(async()=>{
+    let data=await this.request('/months','POST',{
+        carpeta_padre_id:this.current,meses:this.newMonths
+    });
+    
+    this.notice=data.created+' carpetas creadas, '+data.skipped+' omitidas.'
+});
+    if(this.modal==='bulk')
+    return this.run(async()=>{
+        let d=await this.request('/bulk','POST',{
+            carpeta_padre_id:this.current,estructura:this.outline
+        });
+        this.notice=d.created+' carpetas creadas.'
+    });
+    if (this.modal === 'rename') {
+    return this.run(async () => {
+        const kind = this.selected.type === 'folder'
+            ? 'folders'
+            : 'files';
+
+        await this.request(
+            '/' + kind + '/' + this.selected.id,
+            'PATCH',
+            { nombre: this.name }
+        );
+
+        this.notice = 'Nombre actualizado.';
+    });
+}
+
+if (this.modal === 'move') {
+    return this.run(async () => {
+        const kind = this.selected.type === 'folder'
+            ? 'folders'
+            : 'files';
+
+        await this.request(
+            '/' + kind + '/' + this.selected.id + '/move',
+            'POST',
+            { destino_id: Number(this.destination) }
+        );
+
+        this.notice = 'Elemento movido.';
+    });
+},
  async removeItem(){if(!confirm('¿Eliminar '+this.selected.name+'?'))return;await this.run(async()=>{await this.request('/'+(this.selected.type==='folder'?'folders':'files')+'/'+this.selected.id,'DELETE');this.notice='Elemento eliminado.'})},
  context(e,item){this.ctx={show:true,x:Math.min(e.clientX,innerWidth-205),y:Math.min(e.clientY,innerHeight-180),item}},
- async uploadFiles(e){const files=[...e.target.files];e.target.value='';if(!files.length)return;if(!this.current){alert('Primero crea o abre una carpeta para subir documentos.');return}await this.run(async()=>{for(const f of files){const body=new FormData();body.append('archivo',f);body.append('carpeta_id',this.current);await this.request('/upload','POST',body)}this.notice=files.length+' archivos subidos.'})},
- async uploadDirectory(e){const files=[...e.target.files];e.target.value='';if(!files.length)return;await this.run(async()=>{let created=0;let dirs=new Map([['',this.current]]);const paths=[...new Set(files.flatMap(f=>{let parts=(f.webkitRelativePath||f.name).split('/');return parts.slice(0,-1).map((_,i)=>parts.slice(0,i+1).join('/'))}))].sort((a,b)=>a.split('/').length-b.split('/').length);for(const p of paths){const split=p.split('/'),parent=split.slice(0,-1).join('/');let d=await this.request('/folders/ensure','POST',{nombre:split.at(-1),carpeta_padre_id:dirs.get(parent)});dirs.set(p,d.id);created++}for(const f of files){let p=(f.webkitRelativePath||f.name).split('/').slice(0,-1).join('/');let id=dirs.get(p);if(id==null){throw Error('Primero crea o abre una carpeta de destino.')}let body=new FormData();body.append('archivo',f);body.append('carpeta_id',id);await this.request('/upload','POST',body)}this.notice=created+' carpetas procesadas y '+files.length+' archivos subidos.'})}
+ async uploadFiles(e){const files=[...e.target.files];e.target.value='';if(!files.length)return;if(!this.current){alert('Primero crea o abre una carpeta para subir documentos.');return}await this.run(async()=>{for(const f of files){const body=new FormData();body.append('archivo',f);body.append('carpeta_id',this.current);await this.request('/files', 'POST', body)}this.notice=files.length+' archivos subidos.'})},
+ async uploadDirectory(e){const files=[...e.target.files];e.target.value='';if(!files.length)return;await this.run(async()=>{let created=0;let dirs=new Map([['',this.current]]);const paths=[...new Set(files.flatMap(f=>{let parts=(f.webkitRelativePath||f.name).split('/');return parts.slice(0,-1).map((_,i)=>parts.slice(0,i+1).join('/'))}))].sort((a,b)=>a.split('/').length-b.split('/').length);for(const p of paths){const split=p.split('/'),parent=split.slice(0,-1).join('/');let d=await this.request('/ensure-folder','POST',{nombre:split.at(-1),carpeta_padre_id:dirs.get(parent)});dirs.set(p,d.id);created++}for(const f of files){let p=(f.webkitRelativePath||f.name).split('/').slice(0,-1).join('/');let id=dirs.get(p);if(id==null){throw Error('Primero crea o abre una carpeta de destino.')}let body=new FormData();body.append('archivo',f);body.append('carpeta_id',id);await this.request('/files', 'POST', body)}this.notice=created+' carpetas procesadas y '+files.length+' archivos subidos.'})}
 }}
 </script>
 </x-filament-panels::page>
