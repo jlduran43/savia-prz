@@ -143,6 +143,7 @@ class DrivePrzController extends Controller
             $doc = new Documento();
             $doc->carpeta_id = (int)$d['carpeta_id'];
             $doc->nombre_original = $file->getClientOriginalName();
+            $doc->nombre_almacenado = basename($path);
             $doc->ruta_archivo = $path;
             $doc->subido_por = auth()->id();
             $doc->save();
