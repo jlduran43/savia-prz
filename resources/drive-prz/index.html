@@ -2945,6 +2945,83 @@
         }
       }
 
+      // SUBIR ARCHIVOS REALES A SAVIA PRZ
+      async function subirArchivosLaravel(archivos) {
+        if (!archivos.length) return;
+
+        const boton = document.getElementById('uploadButton');
+        const tokenCookie = document.cookie
+          .split('; ')
+          .find(c => c.startsWith('XSRF-TOKEN='));
+
+        if (!tokenCookie) {
+          alert('No se encontró el token de seguridad. Recarga la página.');
+          return;
+        }
+
+        const token = decodeURIComponent(
+          tokenCookie.substring('XSRF-TOKEN='.length)
+        );
+
+        boton.disabled = true;
+
+        let subidos = 0;
+        const errores = [];
+
+        try {
+          for (const archivo of archivos) {
+            const datos = new FormData();
+
+            datos.append('archivo', archivo);
+
+            if (carpetaRealActual !== null) {
+              datos.append('carpeta_id', carpetaRealActual);
+            }
+
+            try {
+              const respuesta = await fetch(ENDPOINTS.subir, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                  'Accept': 'application/json',
+                  'X-XSRF-TOKEN': token
+                },
+                body: datos
+              });
+
+              const resultado = await respuesta.json();
+
+              if (!respuesta.ok) {
+                const mensaje = resultado.errors
+                  ? Object.values(resultado.errors).flat().join(', ')
+                  : resultado.message || `HTTP ${respuesta.status}`;
+
+                throw new Error(mensaje);
+              }
+
+              subidos++;
+
+            } catch (error) {
+              errores.push(`${archivo.name}: ${error.message}`);
+            }
+          }
+
+          await mostrarArchivosReales(carpetaRealActual);
+
+          if (errores.length) {
+            alert(
+              `${subidos} archivo(s) subido(s).\n\n` +
+              `Errores:\n${errores.join('\n')}`
+            );
+          } else {
+            alert(`${subidos} archivo(s) subido(s) correctamente.`);
+          }
+
+        } finally {
+          boton.disabled = false;
+        }
+      }
+
       // MOSTRAR ARCHIVOS REALES DE MYSQL
       async function mostrarArchivosReales(carpetaId = null) {
 
@@ -3808,6 +3885,28 @@
       dz.addEventListener('dragleave', e => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) $('dropCover').classList.add('hidden') });
       dz.addEventListener('drop', e => { e.preventDefault(); depth = 0; $('dropCover').classList.add('hidden'); if (dragId || e.dataTransfer.getData('application/x-kcprz-id')) { dragId = null; return } if (e.dataTransfer.items?.length || e.dataTransfer.files?.length) handleExternalDrop(e.dataTransfer) });
 
+      // INTERCEPTAR EL BOTÓN DE SUBIDA ORIGINAL
+      document.addEventListener('click', function (evento) {
+        if (!evento.target.closest('#uploadButton')) return;
+
+        evento.preventDefault();
+        evento.stopPropagation();
+
+        document.getElementById('fileInput').click();
+      }, true);
+
+      // INTERCEPTAR LA SELECCIÓN DE ARCHIVOS
+      document.addEventListener('change', function (evento) {
+        if (evento.target.id !== 'fileInput') return;
+
+        evento.stopPropagation();
+
+        const archivos = [...evento.target.files];
+        evento.target.value = '';
+
+        subirArchivosLaravel(archivos);
+      }, true);
+
       draw();
 
       // Mostrar archivos reales de Laravel
@@ -3819,12 +3918,13 @@
 
       botonesCrear.style.display = 'flex';
 
-      // Mantener temporalmente ocultas las demás acciones
       botonesCrear.querySelectorAll('button').forEach(boton => {
         boton.style.display =
-          boton.id === 'newFolder' ? 'inline-flex' : 'none';
+          ['newFolder', 'uploadButton'].includes(boton.id)
+            ? 'inline-flex'
+            : 'none';
       });
-
+      
       // Interceptar el botón antes de los eventos antiguos
       document.getElementById('newFolder').addEventListener(
         'click',
