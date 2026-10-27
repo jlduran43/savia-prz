@@ -89,10 +89,9 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
         $documento->ruta_archivo,
         $documento->nombre_original
     );
-
 })
-->middleware('auth')
-->name('documentos.descargar');
+    ->middleware('auth')
+    ->name('documentos.descargar');
 
 
 Route::get('/documentos/{documento}/ver', function (Documento $documento) {
@@ -111,7 +110,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
     $extension = strtolower(
         $documento->extension
-        ?: pathinfo($documento->nombre_original, PATHINFO_EXTENSION)
+            ?: pathinfo($documento->nombre_original, PATHINFO_EXTENSION)
     );
 
     // 3. Mantener vista previa original de PDF e imágenes
@@ -132,7 +131,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             'Content-Disposition' => 'inline',
             'X-Content-Type-Options' => 'nosniff',
             'Content-Security-Policy' =>
-                "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
+            "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
         ]);
     }
 
@@ -162,7 +161,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             // Convertir Word a HTML
             $writer = WordIOFactory::createWriter($word, 'HTML');
             $writer->save($temporal);
-
         } else {
 
             // Leer Excel
@@ -180,7 +178,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
                 $writer->setPreCalculateFormulas(false);
 
                 $writer->save($temporal);
-
             } finally {
                 $excel->disconnectWorksheets();
             }
@@ -193,7 +190,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
                 'No fue posible leer la vista previa.'
             );
         }
-
     } catch (\Throwable $e) {
 
         report($e);
@@ -202,7 +198,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             422,
             'No fue posible generar la vista previa de este documento.'
         );
-
     } finally {
 
         if (file_exists($temporal)) {
@@ -217,12 +212,11 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         'X-Content-Type-Options' => 'nosniff',
         'Cache-Control' => 'private, no-store',
         'Content-Security-Policy' =>
-            "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; object-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+        "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; object-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
     ]);
-
 })
-->middleware('auth')
-->name('documentos.ver');
+    ->middleware('auth')
+    ->name('documentos.ver');
 
 Route::get('/documentos/{documento}/office-original', function (Documento $documento) {
 
@@ -267,21 +261,95 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
     );
 
     return $response;
-
 })
-->middleware(['auth', 'signed', 'throttle:20,1'])
-->name('documentos.office-original');
+    ->middleware(['auth', 'signed', 'throttle:20,1'])
+    ->name('documentos.office-original');
 
-Route::middleware('auth')->prefix('drive-prz')->name('drive-prz.')->group(function () {
-    Route::get('/', [DrivePrzController::class, 'pantalla'])->name('pantalla');
-    Route::get('/datos', [DrivePrzController::class, 'listar'])->name('listar');
-    Route::post('/carpetas', [DrivePrzController::class, 'crearCarpeta'])->name('carpetas.crear');
-    Route::patch('/carpetas/{id}', [DrivePrzController::class, 'renombrarCarpeta'])->name('carpetas.renombrar');
-    Route::delete('/carpetas/{id}', [DrivePrzController::class, 'eliminarCarpeta'])->name('carpetas.eliminar');
-    Route::post('/documentos', [DrivePrzController::class, 'subir'])->name('documentos.subir');
-    Route::patch('/documentos/{id}', [DrivePrzController::class, 'renombrarDocumento'])->name('documentos.renombrar');
-    Route::delete('/documentos/{id}', [DrivePrzController::class, 'eliminarDocumento'])->name('documentos.eliminar');
-    Route::get('/documentos/{id}/descargar', [DrivePrzController::class, 'descargar'])->name('documentos.descargar');
-});
+// DRIVE PRZ V5 - EXPLORADOR DE ARCHIVOS
 
+Route::middleware(['auth'])
+    ->prefix('drive-prz-v5')
+    ->name('drive-prz-v5.')
+    ->group(function () {
 
+        // Pantalla
+        Route::get('/', [
+            DrivePrzController::class,
+            'screen'
+        ])->name('screen');
+
+        // Listar carpetas y documentos
+        Route::get('/data', [
+            DrivePrzController::class,
+            'listing'
+        ])->name('data');
+
+        // Crear carpeta
+        Route::post('/folders', [
+            DrivePrzController::class,
+            'makeFolder'
+        ])->name('folders');
+
+        // Crear carpetas por meses
+        Route::post('/months', [
+            DrivePrzController::class,
+            'months'
+        ])->name('months');
+
+        // Crear varias carpetas
+        Route::post('/bulk', [
+            DrivePrzController::class,
+            'bulk'
+        ])->name('bulk');
+
+        // Crear carpeta si no existe
+        Route::post('/ensure-folder', [
+            DrivePrzController::class,
+            'ensureFolder'
+        ])->name('ensure-folder');
+
+        // Subir documentos
+        Route::post('/files', [
+            DrivePrzController::class,
+            'upload'
+        ])->name('files');
+
+        // Renombrar carpetas o documentos
+        Route::patch('/{kind}/{id}', [
+            DrivePrzController::class,
+            'rename'
+        ])->whereIn('kind', ['folders', 'files'])
+            ->name('rename');
+
+        // Eliminar carpetas o documentos
+        Route::delete('/{kind}/{id}', [
+            DrivePrzController::class,
+            'delete'
+        ])->whereIn('kind', ['folders', 'files'])
+            ->name('delete');
+
+        // Mover carpetas o documentos
+        Route::post('/{kind}/{id}/move', [
+            DrivePrzController::class,
+            'move'
+        ])->whereIn('kind', ['folders', 'files'])
+            ->name('move');
+
+        // Carpetas disponibles como destino
+        Route::get('/destinations', [
+            DrivePrzController::class,
+            'destinations'
+        ])->name('destinations');
+
+        // Descargar documento
+        Route::get('/files/{id}/download', [
+            DrivePrzController::class,
+            'download'
+        ])->name('download');
+
+        // Vista previa
+        Route::get('/files/{id}/preview', [
+            DrivePrzController::class,
+            'preview'
+        ])->name('preview');
+    });
