@@ -56,7 +56,7 @@ class DrivePrzController extends Controller
             ->map(fn ($c) => ['id'=>$c->id,'type'=>'folder','name'=>$c->nombre,'modified'=>$c->updated_at?->toISOString(),'parent'=>$c->carpeta_padre_id]);
         $files = Documento::query()->where('subido_por', auth()->id())->where('carpeta_id', $id)
             ->orderBy('nombre_original')->get()
-            ->map(fn ($f) => ['id'=>$f->id,'type'=>'file','name'=>$f->nombre ?: $f->nombre_original,'modified'=>$f->updated_at?->toISOString(),'parent'=>$f->carpeta_id,'size'=>(Storage::disk('documentos_privados')->exists($f->ruta_archivo) ? Storage::disk('documentos_privados')->size($f->ruta_archivo) : 0)]);
+            ->map(fn ($f) => ['id'=>$f->id,'type'=>'file','name'=>$f->nombre_original,'modified'=>$f->updated_at?->toISOString(),'parent'=>$f->carpeta_id,'size'=>(Storage::disk('documentos_privados')->exists($f->ruta_archivo) ? Storage::disk('documentos_privados')->size($f->ruta_archivo) : 0)]);
         $trail = [];
         $seen = [];
         while ($id !== null && !isset($seen[$id])) {
@@ -142,7 +142,6 @@ class DrivePrzController extends Controller
         try {
             $doc = new Documento();
             $doc->carpeta_id = (int)$d['carpeta_id'];
-            $doc->nombre = $file->getClientOriginalName();
             $doc->nombre_original = $file->getClientOriginalName();
             $doc->ruta_archivo = $path;
             $doc->subido_por = auth()->id();
