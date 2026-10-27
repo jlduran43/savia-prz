@@ -397,6 +397,112 @@
                 min-width: 100%
             }
         }
+
+        .prz-ayuda-barra {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .prz-ayuda-barra span {
+            font-size: 13px;
+            color: #7187a0;
+        }
+
+        .prz-ayuda-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .prz-ayuda-fondo {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, .55);
+        }
+
+        .prz-ayuda-modal {
+            position: relative;
+            width: 100%;
+            max-width: 820px;
+            max-height: 90vh;
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+        }
+
+        .prz-ayuda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .prz-ayuda-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #16385d;
+        }
+
+        .prz-ayuda-header button {
+            background: #f1f5f9;
+            border: 0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .prz-ayuda-contenido {
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .prz-ayuda-paso {
+            padding: 18px;
+            margin-bottom: 14px;
+            background: #f8fafc;
+            border: 1px solid #dce7f4;
+            border-radius: 12px;
+        }
+
+        .prz-ayuda-paso strong {
+            display: block;
+            color: #17467a;
+            margin-bottom: 10px;
+        }
+
+        .prz-ayuda-paso p {
+            color: #536d8d;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .prz-ayuda-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 16px 22px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .prz-ayuda-footer button {
+            background: #176B45;
+            color: white;
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
     </style>
     <div class="prz5" x-data="drivePrzV5()" x-init="load()"
         @keydown.escape.window="modal = null; ctx.show = false" @click.window="ctx.show = false">
@@ -418,7 +524,22 @@
         <div class="location">📍 Estás en: <strong
                 x-text="'Mis archivos'+(trail.length?' / '+trail.map(t=>t.name).join(' / '):'')"></strong> <button
                 class="btn" :disabled="!trail.length"
-                @click="navigate(trail.length>1?trail[trail.length-2].id:null)">↑ Subir un nivel</button></div>
+                @click="navigate(trail.length>1?trail[trail.length-2].id:null)">↑ Subir un nivel</button>
+        </div>
+        {{-- AYUDA DEL EXPLORADOR --}}
+
+        <div class="prz-ayuda-barra">
+
+            <button type="button" class="btn" @click="mostrarAyuda = true">
+                ❔ ¿Cómo se usa?
+            </button>
+
+            <span>
+                Abre carpetas, crea una estructura completa
+                o importa carpetas desde tu equipo.
+            </span>
+
+        </div>
         <section class="panel">
             <div class="tabs"><button class="tab active">Mis archivos</button><button class="tab" disabled
                     title="Se conectará al módulo de permisos existente">Compartidos conmigo</button><span
@@ -531,7 +652,8 @@
                     <template x-if="modal==='bulk'">
                         <div>
                             <p>Escribe una carpeta por línea. Para subcarpetas usa <code>/</code>, por ejemplo
-                                <code>2026/Contratos</code>.</p>
+                                <code>2026/Contratos</code>.
+                            </p>
                             <textarea rows="8" x-model="outline" placeholder="Administración&#10;2026/Contratos&#10;2026/Facturas"></textarea>
                         </div>
                     </template>
@@ -580,6 +702,7 @@
                 selected: null,
                 destinations: [],
                 destination: '',
+                mostrarAyuda: false,
                 ctx: {
                     show: false,
                     x: 0,
@@ -878,4 +1001,104 @@
             }
         }
     </script>
+    {{-- MODAL DE AYUDA --}}
+
+    <template x-teleport="body">
+        <div x-show="mostrarAyuda" x-cloak class="prz-ayuda-overlay" @keydown.escape.window="mostrarAyuda = false">
+
+            <div class="prz-ayuda-fondo" @click="mostrarAyuda = false"></div>
+
+            <div class="prz-ayuda-modal">
+
+                <div class="prz-ayuda-header">
+                    <h2>Cómo organizar tus documentos</h2>
+
+                    <button type="button" @click="mostrarAyuda = false" aria-label="Cerrar">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="prz-ayuda-contenido">
+
+                    <div class="prz-ayuda-paso">
+                        <strong>1. Entra en una carpeta</strong>
+                        <p>
+                            Haz clic en “Abrir” o doble clic sobre
+                            la carpeta. Puedes crear nuevas carpetas
+                            dentro de ella.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>2. Sube un archivo</strong>
+                        <p>
+                            Usa “Subir archivos aquí” o arrástralos
+                            desde tu computador.
+
+                            Primero se abre una ventana para revisar
+                            los documentos seleccionados.
+
+                            Puedes visualizar PDF, imágenes y otros
+                            formatos compatibles antes de confirmar
+                            la subida.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>3. Cambia un archivo de lugar</strong>
+                        <p>
+                            Pulsa “Mover”, selecciona la carpeta
+                            de destino y confirma.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>4. Crea muchas carpetas de una vez</strong>
+                        <p>
+                            Pulsa “Crear varias carpetas”.
+                            Escribe los nombres en líneas y usa
+                            dos espacios para indicar subcarpetas.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>5. Crea los meses automáticamente</strong>
+                        <p>
+                            Entra en la carpeta de destino,
+                            pulsa “Crear meses”, selecciona
+                            los meses necesarios y confirma.
+
+                            Los meses existentes no se duplicarán.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>6. Importa carpetas desde tu equipo</strong>
+                        <p>
+                            Utiliza “Subir carpeta completa”
+                            para importar carpetas y documentos
+                            desde tu computador.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>7. Comparte tus documentos</strong>
+                        <p>
+                            Utiliza “Compartir” para otorgar
+                            acceso a usuarios autorizados
+                            del sistema.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="prz-ayuda-footer">
+                    <button type="button" @click="mostrarAyuda = false">
+                        Entendido
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </template>
 </x-filament-panels::page>
