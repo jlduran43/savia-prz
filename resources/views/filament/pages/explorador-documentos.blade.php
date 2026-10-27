@@ -681,6 +681,106 @@
             </div>
         </div>
     </div>
+    {{-- MODAL DE AYUDA --}}
+
+    <template x-teleport="body">
+        <div x-show="mostrarAyuda" x-cloak class="prz-ayuda-overlay" @keydown.escape.window="mostrarAyuda = false">
+
+            <div class="prz-ayuda-fondo" @click="mostrarAyuda = false"></div>
+
+            <div class="prz-ayuda-modal">
+
+                <div class="prz-ayuda-header">
+                    <h2>Cómo organizar tus documentos</h2>
+
+                    <button type="button" @click="mostrarAyuda = false" aria-label="Cerrar">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="prz-ayuda-contenido">
+
+                    <div class="prz-ayuda-paso">
+                        <strong>1. Entra en una carpeta</strong>
+                        <p>
+                            Haz clic en “Abrir” o doble clic sobre
+                            la carpeta. Puedes crear nuevas carpetas
+                            dentro de ella.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>2. Sube un archivo</strong>
+                        <p>
+                            Usa “Subir archivos aquí” o arrástralos
+                            desde tu computador.
+
+                            Primero se abre una ventana para revisar
+                            los documentos seleccionados.
+
+                            Puedes visualizar PDF, imágenes y otros
+                            formatos compatibles antes de confirmar
+                            la subida.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>3. Cambia un archivo de lugar</strong>
+                        <p>
+                            Pulsa “Mover”, selecciona la carpeta
+                            de destino y confirma.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>4. Crea muchas carpetas de una vez</strong>
+                        <p>
+                            Pulsa “Crear varias carpetas”.
+                            Escribe los nombres en líneas y usa
+                            dos espacios para indicar subcarpetas.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>5. Crea los meses automáticamente</strong>
+                        <p>
+                            Entra en la carpeta de destino,
+                            pulsa “Crear meses”, selecciona
+                            los meses necesarios y confirma.
+
+                            Los meses existentes no se duplicarán.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>6. Importa carpetas desde tu equipo</strong>
+                        <p>
+                            Utiliza “Subir carpeta completa”
+                            para importar carpetas y documentos
+                            desde tu computador.
+                        </p>
+                    </div>
+
+                    <div class="prz-ayuda-paso">
+                        <strong>7. Comparte tus documentos</strong>
+                        <p>
+                            Utiliza “Compartir” para otorgar
+                            acceso a usuarios autorizados
+                            del sistema.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="prz-ayuda-footer">
+                    <button type="button" @click="mostrarAyuda = false">
+                        Entendido
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </template>
     <script>
         function drivePrzV5() {
             return {
@@ -1001,104 +1101,4 @@
             }
         }
     </script>
-    {{-- MODAL DE AYUDA --}}
-
-    <template x-teleport="body">
-        <div x-show="mostrarAyuda" x-cloak class="prz-ayuda-overlay" @keydown.escape.window="mostrarAyuda = false">
-
-            <div class="prz-ayuda-fondo" @click="mostrarAyuda = false"></div>
-
-            <div class="prz-ayuda-modal">
-
-                <div class="prz-ayuda-header">
-                    <h2>Cómo organizar tus documentos</h2>
-
-                    <button type="button" @click="mostrarAyuda = false" aria-label="Cerrar">
-                        ✕
-                    </button>
-                </div>
-
-                <div class="prz-ayuda-contenido">
-
-                    <div class="prz-ayuda-paso">
-                        <strong>1. Entra en una carpeta</strong>
-                        <p>
-                            Haz clic en “Abrir” o doble clic sobre
-                            la carpeta. Puedes crear nuevas carpetas
-                            dentro de ella.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>2. Sube un archivo</strong>
-                        <p>
-                            Usa “Subir archivos aquí” o arrástralos
-                            desde tu computador.
-
-                            Primero se abre una ventana para revisar
-                            los documentos seleccionados.
-
-                            Puedes visualizar PDF, imágenes y otros
-                            formatos compatibles antes de confirmar
-                            la subida.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>3. Cambia un archivo de lugar</strong>
-                        <p>
-                            Pulsa “Mover”, selecciona la carpeta
-                            de destino y confirma.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>4. Crea muchas carpetas de una vez</strong>
-                        <p>
-                            Pulsa “Crear varias carpetas”.
-                            Escribe los nombres en líneas y usa
-                            dos espacios para indicar subcarpetas.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>5. Crea los meses automáticamente</strong>
-                        <p>
-                            Entra en la carpeta de destino,
-                            pulsa “Crear meses”, selecciona
-                            los meses necesarios y confirma.
-
-                            Los meses existentes no se duplicarán.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>6. Importa carpetas desde tu equipo</strong>
-                        <p>
-                            Utiliza “Subir carpeta completa”
-                            para importar carpetas y documentos
-                            desde tu computador.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>7. Comparte tus documentos</strong>
-                        <p>
-                            Utiliza “Compartir” para otorgar
-                            acceso a usuarios autorizados
-                            del sistema.
-                        </p>
-                    </div>
-
-                </div>
-
-                <div class="prz-ayuda-footer">
-                    <button type="button" @click="mostrarAyuda = false">
-                        Entendido
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    </template>
 </x-filament-panels::page>
