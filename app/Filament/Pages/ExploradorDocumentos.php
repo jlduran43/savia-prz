@@ -16,10 +16,12 @@ use Illuminate\Support\Str;
 
 class ExploradorDocumentos extends Page
 {
+    protected static ?string $slug = 'archivos';
+
     protected static string|BackedEnum|null $navigationIcon =
     Heroicon::OutlinedFolderOpen;
 
-    protected static ?string $navigationLabel = 'Explorador';
+    protected static ?string $navigationLabel = 'Archivos';
 
     protected string $view =
     'filament.pages.explorador-documentos';
