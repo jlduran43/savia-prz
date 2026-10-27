@@ -124,18 +124,17 @@ class AdminPanelProvider extends PanelProvider
 
                         ]),
 
-                    // SEGUNDO: DOCUMENTOS
+                    // SEGUNDO: ARCHIVOS
                     NavigationGroup::make()
-                        ->label('Documentos')
+                        ->label('Archivos')
                         ->icon('heroicon-o-folder')
                         ->items([
 
-                            NavigationItem::make('Explorador')
-                                ->icon('heroicon-o-folder-open')
+                            NavigationItem::make('Explorador de archivos')
                                 ->url(fn(): string => ExploradorDocumentos::getUrl())
                                 ->isActiveWhen(
                                     fn(): bool => request()->routeIs(
-                                        'filament.admin.pages.explorador-documentos'
+                                        'filament.admin.pages.archivos'
                                     )
                                 ),
 
