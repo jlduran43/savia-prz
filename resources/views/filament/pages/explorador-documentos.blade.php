@@ -576,18 +576,66 @@
                         </thead>
                         <tbody><template x-for="item in filtered" :key="item.type + '-' + item.id">
                                 <tr @contextmenu.prevent.stop="context($event,item)">
-                                    <td><span class="fileicon" x-text="item.type==='folder'?'📁':'📄'"></span><button
-                                            class="name" @click="open(item)" x-text="item.name"></button></td>
+                                    <td>
+                                        <span class="fileicon" x-text="tipoIcono(item).texto"
+                                            :style="'color:' + tipoIcono(item).color"></span>
+                                        <button class="name" @click="open(item)" x-text="item.name"></button>
+                                    </td>
                                     <td><span class="type" x-text="item.type==='folder'?'Carpeta':'Documento'"></span>
                                     </td>
                                     <td x-text="item.type==='folder'?'—':size(item.size)"></td>
                                     <td x-text="date(item.modified)"></td>
-                                    <td><button class="smallbtn" @click="open(item)"
-                                            x-text="item.type==='folder'?'Abrir':'Ver'"></button><template
-                                            x-if="item.type==='file'"><button class="smallbtn"
-                                                @click="download(item)">Descargar</button></template><button
-                                            class="smallbtn" @click="beginMove(item)">Mover</button><button
-                                            class="smallbtn" @click="beginRename(item)">•••</button></td>
+
+                                    <td>
+                                        <!-- ABRIR CARPETA -->
+                                        <template x-if="item.type === 'folder'">
+                                            <button class="smallbtn" @click="open(item)">
+                                                📂 Abrir
+                                            </button>
+                                        </template>
+
+                                        <!-- VER: SOLO PDF E IMÁGENES -->
+                                        <template x-if="item.type === 'file' && puedeVer(item)">
+                                            <button class="smallbtn" @click="open(item)" title="Visualizar archivo">
+                                                <span style="display:inline-flex;align-items:center;gap:5px;">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24"
+                                                        fill="none" stroke="currentColor" stroke-width="2"
+                                                        stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                                                        <circle cx="12" cy="12" r="3" />
+                                                    </svg>
+                                                    Ver
+                                                </span>
+                                            </button>
+                                        </template>
+
+                                        <!-- DESCARGAR: TODOS LOS ARCHIVOS -->
+                                        <template x-if="item.type === 'file'">
+                                            <button class="smallbtn" @click="download(item)" title="Descargar archivo">
+                                                <span style="display:inline-flex;align-items:center;gap:5px;">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24"
+                                                        fill="none" stroke="currentColor" stroke-width="2"
+                                                        stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M12 3v12" />
+                                                        <path d="m7 10 5 5 5-5" />
+                                                        <path d="M5 17v4h14v-4" />
+                                                    </svg>
+                                                    Descargar
+                                                </span>
+                                            </button>
+                                        </template>
+
+                                        <!-- MOVER -->
+                                        <button class="smallbtn" @click="beginMove(item)">
+                                            Mover
+                                        </button>
+
+                                        <!-- OPCIONES -->
+                                        <button class="smallbtn" @click="beginRename(item)">
+                                            •••
+                                        </button>
+                                    </td>
+
                                 </tr>
                             </template></tbody>
                     </table>
@@ -596,7 +644,8 @@
             <template x-if="grid">
                 <div class="tiles"><template x-for="item in filtered" :key="item.type + '-' + item.id">
                         <div class="tile" @contextmenu.prevent.stop="context($event,item)">
-                            <div style="font-size:31px" x-text="item.type==='folder'?'📁':'📄'"></div><strong
+                            <div style="font-size:31px" x-text="tipoIcono(item).texto"
+                                :style="'color:' + tipoIcono(item).color"></div><strong
                                 x-text="item.name"></strong><button class="smallbtn"
                                 @click="open(item)">Abrir</button><button class="smallbtn"
                                 @click="beginRename(item)">Opciones</button>
@@ -679,107 +728,108 @@
                         x-text="busy?'Guardando...':modal==='months'?'Crear '+newMonths.length+' carpetas':'Guardar'"></button>
                 </div>
             </div>
-    </div>
-    {{-- MODAL DE AYUDA --}}
-
-    <template x-teleport="body">
-        <div x-show="mostrarAyuda" x-cloak class="prz-ayuda-overlay" @keydown.escape.window="mostrarAyuda = false">
-
-            <div class="prz-ayuda-fondo" @click="mostrarAyuda = false"></div>
-
-            <div class="prz-ayuda-modal">
-
-                <div class="prz-ayuda-header">
-                    <h2>Cómo organizar tus documentos</h2>
-
-                    <button type="button" @click="mostrarAyuda = false" aria-label="Cerrar">
-                        ✕
-                    </button>
-                </div>
-
-                <div class="prz-ayuda-contenido">
-
-                    <div class="prz-ayuda-paso">
-                        <strong>1. Entra en una carpeta</strong>
-                        <p>
-                            Haz clic en “Abrir” o doble clic sobre
-                            la carpeta. Puedes crear nuevas carpetas
-                            dentro de ella.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>2. Sube un archivo</strong>
-                        <p>
-                            Usa “Subir archivos aquí” o arrástralos
-                            desde tu computador.
-
-                            Primero se abre una ventana para revisar
-                            los documentos seleccionados.
-
-                            Puedes visualizar PDF, imágenes y otros
-                            formatos compatibles antes de confirmar
-                            la subida.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>3. Cambia un archivo de lugar</strong>
-                        <p>
-                            Pulsa “Mover”, selecciona la carpeta
-                            de destino y confirma.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>4. Crea muchas carpetas de una vez</strong>
-                        <p>
-                            Pulsa “Crear varias carpetas”.
-                            Escribe los nombres en líneas y usa
-                            dos espacios para indicar subcarpetas.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>5. Crea los meses automáticamente</strong>
-                        <p>
-                            Entra en la carpeta de destino,
-                            pulsa “Crear meses”, selecciona
-                            los meses necesarios y confirma.
-
-                            Los meses existentes no se duplicarán.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>6. Importa carpetas desde tu equipo</strong>
-                        <p>
-                            Utiliza “Subir carpeta completa”
-                            para importar carpetas y documentos
-                            desde tu computador.
-                        </p>
-                    </div>
-
-                    <div class="prz-ayuda-paso">
-                        <strong>7. Comparte tus documentos</strong>
-                        <p>
-                            Utiliza “Compartir” para otorgar
-                            acceso a usuarios autorizados
-                            del sistema.
-                        </p>
-                    </div>
-
-                </div>
-
-                <div class="prz-ayuda-footer">
-                    <button type="button" @click="mostrarAyuda = false">
-                        Entendido
-                    </button>
-                </div>
-
-            </div>
         </div>
-    </template>
+        {{-- MODAL DE AYUDA --}}
+
+        <template x-teleport="body">
+            <div x-show="mostrarAyuda" x-cloak class="prz-ayuda-overlay"
+                @keydown.escape.window="mostrarAyuda = false">
+
+                <div class="prz-ayuda-fondo" @click="mostrarAyuda = false"></div>
+
+                <div class="prz-ayuda-modal">
+
+                    <div class="prz-ayuda-header">
+                        <h2>Cómo organizar tus documentos</h2>
+
+                        <button type="button" @click="mostrarAyuda = false" aria-label="Cerrar">
+                            ✕
+                        </button>
+                    </div>
+
+                    <div class="prz-ayuda-contenido">
+
+                        <div class="prz-ayuda-paso">
+                            <strong>1. Entra en una carpeta</strong>
+                            <p>
+                                Haz clic en “Abrir” o doble clic sobre
+                                la carpeta. Puedes crear nuevas carpetas
+                                dentro de ella.
+                            </p>
+                        </div>
+
+                        <div class="prz-ayuda-paso">
+                            <strong>2. Sube un archivo</strong>
+                            <p>
+                                Usa “Subir archivos aquí” o arrástralos
+                                desde tu computador.
+
+                                Primero se abre una ventana para revisar
+                                los documentos seleccionados.
+
+                                Puedes visualizar PDF, imágenes y otros
+                                formatos compatibles antes de confirmar
+                                la subida.
+                            </p>
+                        </div>
+
+                        <div class="prz-ayuda-paso">
+                            <strong>3. Cambia un archivo de lugar</strong>
+                            <p>
+                                Pulsa “Mover”, selecciona la carpeta
+                                de destino y confirma.
+                            </p>
+                        </div>
+
+                        <div class="prz-ayuda-paso">
+                            <strong>4. Crea muchas carpetas de una vez</strong>
+                            <p>
+                                Pulsa “Crear varias carpetas”.
+                                Escribe los nombres en líneas y usa
+                                dos espacios para indicar subcarpetas.
+                            </p>
+                        </div>
+
+                        <div class="prz-ayuda-paso">
+                            <strong>5. Crea los meses automáticamente</strong>
+                            <p>
+                                Entra en la carpeta de destino,
+                                pulsa “Crear meses”, selecciona
+                                los meses necesarios y confirma.
+
+                                Los meses existentes no se duplicarán.
+                            </p>
+                        </div>
+
+                        <div class="prz-ayuda-paso">
+                            <strong>6. Importa carpetas desde tu equipo</strong>
+                            <p>
+                                Utiliza “Subir carpeta completa”
+                                para importar carpetas y documentos
+                                desde tu computador.
+                            </p>
+                        </div>
+
+                        <div class="prz-ayuda-paso">
+                            <strong>7. Comparte tus documentos</strong>
+                            <p>
+                                Utiliza “Compartir” para otorgar
+                                acceso a usuarios autorizados
+                                del sistema.
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <div class="prz-ayuda-footer">
+                        <button type="button" @click="mostrarAyuda = false">
+                            Entendido
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </template>
     </div> {{-- FIN DEL CONTENEDOR prz5 --}}
     <script>
         function drivePrzV5() {
@@ -882,10 +932,136 @@
                     this.search = '';
                     this.load()
                 },
-                open(item) {
-                    if (item.type === 'folder') this.navigate(item.id);
-                    else window.open(this.api + '/files/' + item.id + '/preview', '_blank', 'noopener')
+
+
+                tipoIcono(item) {
+                    if (item.type === 'folder') {
+                        return {
+                            texto: '📁',
+                            color: '#D97706'
+                        };
+                    }
+
+                    const extension = (item.name || '')
+                        .split('.')
+                        .pop()
+                        .toLowerCase();
+
+                    const tipos = {
+                        pdf: {
+                            texto: '📕',
+                            color: '#DC2626'
+                        },
+
+                        doc: {
+                            texto: '📘',
+                            color: '#2563EB'
+                        },
+                        docx: {
+                            texto: '📘',
+                            color: '#2563EB'
+                        },
+
+                        xls: {
+                            texto: '📗',
+                            color: '#15803D'
+                        },
+                        xlsx: {
+                            texto: '📗',
+                            color: '#15803D'
+                        },
+                        csv: {
+                            texto: '📗',
+                            color: '#15803D'
+                        },
+
+                        ppt: {
+                            texto: '📙',
+                            color: '#C2410C'
+                        },
+                        pptx: {
+                            texto: '📙',
+                            color: '#C2410C'
+                        },
+
+                        jpg: {
+                            texto: '🖼️',
+                            color: '#7C3AED'
+                        },
+                        jpeg: {
+                            texto: '🖼️',
+                            color: '#7C3AED'
+                        },
+                        png: {
+                            texto: '🖼️',
+                            color: '#7C3AED'
+                        },
+                        gif: {
+                            texto: '🖼️',
+                            color: '#7C3AED'
+                        },
+                        webp: {
+                            texto: '🖼️',
+                            color: '#7C3AED'
+                        },
+
+                        zip: {
+                            texto: '🗜️',
+                            color: '#64748B'
+                        },
+                        rar: {
+                            texto: '🗜️',
+                            color: '#64748B'
+                        },
+
+                        txt: {
+                            texto: '📄',
+                            color: '#64748B'
+                        }
+                    };
+
+                    return tipos[extension] || {
+                        texto: '📄',
+                        color: '#64748B'
+                    };
                 },
+
+                puedeVer(item) {
+                    if (item.type !== 'file') return false;
+
+                    const extension = (item.name || '')
+                        .split('.')
+                        .pop()
+                        .toLowerCase();
+
+                    return [
+                        'pdf',
+                        'jpg',
+                        'jpeg',
+                        'png',
+                        'gif',
+                        'webp'
+                    ].includes(extension);
+                },
+
+                open(item) {
+                    if (item.type === 'folder') {
+                        this.navigate(item.id);
+                        return;
+                    }
+
+                    if (this.puedeVer(item)) {
+                        window.open(
+                            this.api + '/files/' + item.id + '/preview',
+                            '_blank',
+                            'noopener'
+                        );
+                        return;
+                    }
+
+                    this.download(item);
+                },
+
                 download(item) {
                     window.location.href = this.api + '/files/' + item.id + '/download'
                 },

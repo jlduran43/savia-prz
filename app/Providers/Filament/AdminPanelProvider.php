@@ -152,6 +152,8 @@ class AdminPanelProvider extends PanelProvider
                             ...TipoVehiculoResource::getNavigationItems(),
                         ]),
 
+                    NavigationGroup::make()
+                        ->label('Drive PRZ'),
 
                     // TERCERO: USUARIOS
                     ...(
