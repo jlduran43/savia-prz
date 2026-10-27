@@ -203,9 +203,20 @@
         }
 
         .prz5 .fileicon {
-            font-size: 24px;
-            margin-right: 10px;
-            vertical-align: middle
+            display: inline-block;
+            width: 34px;
+            height: 38px;
+            object-fit: contain;
+            vertical-align: middle;
+            margin-right: 12px;
+        }
+
+        .prz5 .fileicon-grid {
+            display: block;
+            width: 54px;
+            height: 58px;
+            object-fit: contain;
+            margin-bottom: 10px;
         }
 
         .prz5 .empty {
@@ -577,8 +588,14 @@
                         <tbody><template x-for="item in filtered" :key="item.type + '-' + item.id">
                                 <tr @contextmenu.prevent.stop="context($event,item)">
                                     <td>
-                                        <span class="fileicon" x-text="tipoIcono(item).texto"
-                                            :style="'color:' + tipoIcono(item).color"></span>
+                                        <template x-if="item.type === 'folder'">
+                                            <span class="fileicon" style="font-size:28px;">📁</span>
+                                        </template>
+
+                                        <template x-if="item.type === 'file'">
+                                            <img class="fileicon" :src="tipoIcono(item)" :alt="'Archivo ' + item.name"
+                                                loading="lazy">
+                                        </template>
                                         <button class="name" @click="open(item)" x-text="item.name"></button>
                                     </td>
                                     <td><span class="type" x-text="item.type==='folder'?'Carpeta':'Documento'"></span>
@@ -644,9 +661,14 @@
             <template x-if="grid">
                 <div class="tiles"><template x-for="item in filtered" :key="item.type + '-' + item.id">
                         <div class="tile" @contextmenu.prevent.stop="context($event,item)">
-                            <div style="font-size:31px" x-text="tipoIcono(item).texto"
-                                :style="'color:' + tipoIcono(item).color"></div><strong
-                                x-text="item.name"></strong><button class="smallbtn"
+                            <template x-if="item.type === 'folder'">
+                                <div style="font-size:42px;">📁</div>
+                            </template>
+
+                            <template x-if="item.type === 'file'">
+                                <img class="fileicon-grid" :src="tipoIcono(item)" :alt="'Archivo ' + item.name"
+                                    loading="lazy">
+                            </template><strong x-text="item.name"></strong><button class="smallbtn"
                                 @click="open(item)">Abrir</button><button class="smallbtn"
                                 @click="beginRename(item)">Opciones</button>
                         </div>
@@ -933,97 +955,38 @@
                     this.load()
                 },
 
-
                 tipoIcono(item) {
-                    if (item.type === 'folder') {
-                        return {
-                            texto: '📁',
-                            color: '#D97706'
-                        };
-                    }
+
+                    const base = @js(asset('images/file-icons'));
 
                     const extension = (item.name || '')
                         .split('.')
                         .pop()
                         .toLowerCase();
 
-                    const tipos = {
-                        pdf: {
-                            texto: '📕',
-                            color: '#DC2626'
-                        },
+                    const iconos = {
+                        pdf: 'pdf.svg',
 
-                        doc: {
-                            texto: '📘',
-                            color: '#2563EB'
-                        },
-                        docx: {
-                            texto: '📘',
-                            color: '#2563EB'
-                        },
+                        doc: 'word.svg',
+                        docx: 'word.svg',
 
-                        xls: {
-                            texto: '📗',
-                            color: '#15803D'
-                        },
-                        xlsx: {
-                            texto: '📗',
-                            color: '#15803D'
-                        },
-                        csv: {
-                            texto: '📗',
-                            color: '#15803D'
-                        },
+                        xls: 'excel.svg',
+                        xlsx: 'excel.svg',
+                        csv: 'excel.svg',
 
-                        ppt: {
-                            texto: '📙',
-                            color: '#C2410C'
-                        },
-                        pptx: {
-                            texto: '📙',
-                            color: '#C2410C'
-                        },
+                        ppt: 'powerpoint.svg',
+                        pptx: 'powerpoint.svg',
 
-                        jpg: {
-                            texto: '🖼️',
-                            color: '#7C3AED'
-                        },
-                        jpeg: {
-                            texto: '🖼️',
-                            color: '#7C3AED'
-                        },
-                        png: {
-                            texto: '🖼️',
-                            color: '#7C3AED'
-                        },
-                        gif: {
-                            texto: '🖼️',
-                            color: '#7C3AED'
-                        },
-                        webp: {
-                            texto: '🖼️',
-                            color: '#7C3AED'
-                        },
-
-                        zip: {
-                            texto: '🗜️',
-                            color: '#64748B'
-                        },
-                        rar: {
-                            texto: '🗜️',
-                            color: '#64748B'
-                        },
-
-                        txt: {
-                            texto: '📄',
-                            color: '#64748B'
-                        }
+                        jpg: 'image.svg',
+                        jpeg: 'image.svg',
+                        png: 'image.svg',
+                        gif: 'image.svg',
+                        webp: 'image.svg'
                     };
 
-                    return tipos[extension] || {
-                        texto: '📄',
-                        color: '#64748B'
-                    };
+                    const icono = iconos[extension] || 'file.svg';
+
+                    return base + '/' + icono;
                 },
 
                 puedeVer(item) {

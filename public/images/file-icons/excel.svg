@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="76" viewBox="0 0 64 76" role="img" aria-label="Archivo XLSX">
+<path d="M9 2h32l14 14v54a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4z" fill="#fff" stroke="#16834c" stroke-width="2"/>
+<path d="M41 2v14h14" fill="#16834c" opacity=".20"/>
+<rect x="7" y="21" width="50" height="39" rx="5" fill="#16834c"/>
+<text x="32" y="46" fill="white" font-family="Arial,Helvetica,sans-serif" font-size="29" font-weight="800" text-anchor="middle">X</text>
+<text x="32" y="70" fill="#16834c" font-family="Arial,Helvetica,sans-serif" font-size="8" font-weight="700" text-anchor="middle">XLSX</text>
+</svg>
