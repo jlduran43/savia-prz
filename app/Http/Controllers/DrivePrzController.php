@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-class DrivePrzV5Controller extends Controller
+class DrivePrzController extends Controller
 {
     private function folder(int $id): DocumentoCarpeta
     {
