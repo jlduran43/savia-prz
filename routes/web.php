@@ -10,7 +10,7 @@ use App\Support\DocumentoAcceso;
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory as ExcelIOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Html as ExcelHtmlWriter;
-use Illuminate\Support\Facades\URL;
+use App\Http\Controllers\DrivePrzController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
     return view(

@@ -34,6 +34,7 @@ use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\DocumentoCarpetas\DocumentoCarpetaResource;
 use App\Filament\Resources\Documentos\DocumentoResource;
 use Filament\Support\Assets\Css;
+use App\Filament\Pages\ExploradorDocumentos;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -126,9 +127,18 @@ class AdminPanelProvider extends PanelProvider
                     // SEGUNDO: DOCUMENTOS
                     NavigationGroup::make()
                         ->label('Documentos')
+                        ->icon('heroicon-o-folder')
                         ->items([
-                            ...DocumentoCarpetaResource::getNavigationItems(),
-                            ...DocumentoResource::getNavigationItems(),
+
+                            NavigationItem::make('Explorador')
+                                ->icon('heroicon-o-folder-open')
+                                ->url(fn(): string => ExploradorDocumentos::getUrl())
+                                ->isActiveWhen(
+                                    fn(): bool => request()->routeIs(
+                                        'filament.admin.pages.explorador-documentos'
+                                    )
+                                ),
+
                         ]),
 
                     // SEGUNDO: MANTENEDORES
