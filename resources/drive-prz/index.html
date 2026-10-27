@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KCPRZ · Drive PRZ · Documentos · v6</title>
+<style>
+:root{--navy:#14263d;--navy2:#1d3652;--blue:#1664bd;--pale:#edf5ff;--text:#1a2c40;--muted:#6e7e90;--line:#e5ebf2;--bg:#f5f7fb;--green:#168568;--shadow:0 5px 25px rgba(25,45,70,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.app{min-height:760px;background:var(--bg)}
+.topbar{height:66px;background:var(--navy);color:#fff;display:flex;align-items:center;padding:0 28px;gap:18px}.brand{display:flex;align-items:center;gap:11px;min-width:235px;font-weight:800;letter-spacing:.6px;font-size:19px}.brandicon{display:grid;place-items:center;border-radius:10px;width:36px;height:36px;background:#fff;color:#184c88;font-size:15px;letter-spacing:-1px}.toplabel{font-size:13px;opacity:.76;border-left:1px solid rgba(255,255,255,.22);padding-left:21px}.topright{margin-left:auto;display:flex;align-items:center;gap:12px}.topright small{font-size:12px;opacity:.7}.avatar{display:grid;place-items:center;width:33px;height:33px;border-radius:50%;background:#d9e8ff;color:#254c7c;font-size:12px;font-weight:750}
+.shell{display:flex;min-height:694px}.sidebar{width:235px;padding:25px 13px 18px;background:#fff;border-right:1px solid var(--line);flex-shrink:0}.navtitle{padding:3px 14px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:750;color:#99a6b5}.navitem{display:flex;align-items:center;gap:12px;width:100%;padding:12px 13px;background:transparent;color:#526477;border:0;text-align:left;border-radius:9px;margin:2px 0;font-size:13px;font-weight:590}.navitem.active{background:#eaf3ff;color:#095bab;font-weight:760}.navitem:hover:not(.active){background:#f5f7fa}.navitem .count{margin-left:auto;background:#e8eff8;border-radius:999px;font-size:10px;color:#648099;padding:1px 7px}.sidefoot{border-top:1px solid var(--line);margin:29px 10px 0;padding-top:21px;color:#8290a0;font-size:12px}.storage{height:7px;background:#e6edf5;border-radius:20px;margin:10px 0 6px;overflow:hidden}.storage>div{width:17%;height:100%;background:#3180dc;border-radius:20px}
+.main{flex:1;min-width:0;padding:31px clamp(20px,3.4vw,52px) 42px}.eyebrow{font-weight:700;font-size:12px;color:#3481cd;letter-spacing:1.7px;text-transform:uppercase}.heading{display:flex;align-items:center;gap:22px;justify-content:space-between;flex-wrap:wrap;margin:3px 0 25px}.heading h1{font-size:28px;letter-spacing:-.6px;margin:2px 0 2px;font-weight:780}.heading p{margin:0;font-size:13px;color:#7e8b98}.headingactions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;padding:9px 14px;font-size:12.5px;font-weight:700;min-height:38px;border:1px solid var(--line);background:#fff;color:#415d79}.btn svg{width:16px;height:16px}.btn:hover{filter:brightness(.98)}.btn.primary{background:var(--blue);border-color:var(--blue);color:white;box-shadow:0 2px 5px rgba(22,100,189,.14)}
+.panel{border:1px solid #e7ebf0;background:#fff;border-radius:13px;box-shadow:var(--shadow);overflow:hidden}.panelhead{padding:0 25px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;min-height:64px}.tabs{height:64px;display:flex;gap:29px;align-items:stretch}.tab{border:0;border-bottom:3px solid transparent;background:none;font-size:13px;font-weight:660;color:#7c8a97;padding:0 2px;white-space:nowrap}.tab.selected{border-bottom-color:var(--blue);color:#175fba}.tabs button:hover{color:#175fba}.crumbs{display:flex;align-items:center;gap:5px;padding:22px 26px 17px;min-height:62px;color:#7890a6;font-size:13px}.crumbs button{border:0;background:none;color:#5b758f;padding:3px 2px}.crumbs button:hover{color:var(--blue)}.crumbs strong{color:#273e56;font-weight:750}.crumbs svg{width:14px;height:14px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 25px 18px;gap:12px;flex-wrap:wrap}.searchwrap{display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e4ebf2;border-radius:8px;padding:0 11px;height:40px;flex:1;max-width:385px;min-width:185px;color:#8797a6}.searchwrap input{border:0;background:none;outline:0;min-width:0;flex:1;font-size:12.5px;color:#30465e}.searchwrap input::placeholder{color:#a0aebe}.tools{display:flex;align-items:center;gap:8px}.select{height:39px;background:#fff;border:1px solid #e1e8f0;border-radius:8px;padding:0 10px;color:#607389;font-size:12px;max-width:125px}.iconbtn{border:1px solid #e1e8f0;width:38px;height:39px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:white;color:#7f90a2}.iconbtn.on{background:#eaf3ff;color:#1566bf;border-color:#cde2ff}.iconbtn svg{width:17px;height:17px}
+.tablewrap{overflow-x:auto}.filetable{border-collapse:collapse;width:100%;table-layout:auto;white-space:nowrap}.filetable th{text-align:left;font-size:11px;text-transform:uppercase;color:#8997a6;letter-spacing:.8px;font-weight:760;background:#f9fbfd;padding:13px 22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.filetable td{padding:13px 22px;border-bottom:1px solid #edf0f4;color:#67798a;font-size:12px}.filetable tr:last-child td{border-bottom:none}.filetable tbody tr:hover{background:#fbfdff}.namecell{display:flex;align-items:center;gap:12px;min-width:175px}.fileico{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}.fileico svg{width:20px;height:20px}.fileico.folder{background:#fff3d5;color:#df9b1d}.fileico.pdf{background:#ffeced;color:#db555a}.fileico.xlsx,.fileico.csv{background:#e0f5eb;color:#19865b}.fileico.png,.fileico.jpg,.fileico.jpeg,.fileico.webp{background:#e7f0ff;color:#3d77bf}.fileico.docx,.fileico.txt{background:#e7f2ff;color:#2371bb}.fileico.other{background:#eef1f5;color:#697c91}.filename{font-size:13px;color:#263b52;font-weight:720;display:block;border:0;background:none;padding:0;text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.filename:hover{color:var(--blue);text-decoration:underline}.filemeta{font-size:11px;color:#9aa7b4;margin-top:2px}.typepill{font-size:11px;display:inline-block;padding:3px 8px;background:#f0f4f8;color:#667b8f;border-radius:5px;font-weight:650}.actions{display:flex;align-items:center;gap:7px}.action{border:1px solid #dee8f3;color:#246cac;background:white;border-radius:6px;font-size:11px;font-weight:720;padding:6px 9px}.action:hover{background:#ecf5ff}.dots{border:0;background:none;color:#92a3b4;padding:5px;display:inline-flex;border-radius:5px}.dots:hover{background:#eff4fa}.dots svg{width:17px;height:17px}.kind{min-width:118px}.date{min-width:148px}.size{min-width:80px}.actcol{min-width:228px}.griditems{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:13px;padding:2px 25px 27px}.tile{position:relative;border:1px solid #e6ecf2;padding:15px;border-radius:10px;min-height:148px;display:flex;flex-direction:column;gap:10px}.tile:hover{border-color:#bcdafa;background:#fcfdff}.tiletop{display:flex;justify-content:space-between}.tile .filename{max-width:100%;font-size:12px}.tilefoot{display:flex;align-items:center;gap:8px;margin-top:auto}.tile .action{font-size:10px;padding:5px 7px}.empty{display:grid;place-items:center;text-align:center;padding:55px 20px;color:#7b8da0}.empty svg{width:40px;height:40px;stroke:#b1c0cf;margin-bottom:10px}.empty strong{font-size:14px;color:#3a5168}.empty p{margin:5px 0 0;font-size:12px}.countline{padding:13px 24px;color:#8d9cac;border-top:1px solid #edf1f5;font-size:11.5px;background:#fcfdfe}
+.modalback{position:fixed;inset:0;background:rgba(10,27,47,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}.modal{background:#fff;border-radius:14px;width:min(520px,100%);box-shadow:0 22px 70px rgba(0,18,42,.2);max-height:min(90vh,700px);overflow-y:auto}.modal.large{width:min(680px,100%)}.modalheader{display:flex;align-items:center;justify-content:space-between;padding:20px 23px;border-bottom:1px solid var(--line)}.modalheader h2{font-size:17px;margin:0;font-weight:780}.close{border:0;background:#f4f7fa;color:#64788c;border-radius:7px;padding:6px;display:flex}.modalbody{padding:24px}.modalfoot{border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:9px;padding:15px 23px}.field{display:block;color:#4e6175;font-weight:700;font-size:12px;margin:0 0 7px}.textinput{padding:11px 13px;width:100%;border:1px solid #d8e2ed;border-radius:7px;outline:0;font-size:13px;color:#304760}.textinput:focus{border-color:var(--blue);box-shadow:0 0 0 3px #d9eaff}.hint{color:#93a0ad;font-size:11.5px;margin-top:8px}.previewbox{border:1px dashed #d5e2ef;background:#f7faff;min-height:235px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#6a8095;text-align:center;padding:20px;overflow:hidden}.previewbox .fileico{width:64px;height:64px;border-radius:14px;margin:0 0 13px}.previewbox .fileico svg{width:30px;height:30px}.previewbox img{max-height:320px;max-width:100%;object-fit:contain}.previewbox iframe{width:100%;height:420px;border:0;background:white}.previewbox pre{width:100%;max-height:280px;overflow:auto;white-space:pre-wrap;word-break:break-word;text-align:left;font-size:12px}.detailrow{display:flex;justify-content:space-between;gap:15px;font-size:12px;color:#8a9aa9;padding-top:12px}.detailrow strong{color:#445d74;font-weight:660}.notice{border:1px solid #dfeafa;background:#f4f8ff;border-radius:8px;padding:11px 13px;color:#55718b;font-size:12px;margin:0 0 18px}.sharepeople{margin-top:22px}.person{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eff2f7;font-size:12px}.person .avatar{width:30px;height:30px;font-size:11px}.person small{display:block;color:#95a4b1}.person .role{margin-left:auto;color:#7890a4;font-size:11px}.inlineform{display:flex;gap:8px}.inlineform .btn{white-space:nowrap}.toast{position:fixed;bottom:24px;right:24px;z-index:70;background:#173650;color:#fff;border-radius:9px;box-shadow:0 10px 35px #17365033;padding:13px 18px;font-size:12.5px;max-width:min(400px,calc(100vw - 32px))}.hidden{display:none!important}.mockpage{width:190px;height:120px;border-radius:9px;background:linear-gradient(130deg,#dbecff,#e6e1f8 55%,#e4f6ea);display:grid;place-items:center;margin:auto;box-shadow:inset 0 0 0 8px #fff;color:#38558c;font-weight:800}.statusdot{display:inline-block;background:#18a584;width:7px;height:7px;border-radius:50%;margin-right:5px}.dropcover{position:absolute;inset:0;background:#edf6ffdc;z-index:30;outline:3px dashed #2879c9;outline-offset:-12px;border-radius:12px;display:grid;place-items:center;font-size:17px;font-weight:800;color:#1a61a2;pointer-events:none}.contentregion{position:relative}
+@media(max-width:1000px){.sidebar{width:190px}.brand{min-width:175px}.main{padding:26px 22px}.filetable th,.filetable td{padding-left:15px;padding-right:15px}.panelhead{padding:0 17px}.toolbar{padding-left:17px;padding-right:17px}.crumbs{padding-left:17px}}@media(max-width:760px){.topbar{height:56px;padding:0 15px}.brand{min-width:auto;font-size:15px}.toplabel,.topright small{display:none}.shell{display:block}.sidebar{display:flex;width:100%;padding:9px;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);border-right:0}.navtitle,.sidefoot,.navitem .count{display:none}.navitem{white-space:nowrap;padding:9px 11px;width:auto;min-width:max-content;margin:0}.navitem svg{width:16px;height:16px}.main{padding:22px 12px}.heading h1{font-size:23px}.heading{align-items:flex-start;gap:14px}.headingactions{width:100%}.headingactions .btn{flex:1}.panelhead{min-height:56px}.tabs{height:56px;gap:17px}.toolbar{gap:10px}.tools{width:100%;justify-content:flex-end}.filetable{min-width:770px}.toast{bottom:12px;right:12px}}
+
+/* Ampliación de permisos, usuarios y navegación; conserva el CSS del prototipo de referencia. */
+.modal.large{max-height:min(94vh,920px)}
+.actorlabel{display:flex;align-items:center;gap:7px;color:#dce7f4;font-size:11px}.actorlabel select{border:1px solid #667c94;border-radius:7px;background:#1d3652;color:#fff;padding:7px;max-width:170px}.resetmini{border:1px solid #54677c;background:#1c3551;border-radius:7px;color:#c9dbec;font-size:19px;width:30px;height:30px}.sharetitle{display:flex;align-items:center;gap:10px}.sharetitle .fileico{display:inline-grid}.shareblock{padding:16px 0;border-bottom:1px solid #e8eef5}.shareblock:first-of-type{padding-top:6px}.shareform{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.shareform .textinput{min-width:180px;flex:1;width:auto}.shareform .select{max-width:none}.switchlabel{display:flex;align-items:center;gap:5px;color:#465d75;font-size:12px;white-space:nowrap}.sharepeople{margin-top:20px}.inherited{padding:10px 0;border-top:1px solid #e1e9f2}.inherited>strong{display:block;font-size:12px;margin-bottom:5px;color:#6d839a}.inherited .person{background:#f6f9fd;padding:8px;border-radius:7px;margin:4px 0}.personmain{flex:1;min-width:95px;overflow:hidden}.personmain strong,.personmain small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}.person .select{width:116px;max-width:116px}.person .remove{border:0;background:#fff0f1;color:#c54c56;border-radius:6px;font-size:21px;line-height:1;width:28px;height:28px}.optiongrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:15px 0}.optiongrid .btn{justify-content:flex-start}.history{padding:10px 24px}.historyitem{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #eef3f8}.historyitem strong{font-size:12px;color:#3d536a}.historyitem small{white-space:nowrap;color:#8191a1}.texteditor{min-height:320px;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}.folder-row{cursor:pointer}.folder-row:hover{background:#edf6ff!important}.tile{cursor:pointer}.tile .tilefoot{flex-wrap:wrap}.tile .tilefoot .dots{margin-left:auto}.inlineform input{min-width:0}
+@media(max-width:760px){.actorlabel{font-size:0}.actorlabel select{width:115px;max-width:115px;font-size:11px}.topright{gap:6px}.topbar{gap:8px}.resetmini{display:none}.shareform .btn{flex:1}.shareform .textinput{min-width:160px}.person .avatar{display:none}.person .select{width:105px;max-width:105px}.historyitem{display:block}.historyitem small{display:block;margin-top:5px}.optiongrid{grid-template-columns:1fr}}
+
+/* KCPRZ V3: operaciones familiares a Google Drive y OneDrive */
+.workhint{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:-9px 0 19px;color:#526f8e;font-size:12px}
+.workhint .where{display:flex;align-items:center;gap:6px;border:1px solid #dce8f4;border-radius:8px;background:#fff;padding:7px 10px}
+.workhint .where b{color:#224e7d}.workhint .txthelp{color:#8092a5;font-size:11px}
+.pillbtn{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;background:#f5f9ff;border:1px solid #dce8f5;color:#366c9f;border-radius:7px;padding:7px 9px;font-weight:700;cursor:pointer}
+.pillbtn:hover{background:#e8f3ff}
+.workhint .where svg{width:14px;height:14px}.workhint [hidden]{display:none}.pillbtn:disabled{opacity:.45;cursor:not-allowed}
+.batchbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:11px 24px;background:#eaf4ff;border-top:1px solid #d6e9ff;border-bottom:1px solid #d6e9ff;color:#275f95;font-size:12px}
+.batchbar[hidden]{display:none}.batchbar .batchspacer{flex:1}.batchbar button{background:#fff;border:1px solid #c6dff5;border-radius:7px;padding:7px 11px;color:#155b9d;font-weight:700}
+.filetable th.selcol,.filetable td.selcol{width:34px;min-width:34px;padding-left:17px;padding-right:0}.rowcheck,.checkall,.tilecheck{width:17px;height:17px;accent-color:var(--blue);cursor:pointer}
+.filetable tr.selected-row,.tile.selected-row{background:#eff7ff}.filetable tr.drop-target,.tile.drop-target{outline:2px dashed #1781c4;outline-offset:-2px;background:#e9f7ff}
+.filetable [draggable=true],.tile[draggable=true]{cursor:grab}.tilecheck{position:absolute;right:12px;top:12px}.tiletop{padding-right:25px}
+.action.move-action{border-color:#c7dfef;background:#f6fbff;color:#126aa7}.action.move-action:hover{background:#e4f2ff}
+.folderpicker{max-height:290px;overflow:auto;border:1px solid #d9e4ef;border-radius:9px;padding:7px;background:#fcfdff;margin:12px 0}
+.folderoption{display:flex;width:100%;align-items:center;gap:9px;text-align:left;background:transparent;border:0;border-radius:7px;padding:9px 8px;font-size:12px;color:#425b75}
+.folderoption:hover{background:#eaf4ff}.folderoption.active{background:#e5f2ff;outline:1px solid #b6d8fa;font-weight:750;color:#145ca5}
+.folderoption:disabled{opacity:.4;cursor:not-allowed}.folderoption svg{width:17px;height:17px;color:#e0a425}
+.folderoption .treeinfo{margin-left:auto;color:#9aaabd;font-size:10px}
+.moveproof{border-radius:8px;padding:12px;background:#f1f7ff;font-size:12px;color:#416784;line-height:1.7}
+.smallmuted{font-size:11px;color:#8b9eaf}.helperline{padding:0 24px 13px;color:#90a1b1;font-size:11px}
+.emptyaction{margin-top:18px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.uploadprog{padding:10px 22px;border-top:1px solid #d9e7f5;background:#f4faff;color:#34658c;font-size:12px}
+.uploadprog[hidden]{display:none}.uploadprog progress{height:9px;width:180px;margin-left:10px;accent-color:var(--blue)}
+.dropcover{pointer-events:none}.shortsteps{display:grid;gap:11px}.step{border:1px solid #e3edf6;border-radius:9px;padding:14px;background:#fafcff;color:#526a81;font-size:13px}.step strong{display:block;color:#204d7b;font-size:14px;margin-bottom:4px}
+@media(max-width:760px){.workhint{margin-top:-6px}.workhint .txthelp{display:none}.batchbar{padding:9px 12px}.filetable{min-width:930px}.helperline{padding-left:12px}.workhint .where{max-width:100%;overflow:hidden}.workhint .where b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}}
+
+/* Vista de teléfono sin desplazamiento horizontal para acciones importantes */
+@media(max-width:760px){
+ .tablewrap{overflow:visible}
+ .filetable{display:block;width:100%;min-width:0!important;white-space:normal}
+ .filetable thead,.filetable tbody{display:block;width:100%}
+ .filetable thead tr{display:flex;align-items:center;gap:8px;padding:6px 13px;background:#f9fbfd}
+ .filetable thead tr:after{content:'Seleccionar elementos';font-size:10px;color:#91a2b3;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+ .filetable th{display:none}
+ .filetable th.selcol{display:block;padding:6px 4px;border:0;background:transparent;width:26px;min-width:26px}
+ .filetable tbody tr{display:grid;grid-template-columns:27px minmax(0,1fr);grid-template-rows:auto auto;gap:0 7px;align-items:center;padding:13px 13px 14px;border-bottom:1px solid #eaf0f6}
+ .filetable tbody tr:last-child{border-bottom:0}
+ .filetable td{border:0!important;padding:0!important;white-space:normal;min-width:0}
+ .filetable td.selcol{grid-column:1;grid-row:1;display:flex;align-items:center;justify-content:flex-start}
+ .filetable td:nth-child(2){grid-column:2;grid-row:1}
+ .filetable td:nth-child(3),.filetable td:nth-child(4),.filetable td:nth-child(5){display:none}
+ .filetable td:nth-child(6){grid-column:2;grid-row:2;display:block;padding-top:11px!important}
+ .filetable .namecell{min-width:0;gap:10px}
+ .filetable .namecell>div:last-child{min-width:0}
+ .filetable .filename{max-width:calc(100vw - 140px);font-size:12px}
+ .filetable .filemeta{font-size:10px;white-space:normal}
+ .filetable .actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+ .filetable .actions .action{padding:6px 9px;font-size:11px}
+ .filetable .actions .dots{margin-left:auto}
+ .filetable .fileico{height:34px;width:34px}
+ .griditems{padding:4px 12px 16px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+}
+
+/* KCPRZ V4 - creación masiva e importación jerárquica; accesibilidad y estados explícitos. */
+.headingactions .folderupload{background:#f1f7ff;border-color:#bcd8f5;color:#155e9a}
+.headingactions #bulkFolders{border-color:#cce0eb;color:#2b5c82}
+/* V5: acceso directo para crear las carpetas mensuales. */
+.headingactions .monthshortcut{background:#e8f6f2;border-color:#c2e3d6;color:#17694d}
+.headingactions .monthshortcut:hover{background:#d9efe7}
+.monthquick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.monthquick>strong{font-size:12px;color:#52677e;margin-right:4px}
+.monthpreset{background:#f7faff;border:1px solid #d8e4f1;border-radius:7px;padding:7px 10px;color:#3b6288;font-weight:690;font-size:12px}
+.monthpreset:hover,.monthpreset.on{background:#e5f2ff;border-color:#a9d0f6;color:#135fa9}
+.monthfieldset{border:0;padding:0;margin:0;min-width:0;width:100%}
+.monthfieldset legend{font-size:13px;font-weight:760;color:#30485d;padding-bottom:10px}
+.monthgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.monthitem{display:flex;align-items:center;gap:8px;border:1px solid #dde7f1;background:#fff;border-radius:9px;padding:11px 10px;min-width:0;cursor:pointer;transition:background .1s,border-color .1s}
+.monthitem:hover{border-color:#90bdea;background:#f8fbff}
+.monthitem.chosen{border-color:#aacced;background:#f2f8ff}
+.monthitem.existing{background:#fafbfd}
+.monthitem input{width:17px;height:17px;accent-color:#1264b9;margin:0;flex-shrink:0;cursor:pointer}
+.monthitem .monthname{font-size:12.5px;color:#314c64;font-weight:710;white-space:nowrap}
+.monthitem .monthalready{display:block;font-size:10.5px;color:#738da1;font-weight:500}
+.monthsummary{margin:15px 0 0;border:1px solid #cde7da;border-radius:8px;background:#f0faf5;padding:10px 12px;color:#326d54;font-size:12px;font-weight:650}
+.monthsummary.noaction{background:#f4f7fb;border-color:#e0e8f1;color:#718197}
+.monthhint{color:#71859a;font-size:11.5px;margin:0 0 15px}
+.monthitem:focus-within,.monthpreset:focus-visible{outline:3px solid #a8d2ff;outline-offset:2px}
+/* Mantiene siempre visible Confirmar en pantallas pequeñas. */
+.modal.monthsmodal{display:flex;flex-direction:column;overflow:hidden;max-height:min(92dvh,780px)}
+.modal.monthsmodal .modalheader,.modal.monthsmodal .modalfoot{flex:0 0 auto;background:#fff}
+.modal.monthsmodal .modalbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:480px){.modal.monthsmodal .modalfoot{gap:7px}.modal.monthsmodal .modalfoot .btn{flex:1;padding:9px 8px}}
+@media(max-width:580px){.monthgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.monthitem{padding:10px 7px;gap:6px}.monthitem .monthname{font-size:12px}}
+.outlinehelp{font-size:12px;color:#637a90;line-height:1.7;margin:0 0 12px}
+.outlineexamples{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 8px}
+.outlineexamples button{border:1px solid #c9dfef;color:#2265a2;background:#f7fbff;border-radius:6px;padding:7px 11px;font-size:11.5px;font-weight:700}
+.outlineinput{font-family:ui-monospace,Consolas,monospace;min-height:180px;max-height:300px;resize:vertical;line-height:1.65;white-space:pre;tab-size:2}
+.outlinestat{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:12px 0;color:#56748d;font-size:12px}
+.outlinestat strong{background:#eaf5ff;color:#165b96;border-radius:99px;padding:3px 9px}
+.outlinepreview{border:1px solid #dce8f4;background:#fafcff;border-radius:9px;padding:9px 13px;max-height:220px;overflow:auto}
+.outlinepreview ul{list-style:none;padding:0;margin:0}
+.outlinepreview li{padding:4px 0 4px 20px;border-left:1px solid #d5e4f2;margin-left:8px;position:relative;font-size:12px;color:#39546f;overflow-wrap:anywhere}
+.outlinepreview li::before{content:"";width:10px;border-top:1px solid #d5e4f2;position:absolute;left:0;top:15px}
+.outlinepreview .outlineexists{color:#738f9d;font-size:10px;margin-left:6px}
+.outlineerror{background:#fff4f3;border:1px solid #f1b9b4;border-radius:8px;padding:10px 12px;margin-top:10px;color:#9a3b35;font-size:12px}
+.outlineerror[hidden]{display:none}
+.outlineaccess{margin-top:12px;color:#758ba1;font-size:11.5px}
+.outlineaccess kbd{background:#eff5fb;border:1px solid #dce6ef;border-radius:4px;padding:0 4px;font-family:inherit}
+.outlineicon{color:#d99f2c;margin-right:5px}
+.uploadworking{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.uploadworking progress{width:180px;max-width:100%}
+@media(max-width:900px){.headingactions .btn{flex:1;min-width:170px}.headingactions{width:100%}}
+@media(max-width:480px){.headingactions .btn{min-width:45%;font-size:11px;padding:8px 8px}.outlinepreview{max-height:175px}.modalbody{padding:16px}.modalfoot{padding:12px}}
+
+.importnotice{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:4px 24px 18px;padding:12px 14px;border:1px solid #bce1d5;border-radius:9px;background:#f0fbf6;color:#286653;font-size:12px}
+.importnotice[hidden]{display:none}.importnotice>strong{font-weight:700}.importnotice button{border:1px solid #b1dacc;color:#246c53;background:#fff;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700}
+@media(max-width:760px){.importnotice{margin:5px 12px 12px}}
+ 
+/* V6 · revisión accesible antes de confirmar la carga, para cualquier extensión. */
+.modal.stage-modal{width:min(1110px,98vw);height:min(90dvh,820px);max-height:95dvh;display:flex;flex-direction:column;overflow:hidden}
+.stage-modal .modalheader,.stage-modal .modalfoot{flex-shrink:0;background:white}
+.stage-modal .modalbody{flex:1 1 auto;min-height:0;overflow:hidden;padding:16px 19px}
+.stage-intro{font-size:12px;color:#546d83;margin:0 0 12px}
+.stage-intro strong{color:#1f557e}
+.stage-layout{display:grid;grid-template-columns:minmax(195px,265px) minmax(0,1fr);gap:16px;height:calc(100% - 35px);min-height:0}
+.stage-left{min-height:0;display:flex;flex-direction:column;border:1px solid #e2eaf3;border-radius:10px;overflow:hidden;background:#fbfdff}
+.stage-list-head{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:10px 11px;background:#f3f8fe;border-bottom:1px solid #e0eaf6;font-size:12px;font-weight:720}
+.stage-add{border:1px solid #bcd6f1;background:#fff;color:#185b9c;padding:5px 7px;border-radius:6px;font-size:11px;white-space:nowrap;font-weight:730}
+.stage-list{overflow:auto;flex:1;padding:6px;min-height:0}
+.stage-list-row{display:flex;align-items:center;gap:5px;border:1px solid transparent;border-radius:8px;padding:5px;margin-bottom:4px}
+.stage-list-row.active{border-color:#a3c8f0;background:#e8f3ff}
+.stage-list-pick{border:0;background:transparent;padding:7px 3px;display:flex;gap:9px;align-items:center;text-align:left;min-width:0;flex:1}
+.stage-mini-icon{flex:0 0 34px;width:34px;height:38px;display:grid;place-items:center;background:white;border:1px solid #dce7f3;border-radius:7px;color:#326a9e;font-size:19px}
+.stage-list-text{min-width:0;display:block}.stage-list-text strong{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:11.5px;color:#243d57}.stage-list-text small{display:block;color:#8b9cac;font-size:10px}
+.stage-remove{background:none;border:0;color:#8d6d76;padding:5px 7px;border-radius:5px;font-size:18px}.stage-remove:hover{background:#ffe6e8;color:#b93648}
+.stage-main{display:flex;min-width:0;min-height:0;flex-direction:column;gap:9px}
+.stage-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.stage-heading strong{font-size:13px;color:#1b3b5c;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.stage-zoombar{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.stage-zoombar button{border:1px solid #d1e3f2;background:white;color:#295d8c;padding:5px 9px;border-radius:6px;font-weight:750;font-size:12px;min-width:33px}
+.stage-pdf-link{font-size:11px;font-weight:700;color:#1664bd;text-decoration:underline;text-underline-offset:2px}.stage-pdf-link:focus-visible{outline:3px solid #a8d2ff;outline-offset:2px}
+.stage-list-pick:focus-visible{outline:2px solid #4994df;outline-offset:1px;border-radius:6px}
+.stage-zoomtext{font-size:11px;color:#68839c;min-width:34px;text-align:center}
+.stage-viewport{position:relative;flex:1;min-height:180px;border:1px solid #d8e4ef;border-radius:10px;overflow:hidden;background:repeating-conic-gradient(#f5f8fc 0% 25%,#edf2f8 0% 50%) 50% / 24px 24px}
+.stage-scroll{width:100%;height:100%;overflow:auto;overscroll-behavior:contain;display:block;text-align:center}
+.stage-scroll img{display:block;height:auto;max-width:none;margin:12px auto;border-radius:3px;box-shadow:0 2px 12px #233b502a;background:white}
+.stage-scroll iframe{width:100%;height:100%;min-height:250px;border:0;background:white;display:block}
+.stage-scroll video{max-width:100%;max-height:100%;margin:auto}
+.stage-scroll audio{max-width:calc(100% - 24px);margin:30px auto}
+.stage-scroll pre{margin:10px;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;padding:14px;background:#fff;border:1px solid #dfe8f2;border-radius:8px;line-height:1.55;color:#29425d;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.stage-placeholder{min-height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:25px;text-align:center;gap:9px;color:#647e94}
+.stage-placeholder .stage-filetype{font-size:40px}.stage-placeholder strong{font-size:14px;color:#2e526f;overflow-wrap:anywhere}
+.stage-expand{position:absolute;bottom:12px;right:12px;border:1px solid #c2d8eb;background:#fff;box-shadow:0 4px 18px #173c5e36;color:#195f9c;display:inline-flex;align-items:center;gap:7px;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:800;z-index:2}
+.stage-instruction{font-size:11px;color:#68839a;background:#f4f9ff;border-radius:6px;padding:6px 9px}
+.stage-modal.stage-expanded{width:99vw;height:98dvh;max-height:98dvh}
+.stage-modal.stage-expanded .stage-layout{grid-template-columns:minmax(130px,190px) minmax(0,1fr)}
+.stage-status{background:#f0faf4;border:1px solid #c7e6d3;color:#35704e;border-radius:7px;padding:8px 10px;font-size:12px}
+.stage-button-primary{white-space:nowrap}
+.stage-list-row:focus-within,.stage-expand:focus-visible,.stage-zoombar button:focus-visible,.stage-add:focus-visible{outline:3px solid #91c4f7;outline-offset:1px}
+@media(max-width:710px){
+ .modal.stage-modal{width:100%;max-height:98dvh;height:95dvh}
+ .stage-modal .modalbody{padding:10px;overflow:hidden}
+ .stage-layout{grid-template-columns:1fr;grid-template-rows:minmax(76px,130px) minmax(0,1fr);gap:10px;height:calc(100% - 50px)}
+ .stage-left{min-height:75px}.stage-list{display:flex;gap:6px;overflow:auto;padding:6px}
+ .stage-list-row{flex:0 0 190px;margin:0}.stage-list-head{padding:5px 10px}
+ .stage-modal.stage-expanded .stage-layout{grid-template-columns:1fr;grid-template-rows:minmax(65px,90px) minmax(0,1fr)}
+ .stage-modal .modalfoot{flex-wrap:wrap;padding:10px}
+ .stage-modal .modalfoot .btn{flex:1;font-size:12px}
+ .stage-intro{margin-bottom:6px;font-size:11px}
+}
+.stage-mini-icon .stage-thumb-img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:cover;border-radius:6px;display:block}
+@media(prefers-reduced-motion:reduce){.stage-modal *{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app" id="przApp">
+<svg style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-8h6v8"/></symbol>
+<symbol id="i-files" viewBox="0 0 24 24"><rect x="4" y="3" width="12" height="16" rx="2"/><path d="M8 7h5M8 11h5M8 15h4M19 7h1v13a1 1 0 0 1-1 1H8"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h3M8 18h3M15 14h2M15 18h2"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="5" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8 11 7-5M8 13l7 5"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.8 6.3.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 2.9 1.1-6.3L3 9.7l6.3-.9z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v7M14 11v7M6 7l1 14h10l1-14M9 7V4h6v3"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 5h12M9 12h12M9 19h12M3 5h2M3 12h2M3 19h2"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 18v3h16v-3"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5 19 19M19 5 5 19"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5Z"/><path d="M14 3v5h5M8 13h8M8 17h8"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 8a8 8 0 1 0 1 5M20 3v5h-5"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="2"/><path d="m3 18 6-6 4 4 3-3 5 5"/></symbol>
+</svg>
+<header class="topbar"><div class="brand"><span class="brandicon">PRZ</span> DRIVE PRZ</div><div class="toplabel">Gestión documental</div><div class="topright"><label class="actorlabel">Simular usuario <select id="userSelect"><option value="u1">Administración PRZ</option><option value="u2">María González</option><option value="u3">Pedro Rojas</option><option value="u4">Ana Torres</option></select></label><button id="resetDemo" class="resetmini" title="Reiniciar demo">↺</button><span class="avatar" id="userBadge">PR</span></div></header>
+<div class="shell">
+<aside class="sidebar" aria-label="Navegación">
+<div class="navtitle">Espacio de trabajo</div>
+<button class="navitem" data-nav="home"><svg><use href="#i-home"/></svg> Inicio</button>
+<button class="navitem active" data-nav="files"><svg><use href="#i-files"/></svg> Documentos</button>
+<button class="navitem" data-nav="shared"><svg><use href="#i-share"/></svg> Compartidos</button>
+<button class="navitem" data-nav="starred"><svg><use href="#i-star"/></svg> Destacados</button>
+<button class="navitem" data-nav="trash"><svg><use href="#i-trash"/></svg> Papelera</button><button class="navitem" data-nav="activity"><svg><use href="#i-refresh"/></svg> Actividad</button>
+<div class="sidefoot"><strong style="font-size:12px;color:#53697f">Archivos de este navegador</strong><p id="storageInfo" style="line-height:1.7;margin:8px 0">Los archivos nuevos se guardan en este equipo.</p></div>
+</aside>
+<main class="main"><div class="eyebrow">ESPACIO DE TRABAJO</div><div class="heading"><div><h1 id="sectionTitle">Documentos</h1><p id="sectionSubtitle">Gestiona y organiza los archivos de tu equipo.</p></div><div class="headingactions" id="createButtons"><button type="button" class="btn" id="newFolder"><svg><use href="#i-plus"/></svg> Nueva carpeta</button><button type="button" class="btn" id="bulkFolders"><svg><use href="#i-folder"/></svg> Crear varias carpetas</button><button type="button" class="btn monthshortcut" id="createMonths" title="Crear enero a diciembre o elegir meses individuales dentro de esta carpeta"><svg><use href="#i-calendar"/></svg> Crear meses</button><button type="button" class="btn primary" id="uploadButton"><svg><use href="#i-upload"/></svg> Subir archivos aquí</button><button type="button" class="btn folderupload" id="uploadFolderButton"><svg><use href="#i-upload"/></svg> Subir carpeta completa</button></div></div>
+<div class="workhint"><span class="where">📍 Estás en: <b id="currentPlace">prueba1</b></span><button class="pillbtn" id="goUp" type="button">↑ Subir un nivel</button><button class="pillbtn" id="undoMove" type="button" hidden>↶ Deshacer movimiento</button><button class="pillbtn" id="helpButton" type="button">❔ ¿Cómo se usa?</button><span class="txthelp">Abre carpetas, crea una estructura completa o importa carpetas desde tu equipo.</span></div>
+<section class="panel contentregion" id="dropzone"><div class="panelhead"><div class="tabs"><button type="button" class="tab selected" id="tabMine">Mis archivos</button><button type="button" class="tab" id="tabShared">Compartidos conmigo</button></div><span style="color:#9caabb;font-size:11px" id="sectionCounter">3 archivos</span></div><div class="crumbs" id="breadcrumbs"></div><div id="importNotice" class="importnotice" role="status" aria-live="polite" hidden></div><div id="batchBar" class="batchbar" hidden><strong id="selectedCount">0 seleccionados</strong><span class="batchspacer"></span><button id="bulkMove" type="button">📁 Mover seleccionados</button><button id="bulkDelete" type="button">🗑 Mover a papelera</button><button id="clearSelection" type="button">Quitar selección</button></div><div class="toolbar"><label class="searchwrap"><svg><use href="#i-search"/></svg><input id="searchInput" placeholder="Buscar documentos o carpetas..." autocomplete="off" aria-label="Buscar archivos"></label><div class="tools"><select id="typeFilter" class="select" aria-label="Filtrar por tipo"><option value="all">Todos los tipos</option><option value="folder">Carpetas</option><option value="pdf">PDF</option><option value="xlsx">Excel / CSV</option><option value="png">Imágenes</option><option value="docx">Documentos</option></select><select id="sortBy" class="select" aria-label="Ordenar por"><option value="name">Nombre A-Z</option><option value="recent">Más recientes</option><option value="size">Mayor tamaño</option></select><button class="iconbtn on" type="button" id="listBtn" title="Vista de lista" aria-label="Vista de lista"><svg><use href="#i-list"/></svg></button><button class="iconbtn" type="button" id="gridBtn" title="Vista de cuadrícula" aria-label="Vista de cuadrícula"><svg><use href="#i-grid"/></svg></button></div></div><div id="filesArea"></div><div class="helperline" id="helperLine">Consejo: abre una carpeta con doble clic. Para mover archivos, usa el botón “Mover”.</div><div id="uploadProgress" class="uploadprog" hidden></div><div class="countline" id="footCounter"></div><div id="dropCover" class="dropcover hidden">Suelta archivos o una carpeta completa para importar su estructura</div></section>
+</main></div>
+<input type="file" id="fileInput" hidden multiple aria-label="Seleccionar archivos de cualquier formato">
+<input type="file" id="folderInput" webkitdirectory directory multiple hidden aria-label="Seleccionar carpeta completa">
+<div id="modalMount"></div><div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+</div>
+<script>
+
+(()=>{'use strict';
+const app=document.getElementById('przApp');
+const $=id=>document.getElementById(id);
+const glyph=n=>`<svg aria-hidden="true"><use href="#i-${n}"></use></svg>`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const users=[{id:'u1',name:'Administración PRZ',mail:'admin@prz.cl',initial:'PR'},{id:'u2',name:'María González',mail:'maria@prz.cl',initial:'MG'},{id:'u3',name:'Pedro Rojas',mail:'pedro@prz.cl',initial:'PR'},{id:'u4',name:'Ana Torres',mail:'ana@prz.cl',initial:'AT'}];
+const dateNow=()=>new Date().toISOString();
+const seed={next:70,folders:[
+ {id:'root-u1',name:'Mis archivos',parentId:null,owner:'u1',modified:'2026-10-23T12:00:00',acl:{users:{},everyone:'none'}},
+ {id:'root-u2',name:'Mis archivos',parentId:null,owner:'u2',modified:'2026-10-23T12:00:00',acl:{users:{},everyone:'none'}},
+ {id:'root-u3',name:'Mis archivos',parentId:null,owner:'u3',modified:'2026-10-23T12:00:00',acl:{users:{},everyone:'none'}},
+ {id:'root-u4',name:'Mis archivos',parentId:null,owner:'u4',modified:'2026-10-23T12:00:00',acl:{users:{},everyone:'none'}},
+ {id:'f1',name:'prueba1',parentId:'root-u1',owner:'u1',modified:'2026-10-23T12:00:00',acl:{users:{},everyone:'none'}}
+],files:[
+ {id:'d1',name:'Control_documentos.xlsx',folderId:'f1',owner:'u1',size:24240,modified:'2026-10-23T12:35:00',demo:true,acl:{users:{},everyone:'none'},version:1},
+ {id:'d2',name:'Imagen_prueba.png',folderId:'f1',owner:'u1',size:164112,modified:'2026-10-22T16:10:00',demo:true,acl:{users:{},everyone:'none'},version:1},
+ {id:'d3',name:'Manual_documental.pdf',folderId:'f1',owner:'u1',size:403721,modified:'2026-10-21T09:40:00',demo:true,acl:{users:{},everyone:'none'},version:1},
+ {id:'d4',name:'Documento_compartido.pdf',folderId:'root-u2',owner:'u2',size:121100,modified:'2026-10-20T11:15:00',demo:true,acl:{users:{u1:'view'},everyone:'none'},version:1}
+],history:[]};
+const storeKey='prz-drive-v2-metadata-2026';
+let db=(()=>{try{const d=JSON.parse(localStorage.getItem(storeKey));if(d&&Array.isArray(d.files)&&Array.isArray(d.folders))return d}catch{}return structuredClone(seed)})();
+const state={user:'u1',section:'files',folder:'f1',search:'',type:'all',sort:'name',layout:'list'};
+const selection=new Set();let moveSelection=[],dragId=null,undoMovement=null,lastOpenButtonAt=0,lastImportedFolder=null;
+function clearSelection(){selection.clear();draw()}
+function pickable(x){return state.section!=='trash'&&canEdit(x)}
+function selectedItems(){return [...selection].map(entity).filter(x=>x&&pickable(x))}
+function pathOf(id){const x=folder(id);return x?lineage(x).map(n=>n.name).join(' / '):'—'}
+function persist(){try{localStorage.setItem(storeKey,JSON.stringify(db))}catch{toast('No se pudo guardar la metadata en este navegador.')}}
+function log(msg,id=''){db.history.unshift({at:dateNow(),user:state.user,msg,id});db.history=db.history.slice(0,80);persist()}
+function rootOfUser(id=state.user){return 'root-'+id}
+function folder(id){return db.folders.find(f=>f.id===id)}
+function file(id){return db.files.find(f=>f.id===id)}
+function entity(id){return folder(id)||file(id)}
+function kind(x){return 'parentId'in x?'folder':'file'}
+function parent(x){return kind(x)==='folder'?x.parentId:x.folderId}
+function lineage(item){let items=[],c=item;let n=0;while(c&&n++<1000){items.unshift(c);c=folder(parent(c))}return items}
+function isDeleted(item){return !!lineage(item).find(x=>x.deleted)}
+function isBelow(id,ancestor){let x=folder(id),limit=0;while(x&&limit++<1000){if(x.id===ancestor)return true;x=folder(x.parentId)}return false}
+function canOwn(x){return x?.owner===state.user}
+function permDetails(x,who=state.user){if(!x||isDeleted(x))return {role:'none',level:0,origins:[]};if(x.owner===who)return {role:'owner',level:3,origins:[{id:x.id,role:'owner'}]};let level=0,origins=[];for(const node of lineage(x)){if(node.owner===who)continue;const ownRole=node.acl?.users?.[who]||'none',everyRole=node.acl?.everyone||'none';for(const [r,src] of [[ownRole,'directo'],[everyRole,'todos']]){const v=r==='edit'?2:r==='view'?1:0;if(v){origins.push({id:node.id,role:r,source:src,inherit:node.id!==x.id});level=Math.max(v,level)}}}return {role:level===2?'edit':level===1?'view':'none',level,origins};}
+function canView(x){return permDetails(x).level>=1}
+function canEdit(x){return permDetails(x).level>=2}
+function canShare(x){return !!x&&canOwn(x)&&!isDeleted(x)} // política PRZ: solo propietario comparte
+function cata(x){if(kind(x)==='folder')return 'folder';const e=ext(x);return ['pdf','xlsx','csv','png','jpg','jpeg','webp','docx','txt'].includes(e)?e:'other'}
+function ext(x){return x.name.includes('.')?x.name.split('.').pop().toLowerCase():''}
+function type(x){return ({folder:'Carpeta',pdf:'Documento PDF',xlsx:'Hoja de cálculo',csv:'Hoja de cálculo',png:'Imagen',jpg:'Imagen',jpeg:'Imagen',webp:'Imagen',docx:'Documento Word',txt:'Archivo de texto',other:ext(x)?'Archivo '+ext(x).toUpperCase():'Archivo sin extensión'})[cata(x)]}
+function icon(x){return `<span class="fileico ${cata(x)}">${glyph(kind(x)==='folder'?'folder':['png','jpg','jpeg','webp'].includes(ext(x))?'image':'file')}</span>`}
+function size(s){return s==null?'—':s<1024?s+' B':s<1048576?(s/1024).toFixed(1)+' KB':(s/1048576).toFixed(1)+' MB'}
+function formatDate(d){return d?new Date(d).toLocaleDateString('es-CL',{day:'2-digit',month:'short',year:'numeric'}):'—'}
+function user(id){return users.find(u=>u.id===id)||{name:id,initial:'??'}}
+function roleLabel(r){return ({owner:'Propietario',edit:'Puede editar',view:'Solo ver',none:'Sin acceso'})[r]||'Sin acceso'}
+function validName(n){return !!n&&n.length<=160&&!/[\\/<>\x00-\x1f]/.test(n)}
+function siblings(x,newParent){return (kind(x)==='folder'?db.folders.filter(a=>a.parentId===newParent):db.files.filter(a=>a.folderId===newParent)).filter(a=>a.id!==x.id&&!a.deleted)}
+function sharingRoots(){const visible=[...db.folders.filter(x=>x.parentId&&x.owner!==state.user&&canView(x)),...db.files.filter(x=>x.owner!==state.user&&canView(x))];return visible.filter(x=>{let p=folder(parent(x));while(p){if(p.owner!==state.user&&canView(p))return false;p=folder(p.parentId)}return true})}
+function items(){let a=[];
+ if(state.section==='activity')return [];
+ if(state.section==='trash')a=[...db.folders.filter(x=>x.parentId&&x.owner===state.user&&x.deleted&&!folder(x.parentId)?.deleted),...db.files.filter(x=>x.owner===state.user&&x.deleted&&!folder(x.folderId)?.deleted)];
+ else if(state.section==='starred')a=[...db.folders.filter(x=>x.starred&&canView(x)),...db.files.filter(x=>x.starred&&canView(x))];
+ else if(state.section==='shared'&&!state.folder)a=sharingRoots();
+ else{const f=folder(state.folder);if(f&&canView(f))a=[...db.folders.filter(x=>x.parentId===state.folder&&canView(x)),...db.files.filter(x=>x.folderId===state.folder&&canView(x))];}
+ if(state.search){let all=state.section==='shared'?[...db.folders,...db.files].filter(x=>x.owner!==state.user&&canView(x)):
+ state.section==='files'?[...db.folders,...db.files].filter(x=>x.owner===state.user&&canView(x)&&!!parent(x)):a;
+ a=all.filter(x=>x.name.toLocaleLowerCase().includes(state.search.toLocaleLowerCase()));}
+ if(state.type!=='all')a=a.filter(x=>state.type==='png'?['png','jpg','jpeg','webp'].includes(cata(x)):state.type==='xlsx'?['xlsx','csv'].includes(cata(x)):state.type==='docx'?['docx','txt'].includes(cata(x)):cata(x)===state.type);
+ a.sort((a,b)=>state.sort==='recent'?new Date(b.modified||0)-new Date(a.modified||0):state.sort==='size'?(b.size||0)-(a.size||0):kind(a)!==kind(b)?(kind(a)==='folder'?-1:1):a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
+ return a;
+}
+function canCreate(){return ['files','shared'].includes(state.section)&&state.folder&&canEdit(folder(state.folder))}
+function actions(x){
+ if(state.section==='trash')return `<button class="action" data-act="restore" data-id="${x.id}">Restaurar</button><button class="dots" data-act="purge" data-id="${x.id}" title="Eliminar definitivamente">${glyph('trash')}</button>`;
+ const buttons=kind(x)==='folder'?`<button class="action" data-act="open" data-id="${x.id}">Abrir</button>`:`<button class="action" data-act="view" data-id="${x.id}">Ver</button><button class="action" data-act="download" data-id="${x.id}">Descargar</button>`;
+ return buttons+(canEdit(x)?`<button class="action move-action" data-act="move" data-id="${x.id}" title="Elegir otra carpeta">Mover</button>`:'')+(canShare(x)?`<button class="action" data-act="share" data-id="${x.id}">Compartir</button>`:'')+`<button class="dots" data-act="more" data-id="${x.id}" title="Más opciones">${glyph('dots')}</button>`;
+}
+function fileName(x){const p=permDetails(x);return `<div class="namecell">${icon(x)}<div><button class="filename" data-act="${kind(x)==='folder'?'open':'view'}" data-id="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button><div class="filemeta">${kind(x)==='folder'?'Doble clic para abrir':x.demo?'Archivo de referencia · sin contenido':'Archivo guardado en este navegador'}${x.starred?' · ★':''}${x.owner!==state.user?' · Compartido por '+esc(user(x.owner).name):''}${p.level&&p.level<3?' · '+roleLabel(p.role):''}</div></div></div>`}
+function draw(){
+ const titles={files:'Documentos',shared:'Compartidos conmigo',starred:'Destacados',trash:'Papelera',activity:'Actividad reciente'},sub={files:'Gestiona y organiza los archivos de tu equipo.',shared:'Archivos y carpetas que otras personas han compartido contigo.',starred:'Acceso rápido a los elementos que marcaste.',trash:'Recupera los elementos eliminados.',activity:'Movimientos registrados en este navegador.'};
+ $('sectionTitle').textContent=titles[state.section];$('sectionSubtitle').textContent=sub[state.section];
+ const current=folder(state.folder),place=current?pathOf(current.id):titles[state.section];
+ $('currentPlace').textContent=place;const importedAction=$('importNotice')?.querySelector('[data-act="openLastImport"]');if(importedAction)importedAction.hidden=state.folder===lastImportedFolder;
+ const actual=db.files.filter(f=>f.owner===state.user&&!isDeleted(f)&&!f.demo),actualBytes=actual.reduce((n,f)=>n+f.size,0);
+ $('storageInfo').textContent=`${actual.length} archivo(s) reales · ${size(actualBytes)} guardados localmente. Sin sincronización entre equipos.`;
+ $('undoMove').hidden=!undoMovement||undoMovement.user!==state.user;
+ $('goUp').disabled=!current||!current.parentId||!canView(folder(current.parentId))||!['files','shared'].includes(state.section);
+ $('helperLine').textContent=canCreate()?`Carpeta actual: ${place}. Puedes revisar PDF, imágenes y cualquier tipo de archivo antes de confirmar; también crear meses e importar carpetas de Mac o Windows.`:'Selecciona una carpeta en la que tengas permiso de edición para subir y organizar archivos.';
+ const picked=selectedItems();$('batchBar').hidden=!picked.length;$('selectedCount').textContent=picked.length+' seleccionado'+(picked.length===1?'':'s');
+ $('bulkMove').disabled=!picked.length;$('bulkDelete').disabled=!picked.length;
+ const ready=canCreate();$('createButtons').style.display=ready?'flex':'none';
+ app.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===state.section||(b.dataset.nav==='home'&&state.section==='files'&&state.folder===rootOfUser())));
+ $('tabMine').classList.toggle('selected',state.section==='files');$('tabShared').classList.toggle('selected',state.section==='shared');
+ let crumb='';if(state.search)crumb='<strong>Resultados de búsqueda</strong>';
+ else if(['files','shared'].includes(state.section)){
+ if(state.section==='shared'&&!state.folder)crumb='<strong>Compartidos conmigo</strong>';
+ else{const current=folder(state.folder);if(current){let chain=lineage(current);if(state.section==='shared'){chain=chain.filter(x=>canView(x));crumb=`<button data-act="sharedhome">Compartidos conmigo</button>${glyph('arrow')}`;}
+ crumb+=chain.map((x,i)=>`${i?glyph('arrow'):''}${i===chain.length-1?`<strong>${esc(x.name)}</strong>`:`<button data-act="crumb" data-id="${x.id}">${esc(x.name)}</button>`}`).join('');}}
+ }else crumb='<strong>'+titles[state.section]+'</strong>';
+ $('breadcrumbs').innerHTML=crumb;
+ $('listBtn').classList.toggle('on',state.layout==='list');$('gridBtn').classList.toggle('on',state.layout==='grid');
+ if(state.section==='activity'){
+ $('sectionCounter').textContent=db.history.length+' movimientos';$('filesArea').innerHTML=db.history.length?`<div class="history">${db.history.map(x=>`<div class="historyitem"><strong>${esc(x.msg)}</strong><small>${esc(user(x.user).name)} · ${new Date(x.at).toLocaleString('es-CL')}</small></div>`).join('')}</div>`:'<div class="empty"><strong>No hay actividades todavía.</strong></div>';$('footCounter').textContent='Historial local de cambios';return;
+ }
+ const a=items(),counts=a.filter(x=>kind(x)==='file').length;
+ $('sectionCounter').textContent=a.length+' elementos';$('footCounter').textContent=`${a.length} elementos · ${counts} archivos · Usuario: ${user(state.user).name}`;
+ if(!a.length){$('filesArea').innerHTML=`<div class="empty">${glyph('folder')}<strong>${state.search?'No se encontraron resultados':'Esta carpeta está vacía'}</strong><p>${state.section==='shared'?'Todavía no han compartido elementos contigo.':'Puedes crear una subcarpeta o subir archivos usando los botones superiores.'}</p>${canCreate()&&!state.search?'<div class="emptyaction"><button class="btn" data-act="newhere">＋ Nueva carpeta</button><button class="btn" data-act="bulkhere">Crear estructura</button><button class="btn monthshortcut" data-act="monthshere">📅 Crear meses</button><button class="btn primary" data-act="uploadhere">⇧ Subir archivos aquí</button><button class="btn" data-act="folderhere">Subir carpeta completa</button></div>':''}</div>`;return}
+ if(state.layout==='grid')$('filesArea').innerHTML=`<div class="griditems">${a.map(x=>`<article class="tile ${selection.has(x.id)?'selected-row':''}" data-row-id="${x.id}" draggable="${pickable(x)}"><div class="tiletop">${pickable(x)?`<input type="checkbox" class="tilecheck rowcheck" data-pick="${x.id}" aria-label="Seleccionar ${esc(x.name)}" ${selection.has(x.id)?'checked':''}>`:''}${icon(x)}<button class="dots" data-act="more" data-id="${x.id}">${glyph('dots')}</button></div><button class="filename" data-act="${kind(x)==='folder'?'open':'view'}" data-id="${x.id}">${esc(x.name)}</button><span class="filemeta">${esc(type(x))} · ${size(x.size)}</span><div class="tilefoot">${actions(x)}</div></article>`).join('')}</div>`;
+ else $('filesArea').innerHTML=`<div class="tablewrap"><table class="filetable"><thead><tr><th class="selcol"><input id="selectAll" type="checkbox" class="checkall" aria-label="Seleccionar todos los elementos que puedo editar" ${a.filter(pickable).length&&a.filter(pickable).every(x=>selection.has(x.id))?'checked':''}></th><th>Nombre</th><th class="kind">Tipo</th><th class="size">Tamaño</th><th class="date">Modificado</th><th class="actcol">Acciones</th></tr></thead><tbody>${a.map(x=>`<tr draggable="${pickable(x)}" data-row-id="${x.id}" class="${kind(x)==='folder'?'folder-row':''} ${selection.has(x.id)?'selected-row':''}"><td class="selcol">${pickable(x)?`<input class="rowcheck" type="checkbox" data-pick="${x.id}" aria-label="Seleccionar ${esc(x.name)}" ${selection.has(x.id)?'checked':''}>`:''}</td><td>${fileName(x)}</td><td><span class="typepill">${esc(type(x))}</span></td><td>${size(x.size)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${actions(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+}
+function showImportNotice(msg,id){
+ lastImportedFolder=id||null;const n=$('importNotice');
+ n.hidden=false;
+ n.innerHTML=`<span>${esc(msg)}</span><span class="importnoticeactions">${id?'<button type="button" data-act="openLastImport">Abrir carpeta importada</button>':''}<button type="button" data-act="dismissImport" aria-label="Cerrar aviso">Cerrar</button></span>`;
+}
+function toast(s){const b=$('toast');b.textContent=s;b.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>b.classList.add('hidden'),4000)}
+function modal(title,body,foot='',wide=false){$('modalMount').innerHTML=`<div class="modalback" data-backdrop="yes"><div class="modal ${wide?'large':''}" role="dialog" aria-modal="true" aria-labelledby="kcprz-dialog-title"><div class="modalheader"><h2 id="kcprz-dialog-title">${esc(title)}</h2><button data-modal-close class="close">${glyph('close')}</button></div><div class="modalbody">${body}</div><div class="modalfoot"><button class="btn" data-modal-close>Cerrar</button>${foot}</div></div></div>`;$('modalMount').querySelector('input,select')?.focus()}
+function close(){const frame=$('modalMount');frame.querySelectorAll('[data-object-url]').forEach(x=>URL.revokeObjectURL(x.dataset.objectUrl));discardStage();frame.innerHTML=''}
+function jumpFolder(id){selection.clear();const f=folder(id);if(!canView(f)){toast('No tienes permiso para abrir esta carpeta.');return}state.section=f.owner===state.user?'files':'shared';state.folder=id;state.search='';$('searchInput').value='';draw()}
+function openOwnedRoot(){selection.clear();state.section='files';state.folder=rootOfUser();state.search='';$('searchInput').value='';draw()}
+function openSharedRoot(){selection.clear();state.section='shared';state.folder=null;state.search='';$('searchInput').value='';draw()}
+function newFolder(){if(!canCreate())return toast('No tienes permiso para crear carpetas aquí.');modal('Crear nueva carpeta',`<label class="field" for="folderName">Nombre</label><input class="textinput" id="folderName" maxlength="160" placeholder="Ej. Contratos 2026"><p class="hint">Se creará dentro de <strong>${esc(folder(state.folder).name)}</strong>. Puedes abrirla con doble clic y crear nuevas subcarpetas sin límite práctico de niveles.</p>`,`<button class="btn primary" data-act="savefolder">Crear carpeta</button>`)}
+function saveFolder(){const name=$('folderName')?.value.trim();if(!validName(name))return toast('Indica un nombre válido (sin / ni \\).');if(!canCreate())return toast('No tienes permiso para crear aquí.');if(db.folders.some(f=>f.parentId===state.folder&&!f.deleted&&f.name.toLowerCase()===name.toLowerCase()))return toast('Ya existe una carpeta con ese nombre.');const x={id:'f'+db.next++,name,parentId:state.folder,owner:folder(state.folder).owner,modified:dateNow(),acl:{users:{},everyone:'none'}};db.folders.push(x);log('Carpeta creada: '+name,x.id);close();draw();toast('Carpeta creada. Haz doble clic para abrirla.')}
+
+// Permite pegar esquemas con sangrías, viñetas o rutas tipo "Proyecto / Informes / 2026".
+const exampleOutline='Administración\n  Contratos\n    2026\n    2027\n  Facturas\nProyectos\n  Proyecto A\n    Informes\n    Fotografías';
+const MAX_OUTLINE=700,MAX_IMPORT=3000;
+function readOutline(input){
+ const text=String(input||'').replace(/\r\n?/g,'\n'), lines=text.split('\n'),nodes=[],errors=[],stack=[],paths=new Map(),base=folder(state.folder);
+ let previousLevel=0;
+ for(let i=0;i<lines.length;i++){
+  const raw=lines[i];if(!raw.trim())continue;
+  if(nodes.length>=MAX_OUTLINE){errors.push(`Máximo ${MAX_OUTLINE} carpetas por operación.`);break}
+  const lead=(raw.match(/^[\t ]*/)||[''])[0],nTabs=(lead.match(/\t/g)||[]).length,nSpaces=(lead.match(/ /g)||[]).length;
+  if(nSpaces%2){errors.push(`Línea ${i+1}: usa dos espacios o Tab para cada subnivel.`);continue}
+  const depth=nTabs+nSpaces/2;
+  const stripped=raw.trim().replace(/^(?:[-•*]\s+|\d+[.)]\s+)/,'').trim();
+  if(!stripped){errors.push(`Línea ${i+1}: falta el nombre de carpeta.`);continue}
+  if(depth>previousLevel+1){errors.push(`Línea ${i+1}: falta el nivel anterior para esa subcarpeta.`);continue}
+  if(depth>0&& !stack[depth-1]){errors.push(`Línea ${i+1}: primero escribe una carpeta superior.`);continue}
+  if(depth===0)stack.length=0;else stack.length=depth;
+  const parts=stripped.split(/\s*\/\s*/);
+  if(parts.some(p=>!validName(p.trim())||p==='.'||p==='..')){errors.push(`Línea ${i+1}: hay un nombre vacío o inválido (evita / dentro del nombre).`);continue}
+  let parentKey=depth?stack[depth-1]:'',key='';
+  for(const partRaw of parts){
+   const name=partRaw.trim();key=parentKey+'\0'+name.toLocaleLowerCase('es');
+   if(!paths.has(key)){
+    const node={key,parentKey,name,depth:(parentKey?parentKey.split('\0').length-1:0),line:i+1};nodes.push(node);paths.set(key,node);
+   }
+   parentKey=key;
+  }
+  stack[depth]=key;
+  previousLevel=depth;
+ }
+ // Determina cuáles carpetas son nuevas sin crear ninguna todavía.
+ const existing=new Map(),current=new Map();
+ for(const n of nodes){
+  const parentId=n.parentKey?existing.get(n.parentKey):state.folder;
+  if(parentId){const f=db.folders.find(x=>x.parentId===parentId&&!x.deleted&&x.name.toLocaleLowerCase('es')===n.name.toLocaleLowerCase('es'));if(f)existing.set(n.key,f.id);}
+  current.set(n.key,{...n,exists:existing.has(n.key)});
+ }
+ return {nodes:[...current.values()],errors,existing:current.size?[...current.values()].filter(n=>n.exists).length:0,total:current.size};
+}
+function createStructure(){
+ if(!canCreate())return toast('No tienes permiso para crear carpetas en esta ubicación.');
+ modal('Crear varias carpetas y subcarpetas',`<div class="notice">Se crearán dentro de <strong>${esc(pathOf(state.folder))}</strong>. Primero revisa la vista previa; nada se crea hasta que pulses “Crear carpetas”.</div>
+ <div class="outlineexamples"><label for="outlineText" class="field">Escribe o pega tu lista</label><button type="button" data-act="outlineExample">Insertar ejemplo</button></div>
+ <textarea class="textinput outlineinput" spellcheck="false" id="outlineText" aria-describedby="outlineInstructions" placeholder="Personal\\n  Contratos\\n    2026\\n    2027\\nProyectos\\n  Informes"></textarea>
+ <p id="outlineInstructions" class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta, usa <kbd>2 espacios</kbd> o <kbd>Tab</kbd> al inicio; también puedes usar <kbd>Proyectos / Informes / 2026</kbd>. Admite listas copiadas con guiones o números.</p>
+ <div class="outlinestat"><strong id="outlineCount">0 carpetas</strong><span id="outlineExisting">Escribe tu lista para ver el resultado.</span></div>
+ <div id="outlinePreview" class="outlinepreview" aria-live="polite"><span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div><div id="outlineErrors" class="outlineerror" role="alert" hidden></div>
+ `,`<button class="btn primary" data-act="saveStructure" id="saveStructureBtn" disabled>Crear carpetas</button>`,true);
+ $('outlineText').focus();
+}
+function refreshOutline(){
+ const t=$('outlineText');if(!t)return;
+ const d=readOutline(t.value),count=$('outlineCount'),exists=$('outlineExisting'),err=$('outlineErrors');
+ count.textContent=d.total+' carpeta'+(d.total===1?'':'s');
+ exists.textContent=d.existing?`Se reutilizarán ${d.existing} ya existentes.`:'Las carpetas nuevas se crearán en tu ubicación actual.';
+ err.hidden=!d.errors.length;err.innerHTML=d.errors.length?d.errors.slice(0,8).map(esc).join('<br>')+(d.errors.length>8?`<br>Hay ${d.errors.length-8} errores más.`:''):'';
+ $('saveStructureBtn').disabled=!d.total||!!d.errors.length;
+ // Construir el árbol visual a partir de claves normalizadas, sin permitir HTML del usuario.
+ const roots=[],lookup=new Map();for(const n of d.nodes){const x={...n,children:[]};lookup.set(n.key,x);const p=lookup.get(n.parentKey);if(p)p.children.push(x);else roots.push(x)}
+ const branch=(node,depth=0)=>`<li><span class="outlineicon">📁</span>${esc(node.name)}${node.exists?'<span class="outlineexists">ya existe</span>':''}${node.children.length?`<ul>${node.children.map(x=>branch(x,depth+1)).join('')}</ul>`:''}</li>`;
+ $('outlinePreview').innerHTML=roots.length?`<ul>${roots.map(x=>branch(x)).join('')}</ul>`:'<span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span>';
+}
+function saveStructure(){
+ if(!canCreate())return toast('No tienes permiso para crear carpetas aquí.');
+ const parsed=readOutline($('outlineText')?.value);if(parsed.errors.length){refreshOutline();return toast('Corrige los errores antes de crear la estructura.')}if(!parsed.total)return;
+ const ids=new Map();let created=0,reused=0;
+ for(const n of parsed.nodes){
+  const parentId=n.parentKey?ids.get(n.parentKey):state.folder;
+  if(!parentId)continue;
+  let f=db.folders.find(x=>x.parentId===parentId&&!x.deleted&&x.name.toLocaleLowerCase('es')===n.name.toLocaleLowerCase('es'));
+  if(f)reused++;else{
+   f={id:'f'+db.next++,name:n.name,parentId,owner:folder(parentId).owner,modified:dateNow(),acl:{users:{},everyone:'none'}};
+   db.folders.push(f);created++;
+  }
+  ids.set(n.key,f.id);
+ }
+ log(`Estructura generada: ${created} carpeta(s) nuevas${reused?', '+reused+' ya existentes':''}`,state.folder);
+ close();draw();showImportNotice(`${created} carpetas creadas.${reused?' '+reused+' existentes reutilizadas.':''} Puedes abrirlas desde la lista.`,null);toast(`${created} carpetas creadas.${reused?' '+reused+' existentes reutilizadas.':''}`);
+}
+
+// Generador rápido de meses: respeta permisos, reutiliza nombres existentes y nunca borra contenido.
+const monthNames=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+let monthSelectedPreset='all';
+function monthName(index){return String(index+1).padStart(2,'0')+'. '+monthNames[index]}
+function monthPresent(targetId,index){const value=monthName(index).toLocaleLowerCase('es');return db.folders.some(x=>x.parentId===targetId&&!x.deleted&&x.name.toLocaleLowerCase('es')===value)}
+function createMonths(){
+ if(!canCreate())return toast('Necesitas permiso de edición para crear carpetas aquí.');
+ const targetId=state.folder;
+ monthSelectedPreset='all';
+ const grid=monthNames.map((month,i)=>{const name=monthName(i),exists=monthPresent(targetId,i);return `<label class="monthitem chosen ${exists?'existing':''}"><input class="monthcheck" type="checkbox" value="${i}" checked aria-label="${esc(name)}"><span><span class="monthname">${esc(name)}</span>${exists?'<span class="monthalready">Ya existe</span>':''}</span></label>`}).join('');
+ modal('Crear carpetas mensuales',`<div class="notice">Destino: <strong>${esc(pathOf(targetId))}</strong>.<br>Elige los meses que necesitas. Se crearán en esta carpeta, no dentro de una carpeta adicional.</div>
+ <input type="hidden" id="monthsTarget" value="${esc(targetId)}">
+ <div class="monthquick" role="group" aria-label="Selección rápida de meses"><strong>Seleccionar:</strong><button type="button" class="monthpreset" data-act="monthPreset" data-preset="all">Los 12 meses</button><button type="button" class="monthpreset" data-act="monthPreset" data-preset="first">Enero–junio</button><button type="button" class="monthpreset" data-act="monthPreset" data-preset="last">Julio–diciembre</button><button type="button" class="monthpreset" data-act="monthPreset" data-preset="missing">Solo faltantes</button><button type="button" class="monthpreset" data-act="monthPreset" data-preset="none">Ninguno</button></div>
+ <fieldset class="monthfieldset"><legend>Meses que deseas crear</legend><div class="monthgrid">${grid}</div></fieldset>
+ <p class="monthsummary" id="monthsSummary" role="status" aria-live="polite"></p><p class="monthhint">Se usan los nombres “01. enero”, “02. febrero”… “12. diciembre”, para que las carpetas queden en orden. Los meses que ya existan no se duplicarán.</p>`,
+ `<button type="button" class="btn primary" data-act="saveMonths" id="saveMonthsBtn">Crear 12 carpetas</button>`,true);
+ $('modalMount').querySelector('.modal')?.classList.add('monthsmodal');
+ refreshMonths();
+ $('modalMount').querySelector('.monthpreset')?.focus();
+}
+function chosenMonthIndexes(){return [...$('modalMount').querySelectorAll('.monthcheck:checked')].map(x=>Number(x.value))}
+function selectMonthsPreset(choice){
+ monthSelectedPreset=choice;
+ const target=$('monthsTarget')?.value;
+ if(!target)return;
+ $('modalMount').querySelectorAll('.monthcheck').forEach(input=>{const i=Number(input.value);
+  input.checked=choice==='all'||choice==='first'&&i<6||choice==='last'&&i>=6||choice==='missing'&&!monthPresent(target,i);
+ });
+ refreshMonths();
+}
+function refreshMonths(){
+ const target=$('monthsTarget')?.value,save=$('saveMonthsBtn'),summary=$('monthsSummary');if(!target||!save||!summary)return;
+ const all=[...$('modalMount').querySelectorAll('.monthcheck')],selected=chosenMonthIndexes();
+ const already=selected.filter(i=>monthPresent(target,i)).length,newCount=selected.length-already;
+ all.forEach(input=>input.closest('.monthitem').classList.toggle('chosen',input.checked));
+ $('modalMount').querySelectorAll('.monthpreset').forEach(b=>{const on=b.dataset.preset===monthSelectedPreset;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+ summary.textContent=!selected.length?'Selecciona al menos un mes.':newCount?`${selected.length} ${selected.length===1?'mes seleccionado':'meses seleccionados'} · ${newCount} ${newCount===1?'carpeta nueva':'carpetas nuevas'}${already?' · '+already+' ya existente'+(already===1?'':'s'):''}.`:'Los meses seleccionados ya existen en esta carpeta. No hay nada nuevo que crear.';
+ summary.classList.toggle('noaction',!newCount);
+ save.disabled=!newCount;
+ save.textContent=newCount?`Crear ${newCount} carpeta${newCount===1?'':'s'}`:'No hay carpetas nuevas';
+}
+function saveMonths(){
+ const targetId=$('monthsTarget')?.value,target=folder(targetId);
+ if(!target||targetId!==state.folder||!canCreate()||!canEdit(target))return toast('Esta carpeta ya no permite crear contenido.');
+ const selected=chosenMonthIndexes();if(!selected.length)return toast('Selecciona al menos un mes.');
+ let created=0,existing=0;
+ for(const i of selected){const name=monthName(i);if(monthPresent(targetId,i)){existing++;continue}
+  db.folders.push({id:'f'+db.next++,name,parentId:targetId,owner:target.owner,modified:dateNow(),acl:{users:{},everyone:'none'}});created++;
+ }
+ if(!created)return refreshMonths();
+ log(`Carpetas mensuales creadas: ${created} nueva(s)${existing?', '+existing+' ya existentes':''}`,targetId);
+ close();draw();
+ const result=`${created} carpeta${created===1?' creada':'s creadas'} en ${target.name}.${existing?' '+existing+' mes(es) ya existente(s), sin duplicar.':''}`;
+ showImportNotice(result,null);toast(result);
+}
+
+function share(id){const x=entity(id);if(!canShare(x))return toast('Solo el propietario puede compartir.');const direct=x.acl?.users||{};
+ const directRows=Object.entries(direct).map(([uid,r])=>personRow(uid,r,id)).join('');
+ const inherited=lineage(x).slice(0,-1).flatMap(p=>[
+ ...(p.acl?.everyone&&p.acl.everyone!=='none'?[`<div class="person"><span class="avatar">🌐</span><div><strong>Todos los usuarios (heredado)</strong><small>Desde ${esc(p.name)} · ${roleLabel(p.acl.everyone)}</small></div><span class="role">Heredado</span></div>`]:[]),
+ ...Object.entries(p.acl?.users||{}).map(([uid,r])=>`<div class="person"><span class="avatar">↳</span><div><strong>${esc(user(uid).name)}</strong><small>Desde ${esc(p.name)} · ${roleLabel(r)}</small></div><span class="role">Heredado</span></div>`)
+ ]).join('');
+ modal('Compartir '+(kind(x)==='folder'?'carpeta':'documento'),`<p class="sharetitle">${icon(x)} <strong>${esc(x.name)}</strong></p><div class="notice">La vista previa gestiona permisos locales. No envía invitaciones ni publica enlaces. <strong>Solo el propietario comparte.</strong></div><div class="shareblock"><label class="field">1. Compartir con personas concretas</label><div class="shareform"><input class="textinput" id="shareUser" list="knownUsers" placeholder="Nombre o correo electrónico" autocomplete="off"><datalist id="knownUsers">${users.filter(u=>u.id!==state.user).map(u=>`<option value="${esc(u.mail)}">${esc(u.name)}</option>`).join('')}</datalist><select id="shareNewRole" class="select" aria-label="Permiso individual"><option value="view">Solo ver</option><option value="edit">Puede editar</option></select><button class="btn primary" data-act="grant" data-id="${id}">Agregar</button></div><p class="hint">Predeterminado: Solo ver. Personas externas requieren autenticación al conectar el servidor.</p></div><div class="shareblock"><label class="field">2. Compartir con todos los usuarios del sistema</label><div class="shareform"><label class="switchlabel"><input type="checkbox" id="everyoneEnabled" ${x.acl?.everyone&&x.acl.everyone!=='none'?'checked':''}> Habilitar</label><select class="select" id="everyoneRole"><option value="view" ${x.acl?.everyone==='view'?'selected':''}>Solo ver</option><option value="edit" ${x.acl?.everyone==='edit'?'selected':''}>Puede editar</option></select><button class="btn" data-act="saveeveryone" data-id="${id}">Aplicar</button></div></div><div class="sharepeople"><label class="field">Personas con acceso</label><div class="person"><span class="avatar">${esc(user(x.owner).initial)}</span><div><strong>${esc(user(x.owner).name)}</strong><small>Propietario del elemento</small></div><span class="role">Propietario</span></div><div id="sharePeople">${directRows||'<p class="hint">No hay permisos individuales directos.</p>'}</div>${inherited?`<div class="inherited"><strong>Permisos heredados de carpetas superiores</strong>${inherited}</div>`:''}</div><div class="notice">Los permisos heredados no pueden reducirse en un archivo hijo: hay que cambiarlos en la carpeta superior. Una persona con acceso de edición heredado seguirá pudiendo editar aunque aquí se indique Solo ver.</div>`,`<button class="btn" data-act="copyref" data-id="${id}">Copiar referencia local</button><button class="btn primary" data-modal-close>Listo</button>`,true);
+}
+function personRow(uid,r,id){const u=user(uid);return `<div class="person"><span class="avatar">${esc(u.initial||'EX')}</span><div class="personmain"><strong>${esc(u.name)}</strong><small>${esc(u.mail||uid)}</small></div><select class="select" data-permission="${esc(uid)}" data-entity="${id}" aria-label="Permiso de ${esc(u.name)}"><option value="view" ${r==='view'?'selected':''}>Solo ver</option><option value="edit" ${r==='edit'?'selected':''}>Puede editar</option></select><button class="remove" data-act="revoke" data-id="${id}" data-target="${esc(uid)}" title="Quitar acceso">×</button></div>`}
+function grant(id){const x=entity(id);if(!canShare(x))return toast('Acción no autorizada.');let raw=$('shareUser').value.trim().toLowerCase(),u=users.find(u=>u.mail===raw||u.name.toLowerCase()===raw);if(!u){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw))return toast('Escribe un usuario o correo válido.');u={id:raw,name:raw,mail:raw,initial:'EX'}}if(u.id===x.owner)return toast('El propietario ya tiene acceso completo.');const r=$('shareNewRole').value;x.acl=x.acl||{users:{},everyone:'none'};x.acl.users[u.id]=r;log('Permiso '+roleLabel(r).toLowerCase()+' concedido a '+u.name+' en '+x.name,id);share(id);toast('Permiso guardado en la demo. No se envió ningún correo.')}
+function everyone(id){const x=entity(id);if(!canShare(x))return toast('Acción no autorizada.');x.acl.everyone=$('everyoneEnabled').checked?$('everyoneRole').value:'none';log('Acceso general cambiado a '+roleLabel(x.acl.everyone)+' en '+x.name,id);share(id);toast('Acceso para todos actualizado.')}
+function updateRole(id,who,role){const x=entity(id);if(!canShare(x)||!x.acl?.users?.[who])return toast('No se pudo cambiar este permiso.');x.acl.users[who]=role;log('Permiso de '+user(who).name+' cambiado a '+roleLabel(role)+' en '+x.name,id);share(id);toast('Permiso actualizado.')}
+function revoke(id,who){const x=entity(id);if(!canShare(x))return toast('No autorizado.');delete x.acl.users[who];log('Acceso directo retirado a '+user(who).name+' en '+x.name,id);share(id);toast('Acceso directo quitado. Revisa si existen permisos heredados.')}
+function copyRef(id){const x=entity(id);if(!x)return;const ref='KCPRZ DEMO · '+x.name+' · '+x.id+' (referencia local, no enlace público)';navigator.clipboard?.writeText(ref).then(()=>toast('Referencia copiada. No concede acceso.')).catch(()=>toast('No se pudo copiar en este navegador.'))||toast('Referencia local: '+ref)}
+// IndexedDB almacena el contenido binario cargado, separado de la metadata localStorage.
+const openDB=()=>new Promise((resolve,reject)=>{if(!('indexedDB'in window))return reject(new Error('Sin IndexedDB'));const r=indexedDB.open('KCPRZ_Local_V2',1);r.onupgradeneeded=()=>r.result.createObjectStore('blobs');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
+async function saveBlob(key,blob){const d=await openDB();return new Promise((resolve,reject)=>{const t=d.transaction('blobs','readwrite');t.objectStore('blobs').put(blob,key);t.oncomplete=()=>{d.close();resolve()};t.onerror=()=>{d.close();reject(t.error)}})}
+async function loadBlob(key){const d=await openDB();return new Promise((resolve,reject)=>{const t=d.transaction('blobs','readonly'),q=t.objectStore('blobs').get(key);q.onsuccess=()=>{d.close();resolve(q.result)};q.onerror=()=>{d.close();reject(q.error)}})}
+async function eraseBlob(key){try{const d=await openDB();await new Promise((resolve,reject)=>{const t=d.transaction('blobs','readwrite');t.objectStore('blobs').delete(key);t.oncomplete=resolve;t.onerror=reject});d.close()}catch{}}
+function uniqueName(base,folderId){
+ const taken=name=>db.files.some(x=>x.folderId===folderId&&!x.deleted&&x.name.toLocaleLowerCase()===name.toLocaleLowerCase());
+ if(!taken(base))return base;
+ const dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base,suffix=dot>0?base.slice(dot):'';
+ let n=2,name;do{name=`${stem} (${n++})${suffix}`}while(taken(name));return name;
+}
+async function upload(arr,targetId=state.folder){
+ const target=folder(targetId);if(!canEdit(target))return toast('No tienes permiso para subir archivos en esta carpeta.');
+ const valid=[...arr].filter(f=>f&&typeof f.name==='string');if(!valid.length)return;
+ let success=0,renamed=0,failed=0,quotaFailure=false;
+ const oldLabel=$('uploadButton').innerHTML;$('uploadButton').disabled=true;
+ $('uploadProgress').hidden=false;
+ for(let index=0;index<valid.length;index++){
+  const f=valid[index],name=uniqueName(f.name,targetId),id='d'+db.next++;
+  $('uploadProgress').innerHTML=`Subiendo ${index+1} de ${valid.length}: <strong>${esc(name)}</strong> <progress value="${index}" max="${valid.length}"></progress>`;
+  try{await saveBlob(id,f);db.files.push({id,name,folderId:targetId,owner:target.owner,size:f.size,modified:dateNow(),demo:false,acl:{users:{},everyone:'none'},version:1});success++;if(name!==f.name)renamed++;}
+  catch(e){failed++;if(e?.name==='QuotaExceededError'||/quota|storage/i.test(String(e?.message||'')))quotaFailure=true;}
+ }
+ $('uploadProgress').hidden=true;$('uploadProgress').innerHTML='';$('uploadButton').disabled=false;$('uploadButton').innerHTML=oldLabel;
+ if(success)log(success+' archivo(s) subidos a '+pathOf(targetId));
+ draw();toast(`${success} archivo(s) guardados en ${target.name}.${renamed?' '+renamed+' renombrado(s) automáticamente para evitar duplicados.':''}${failed?' '+failed+' no se pudieron guardar. Revisa el espacio disponible en tu navegador.':''}${quotaFailure?' Cuota de almacenamiento insuficiente.':''}`);
+}
+
+// Reconstruye una jerarquía de carpetas del selector de Mac/Windows o de un arrastre.
+function cleanPath(v){const p=String(v||'').replace(/\\/g,'/').split('/').filter(Boolean);if(!p.length||p.some(x=>!validName(x)||x==='.'||x==='..'))return null;return p}
+let importBusy=false;
+async function importDirectory(entries,targetId=state.folder){
+ if(importBusy)return toast('Ya se está importando una carpeta.');
+ const target=folder(targetId);if(!target||!canEdit(target))return toast('Necesitas permiso para editar esta carpeta.');
+ const included=entries.filter(x=>x&&cleanPath(x.path));
+ if(!included.length)return toast('No se encontraron archivos o carpetas válidos.');
+ if(included.length>MAX_IMPORT)return toast(`Por seguridad, importa hasta ${MAX_IMPORT} elementos cada vez.`);
+ // Vista de las rutas a crear: incluye las carpetas vacías cuando el arrastre las revela.
+ const dirSet=new Set(),tasks=[];let skipped=0;
+ for(const x of included){
+  const path=cleanPath(x.path);if(!path){skipped++;continue}
+  const parts=x.dir?path:path.slice(0,-1);
+  for(let i=1;i<=parts.length;i++)dirSet.add(parts.slice(0,i).join('/'));
+  if(!x.dir)tasks.push({file:x.file,path});
+ }
+ const foldersSorted=[...dirSet].sort((a,b)=>a.split('/').length-b.split('/').length||a.localeCompare(b,'es'));
+ if(foldersSorted.length+tasks.length>MAX_IMPORT)return toast(`La selección supera ${MAX_IMPORT} elementos. Divídela en grupos.`);
+ importBusy=true;
+ const buttons=[$('uploadButton'),$('uploadFolderButton'),$('bulkFolders'),$('newFolder'),$('createMonths')];
+ buttons.forEach(b=>b.disabled=true);
+ const prog=$('uploadProgress');prog.hidden=false;
+ const show=(label,n,total)=>{prog.innerHTML=`<div class="uploadworking">${esc(label)} <progress value="${n}" max="${Math.max(1,total)}"></progress> <b>${n}/${total}</b></div>`};
+ let created=0,reused=0,uploaded=0,renamed=0,failed=0;const idByPath=new Map();
+ const total=foldersSorted.length+tasks.length;
+ try{
+  for(let i=0;i<foldersSorted.length;i++){
+   const p=foldersSorted[i],parts=p.split('/');
+   const ancestor=parts.slice(0,-1).join('/');const pid=ancestor?idByPath.get(ancestor):targetId;
+   if(!pid){failed++;continue}
+   let f=db.folders.find(z=>z.parentId===pid&&!z.deleted&&z.name.toLocaleLowerCase('es')===parts.at(-1).toLocaleLowerCase('es'));
+   if(f)reused++;else{f={id:'f'+db.next++,name:parts.at(-1),parentId:pid,owner:folder(pid).owner,modified:dateNow(),acl:{users:{},everyone:'none'}};db.folders.push(f);created++}
+   idByPath.set(p,f.id);show('Preparando carpetas…',i+1,total);
+  }
+  // Si faltó espacio para alguno de los archivos, conserva solo la metadata de los archivos escritos.
+  for(let i=0;i<tasks.length;i++){
+   const t=tasks[i],pid=idByPath.get(t.path.slice(0,-1).join('/'))||targetId;
+   const f=t.file,orig=t.path.at(-1);if(!pid||!f){failed++;continue}
+   const name=uniqueName(orig,pid),id='d'+db.next++;
+   show(`Guardando ${name}`,foldersSorted.length+i+1,total);
+   try{
+    await saveBlob(id,f);
+    db.files.push({id,name,folderId:pid,owner:folder(pid).owner,size:f.size,modified:dateNow(),demo:false,acl:{users:{},everyone:'none'},version:1});
+    uploaded++;if(orig!==name)renamed++;
+   }catch{failed++}
+  }
+  log(`Carpeta importada a ${pathOf(targetId)}: ${created} carpetas, ${uploaded} archivos`,targetId);
+ }finally{importBusy=false;buttons.forEach(b=>b.disabled=false);prog.hidden=true;prog.innerHTML='';draw()}
+ const top=foldersSorted.filter(n=>!n.includes('/'));const onlyTop=top.length===1?idByPath.get(top[0]):null;
+ const receipt=`Importación terminada: ${created} carpetas nuevas y ${uploaded} archivos.${reused?' '+reused+' carpetas existentes reutilizadas.':''}${renamed?' '+renamed+' archivos renombrados para no sobrescribir.':''}${failed||skipped?' '+(failed+skipped)+' elementos no importados.':''}`;
+ showImportNotice(receipt,onlyTop);toast(receipt);
+}
+// Lee las carpetas arrastradas, incluidas las vacías. readEntries debe repetirse por lotes.
+function dragEntries(dt){
+ const entries=[];for(const item of Array.from(dt?.items||[])){
+  if(item.kind!=='file')continue;
+  const entry=item.webkitGetAsEntry?.();if(entry)entries.push(entry);
+ }
+ return entries;
+}
+async function scanDrop(dt){
+ const roots=dragEntries(dt),found=[];
+ if(!roots.length)return Array.from(dt?.files||[]).map(file=>({file,path:file.webkitRelativePath||file.name,dir:false}));
+ async function walk(entry,prefix=''){
+  if(found.length>=MAX_IMPORT)throw new Error('Hay más elementos que el máximo admitido.');
+  const path=prefix?prefix+'/'+entry.name:entry.name;
+  if(entry.isDirectory){
+   found.push({dir:true,path});
+   const reader=entry.createReader();
+   while(true){
+    const batch=await new Promise((resolve,reject)=>reader.readEntries(resolve,reject));
+    if(!batch.length)break;
+    for(const child of batch)await walk(child,path);
+   }
+  }else if(entry.isFile){
+   const file=await new Promise((resolve,reject)=>entry.file(resolve,reject));found.push({file,path,dir:false});
+  }
+ }
+ for(const r of roots)await walk(r);
+ return found;
+}
+async function handleExternalDrop(dt,target=state.folder){
+ if(importBusy)return;
+ try{
+  const files=await scanDrop(dt);
+  if(files.some(x=>x.dir)||files.some(x=>String(x.path).includes('/'))){await importDirectory(files,target)}
+  else reviewUpload(files.map(x=>x.file),target);
+ }catch(e){toast(`No se pudo leer la carpeta arrastrada. Usa el botón “Subir carpeta completa”. ${String(e?.message||'')}`)}
+}
+
+async function view(id){const x=file(id);if(!canView(x))return toast('No tienes permiso de lectura.');let html=`${icon(x)}<strong>${esc(x.name)}</strong><p>Archivo de referencia. No se adjuntó contenido real.</p>`,obj='';if(!x.demo){try{const b=await loadBlob(id);if(b){if(b.type.startsWith('image/')||['png','jpg','jpeg','webp'].includes(ext(x))){obj=URL.createObjectURL(b);html=`<img src="${obj}" alt="Vista previa">`;}else if(ext(x)==='pdf'){obj=URL.createObjectURL(b);html=`<iframe title="Vista previa" src="${obj}"></iframe>`;}else if(['txt','md','csv','json','html','css','js'].includes(ext(x))){html=`<pre>${esc((await b.text()).slice(0,50000))}</pre>`;}else html=`${icon(x)}<strong>${esc(x.name)}</strong><p>Descarga el archivo para verlo con una aplicación compatible.</p>`;}else html='<p>El contenido no está disponible en este navegador.</p>'}catch{html='<p>No es posible leer el contenido guardado.</p>'}}modal('Vista previa de archivo',`<div class="previewbox" id="activePreview">${html}</div><p class="hint">${esc(type(x))} · ${size(x.size)} · Versión ${x.version||1}</p>`,`<button class="btn primary" data-act="download" data-id="${id}">Descargar</button>`,true);if(obj)$('activePreview').dataset.objectUrl=obj}
+async function download(id){const x=file(id);if(!canView(x))return toast('Acceso denegado.');let data=null,name=x.name;try{if(!x.demo)data=await loadBlob(id)}catch{}if(!data){data=new Blob(['ARCHIVO DE REFERENCIA - KCPRZ\n'+x.name+'\nNo estaba incluido el contenido original.'],{type:'text/plain'});name=x.name.replace(/\.[^.]+$/,'')+'_referencia.txt'}const link=document.createElement('a'),url=URL.createObjectURL(data);link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);toast('Descarga iniciada.')}
+
+// V6 · Archivos en espera: no se guarda ningún byte hasta confirmar.
+// Se emplean object URLs revocables, no base64 ni conversiones de archivos.
+let stage=null,stagePreviewUrl=null,stageTextSerial=0;
+const stageThumbUrls=new Map();
+function discardStage(){
+ for(const url of stageThumbUrls.values())URL.revokeObjectURL(url);stageThumbUrls.clear();
+ if(stagePreviewUrl){URL.revokeObjectURL(stagePreviewUrl);stagePreviewUrl=null}
+ stageTextSerial++;
+ stage=null;
+}
+function stageClass(f){
+ const n=(f.name||'').toLowerCase(),t=(f.type||'').toLowerCase();
+ if(/\.(png|jpe?g|gif|webp|bmp|avif)$/.test(n)||['image/png','image/jpeg','image/gif','image/webp','image/bmp','image/avif'].includes(t))return 'image';
+ if(n.endsWith('.pdf')||t==='application/pdf')return 'pdf';
+ if(t.startsWith('audio/')||/\.(mp3|wav|ogg|m4a|flac)$/.test(n))return 'audio';
+ if(t.startsWith('video/')||/\.(mp4|webm|mov|m4v)$/.test(n))return 'video';
+ if(/\.(txt|md|csv|json|xml|log|css|js|ts|py|html|yml|yaml|sql)$/.test(n)||t.startsWith('text/'))return 'text';
+ return 'other';
+}
+function stageThumb(f){
+ if(stageClass(f)!=='image')return `<span class="stage-mini-icon" aria-hidden="true">${stageEmoji(f)}</span>`;
+ // Acepta una miniatura real de imagen; los archivos no visualizables usan su icono.
+ if(!stageThumbUrls.has(f))stageThumbUrls.set(f,URL.createObjectURL(f));
+ return `<span class="stage-mini-icon" aria-hidden="true"><img class="stage-thumb-img" src="${stageThumbUrls.get(f)}" loading="lazy" alt=""></span>`;
+}
+function stageEmoji(f){return ({image:'🖼️',pdf:'📕',audio:'🎵',video:'🎞️',text:'📄',other:'📦'})[stageClass(f)]}
+function stageLabel(f){const e=f.name.includes('.')?f.name.split('.').at(-1).toUpperCase():'SIN EXTENSIÓN';return `${e} · ${size(f.size)}`}
+function reviewUpload(files,destination=state.folder,replaceId=null){
+ const target=folder(destination);
+ if(!target||!canEdit(target))return toast('No tienes permiso para subir archivos aquí.');
+ const arr=Array.from(files||[]).filter(f=>f&&typeof f.name==='string'&&f.name.length>0);
+ if(!arr.length)return;
+ if(replaceId&&arr.length!==1)return toast('Elige un único archivo para la nueva versión.');
+ if(arr.length>500)return toast('Selecciona hasta 500 archivos por lote para facilitar su revisión.');
+ if(stage&&!stage.replaceId&&!replaceId&&stage.destination===destination){stage.files.push(...arr);stage.index=stage.files.length-arr.length}
+ else{discardStage();stage={files:arr,destination,index:0,zoom:100,expanded:false,replaceId}}
+ renderUploadReview();
+}
+function stageContent(f){
+ const cls=stageClass(f);
+ let content='';let info='';
+ if(['image','pdf','video','audio'].includes(cls)){
+  let blob=f;
+  // Los archivos de algunos sistemas llegan con MIME genérico, aunque sean PDF/imágenes.
+  if(cls==='pdf'&&f.type!=='application/pdf')blob=new Blob([f],{type:'application/pdf'});
+  stagePreviewUrl=URL.createObjectURL(blob);
+  const url=stagePreviewUrl;
+  if(cls==='image'){
+   content=`<img src="${url}" alt="Imagen seleccionada: ${esc(f.name)}" style="width:${stage.zoom}%;" draggable="false">`;
+   info='Usa la rueda para desplazarte; Ctrl + rueda o los botones para ampliar y reducir.';
+  }else if(cls==='pdf'){
+   content=`<iframe src="${url}#toolbar=1&navpanes=0" title="PDF: ${esc(f.name)}; usa la barra del visor para ampliar o recorrer páginas"></iframe>`;
+   info='PDF real: desplázate por las páginas y usa el zoom del visor. Puedes ampliar el panel con las flechas.';
+  }else if(cls==='video'){
+   content=`<video src="${url}" controls preload="metadata" playsinline aria-label="Reproducir ${esc(f.name)}"></video>`;
+   info='Reproducción disponible si el navegador admite el códec del video.';
+  }else{
+   content=`<audio src="${url}" controls preload="metadata" aria-label="Escuchar ${esc(f.name)}"></audio>`;
+   info='Audio disponible si el navegador admite el formato.';
+  }
+ }else if(cls==='text'){
+   content='<pre id="stageTextPreview" aria-label="Vista previa de texto">Leyendo las primeras líneas…</pre>';
+   info='Vista previa limitada a los primeros 160 KB; el archivo completo se guardará sin cambios.';
+ }else{
+  content=`<div class="stage-placeholder"><div class="stage-filetype" aria-hidden="true">${stageEmoji(f)}</div><strong>${esc(f.name)}</strong><div>Este formato no tiene vista previa integrada en el navegador.</div><div>Se puede guardar y descargar sin modificar su contenido.</div></div>`;
+  info='Este archivo se guardará en su formato original. Para abrirlo necesitarás una aplicación compatible.';
+ }
+ return {content,info,cls};
+}
+function renderUploadReview(){
+ if(!stage||!stage.files.length){discardStage();close();return}
+ if(stagePreviewUrl){URL.revokeObjectURL(stagePreviewUrl);stagePreviewUrl=null}
+ stageTextSerial++;
+ stage.index=Math.max(0,Math.min(stage.index,stage.files.length-1));
+ const f=stage.files[stage.index],review=stageContent(f),destination=folder(stage.destination);
+ const replacing=stage.replaceId?file(stage.replaceId):null;
+ const buttons=stage.files.map((x,i)=>`<div class="stage-list-row ${i===stage.index?'active':''}">
+  <button type="button" class="stage-list-pick" data-act="stagePick" data-idx="${i}" aria-label="Revisar ${esc(x.name)}" aria-pressed="${i===stage.index}">${stageThumb(x)}<span class="stage-list-text"><strong title="${esc(x.name)}">${esc(x.name)}</strong><small>${esc(stageLabel(x))}</small></span></button>
+  <button type="button" class="stage-remove" data-act="stageRemove" data-idx="${i}" title="Quitar ${esc(x.name)} de esta subida" aria-label="Quitar ${esc(x.name)}">×</button>
+ </div>`).join('');
+ const pdfLink=review.cls==='pdf'?`<a class="stage-pdf-link" href="${stagePreviewUrl}" target="_blank" rel="noopener noreferrer">Abrir PDF en otra pestaña</a>`:'';
+ const zoom=['image','text'].includes(review.cls)?`<div class="stage-zoombar" aria-label="Zoom de la vista previa"><button type="button" data-act="stageMinus" title="Alejar" aria-label="Alejar">−</button><span class="stage-zoomtext" aria-live="polite">${stage.zoom}%</span><button type="button" data-act="stagePlus" title="Acercar" aria-label="Acercar">+</button><button type="button" data-act="stageReset" title="Restablecer a 100%">100%</button></div>`:'';
+ modal(replacing?'Revisar nueva versión':'Revisar archivos antes de subir',`<p class="stage-intro">${replacing?`Reemplazar contenido de <strong>${esc(replacing.name)}</strong> · Versión ${replacing.version||1}. Solo se guardará después de confirmar.`:`Destino: <strong>${esc(pathOf(stage.destination))}</strong>. Revisa tus archivos y confirma solo cuando sean los correctos. La capacidad depende del espacio disponible en este navegador.`}</p>
+ <div class="stage-layout"><div class="stage-left"><div class="stage-list-head"><span>${stage.files.length} archivo${stage.files.length===1?'':'s'} seleccionado${stage.files.length===1?'':'s'}</span>${replacing?'':'<button type="button" class="stage-add" data-act="stageAdd">＋ Añadir</button>'}</div><div class="stage-list" role="group" aria-label="Archivos que se van a subir">${buttons}</div></div>
+ <div class="stage-main"><div class="stage-heading"><strong title="${esc(f.name)}">${esc(f.name)}</strong>${pdfLink}${zoom}</div><div class="stage-viewport" id="stageViewport"><div class="stage-scroll" id="stageScroll" tabindex="0" role="region" aria-label="Vista previa: desplázate para explorar el documento">${review.content}</div><button type="button" class="stage-expand" data-act="stageExpand" aria-label="${stage.expanded?'Reducir':'Expandir'} vista previa" title="${stage.expanded?'Reducir':'Expandir'} vista previa">${stage.expanded?'↙ Reducir':'⤢ Expandir'}</button></div><div class="stage-instruction" id="stageInfo">${esc(review.info)}</div></div></div>`,
+ `<button type="button" class="btn primary stage-button-primary" data-act="stageConfirm">${replacing?'Guardar nueva versión':`Confirmar subida (${stage.files.length})`}</button>`,true);
+ const m=$('modalMount').querySelector('.modal');m.classList.add('stage-modal');if(stage.expanded)m.classList.add('stage-expanded');
+ if(review.cls==='text'){
+  const serial=stageTextSerial,target=f;
+  f.slice(0,160000).text().then(t=>{if(stage&&stage.files[stage.index]===target&&serial===stageTextSerial&&$('stageTextPreview')){
+   $('stageTextPreview').textContent=t+(f.size>160000?'\n\n… La vista previa continúa en el documento original.':'');
+   $('stageTextPreview').style.fontSize=(12*stage.zoom/100)+'px';
+  }}).catch(()=>{if(serial===stageTextSerial&&$('stageTextPreview'))$('stageTextPreview').textContent='No se pudo mostrar la vista previa.'});
+ }
+ // El primer foco se mantiene en la lista, para usar todo el diálogo con teclado.
+ $('modalMount').querySelector('.stage-list-row.active .stage-list-pick')?.focus();
+}
+function toggleStageExpand(){
+ if(!stage)return;
+ stage.expanded=!stage.expanded;
+ const modal=$('modalMount').querySelector('.stage-modal');
+ if(modal)modal.classList.toggle('stage-expanded',stage.expanded);
+ const button=$('modalMount').querySelector('[data-act="stageExpand"]');
+ if(button){button.textContent=stage.expanded?'↙ Reducir':'⤢ Expandir';button.title=stage.expanded?'Reducir vista previa':'Expandir vista previa';button.setAttribute('aria-label',button.title)}
+ // No reconstruir el PDF ni la imagen: conserva página, zoom y scroll actuales.
+}
+function stageZoom(delta){
+ if(!stage)return;
+ stage.zoom=Math.max(50,Math.min(300,delta===0?100:stage.zoom+delta));
+ const v=$('stageScroll'),f=stage.files[stage.index];
+ const img=v?.querySelector('img'),pre=v?.querySelector('pre');
+ if(img)img.style.width=stage.zoom+'%';
+ if(pre)pre.style.fontSize=(12*stage.zoom/100)+'px';
+ const counter=$('modalMount').querySelector('.stage-zoomtext');if(counter)counter.textContent=stage.zoom+'%';
+}
+async function confirmStageUpload(){
+ if(!stage||stage.busy)return;
+ const ss=stage,destination=ss.destination,files=ss.files.slice();
+ if(!canEdit(folder(destination)))return toast('Ya no tienes permiso de edición en esa carpeta.');
+ if(ss.replaceId){
+  const old=file(ss.replaceId),replacement=files[0];
+  if(!old||!canEdit(old))return toast('Ya no puedes editar este documento.');
+  if(ext(old)!==ext({name:replacement.name}))return toast('La nueva versión debe tener la misma extensión que el archivo original, para evitar nombres engañosos. Sube otro formato como archivo nuevo.');
+  ss.busy=true;const btn=$('modalMount').querySelector('[data-act="stageConfirm"]');if(btn){btn.disabled=true;btn.textContent='Guardando versión…'}
+  try{await saveBlob(old.id,replacement);old.size=replacement.size;old.demo=false;old.version=(old.version||1)+1;old.modified=dateNow();log('Versión '+old.version+' de '+old.name,old.id);close();draw();toast('Nueva versión guardada después de revisarla.')}catch{ss.busy=false;if(btn){btn.disabled=false;btn.textContent='Guardar nueva versión'}toast('No se pudo guardar la versión. Revisa el espacio disponible en este navegador.')}
+  return;
+ }
+ ss.busy=true;
+ const btn=$('modalMount').querySelector('[data-act="stageConfirm"]');if(btn){btn.disabled=true;btn.textContent='Guardando archivos…'}
+ // Cierra la revisión antes de guardar para evitar seleccionar accidentalmente otro archivo.
+ close();
+ await upload(files,destination);
+}
+
+function more(id){const x=entity(id);if(!canView(x))return toast('Acceso denegado.');modal('Opciones',`<div class="namecell">${icon(x)}<strong>${esc(x.name)}</strong></div><div class="optiongrid">${kind(x)==='folder'?`<button class="btn" data-act="open" data-id="${id}">Abrir carpeta</button>`:''}${canShare(x)?`<button class="btn" data-act="share" data-id="${id}">Administrar permisos</button>`:''}${canEdit(x)?`<button class="btn" data-act="rename" data-id="${id}">Cambiar nombre</button><button class="btn" data-act="move" data-id="${id}">Mover a otra carpeta</button>${kind(x)==='file'?`<button class="btn" data-act="duplicate" data-id="${id}">Crear una copia</button>`:''}${kind(x)==='file'?`<button class="btn" data-act="replace" data-id="${id}">Subir nueva versión</button>`:''}<button class="btn" data-act="delete" data-id="${id}">Mover a papelera</button>`:''}<button class="btn" data-act="star" data-id="${id}">${x.starred?'Quitar de destacados':'☆ Destacar'}</button>${kind(x)==='file'&&canEdit(x)&&['txt','md','csv','json'].includes(ext(x))?`<button class="btn" data-act="edittext" data-id="${id}">Editar texto</button>`:''}</div><div class="hint">Tu acceso: <strong>${roleLabel(permDetails(x).role)}</strong>${canShare(x)?' · Eres el propietario':''}</div>`)}
+function rename(id){const x=entity(id);if(!canEdit(x))return toast('Se requiere acceso de edición.');modal('Cambiar nombre',`<label class="field">Nuevo nombre</label><input class="textinput" id="renameInput" value="${esc(x.name)}" maxlength="160">`,`<button class="btn primary" data-act="saveRename" data-id="${id}">Guardar</button>`)}
+function saveRename(id){const x=entity(id),name=$('renameInput')?.value.trim();if(!canEdit(x))return toast('Acceso denegado.');if(!validName(name))return toast('Nombre no válido.');if(siblings(x,parent(x)).some(a=>a.name.toLowerCase()===name.toLowerCase()))return toast('Ya existe un elemento con ese nombre.');x.name=name;x.modified=dateNow();log('Nombre actualizado a '+name,id);close();draw();toast('Nombre actualizado.')}
+function allowedDestination(x,f){return canEdit(f)&&f.owner===x.owner&&!isDeleted(f)&&f.id!==x.id&&!(kind(x)==='folder'&&isBelow(f.id,x.id))}
+function move(id){return openMove([id])}
+function openMove(ids,preferred=null){
+ let pick=[...new Set(ids)].map(entity).filter(x=>x&&canEdit(x));
+ // Si se ha seleccionado una carpeta, no se mueve otra vez un hijo de ella.
+ pick=pick.filter(x=>!pick.some(y=>y!==x&&kind(y)==='folder'&&isBelow(parent(x),y.id)));
+ if(!pick.length)return toast('Primero selecciona un archivo o carpeta que puedas editar.');
+ moveSelection=pick.map(x=>x.id);const sameOwner=pick.every(x=>x.owner===pick[0].owner);
+ if(!sameOwner)return toast('Para mover varios elementos deben tener el mismo propietario.');
+ const opts=db.folders.filter(f=>pick.every(x=>allowedDestination(x,f))).sort((a,b)=>pathOf(a.id).localeCompare(pathOf(b.id),'es'));
+ if(!opts.length)return toast('No hay carpetas de destino disponibles con permiso de edición.');
+ const chosen=opts.find(x=>x.id===preferred)||opts.find(x=>x.id===parent(pick[0]))||opts[0];
+ modal('Mover a otra carpeta',`<p class="hint">${pick.length===1?`Vas a mover <strong>${esc(pick[0].name)}</strong>`:`Vas a mover <strong>${pick.length} elementos seleccionados</strong>`}. Selecciona una carpeta de destino:</p>
+ <div class="folderpicker" role="group" aria-label="Carpetas de destino">${opts.map(f=>`<button type="button" class="folderoption ${f.id===chosen.id?'active':''}" data-act="chooseDest" data-id="${f.id}" style="padding-left:${9+Math.min(lineage(f).length-1,6)*15}px">${glyph('folder')}<span>${esc(f.name)}</span><span class="treeinfo">${f.id===parent(pick[0])?'Actual':''}</span></button>`).join('')}</div>
+ <input type="hidden" id="moveTo" value="${chosen.id}"><div class="moveproof"><strong>Destino elegido:</strong> <span id="destText">${esc(pathOf(chosen.id))}</span><div class="smallmuted">Los permisos heredados pueden cambiar al mover archivos a otra carpeta.</div></div>`,`<button class="btn primary" data-act="saveMoveBatch">Mover aquí</button>`,true);
+}
+function chooseDest(id){const f=folder(id);if(!f)return;$('moveTo').value=id;$('destText').textContent=pathOf(id);document.querySelectorAll('.folderoption').forEach(b=>b.classList.toggle('active',b.dataset.id===id))}
+function saveMoveBatch(){
+ const destination=folder($('moveTo')?.value),xs=moveSelection.map(entity).filter(Boolean);
+ if(!destination||!xs.length)return toast('Selecciona una carpeta válida.');
+ if(!xs.every(x=>canEdit(x)&&allowedDestination(x,destination)))return toast('No tienes permiso para mover uno de los elementos a esta carpeta.');
+ const moving=xs.filter(x=>parent(x)!==destination.id);
+ const collisions=moving.filter(x=>siblings(x,destination.id).some(y=>y.name.toLocaleLowerCase()===x.name.toLocaleLowerCase()));
+ if(collisions.length)return toast(`No se pueden mover: en destino ya existe "${collisions[0].name}". Renómbralo o elige otra carpeta.`);
+ const seen=new Set();for(const x of moving){const key=kind(x)+':'+x.name.toLocaleLowerCase();if(seen.has(key))return toast('La selección contiene elementos con el mismo nombre. Muévelos por separado.');seen.add(key)}
+ const snapshots=moving.map(x=>({id:x.id,previous:parent(x)}));
+ for(const x of moving){if(kind(x)==='folder')x.parentId=destination.id;else x.folderId=destination.id;x.modified=dateNow();}
+ if(moving.length){undoMovement={user:state.user,entries:snapshots,target:destination.id};}
+ else undoMovement=null;
+ if(moving.length)log(moving.length+' elemento(s) movidos a '+pathOf(destination.id));
+ selection.clear();moveSelection=[];close();draw();toast(moving.length?`${moving.length} elemento(s) movidos a ${destination.name}.`:'Los elementos ya estaban en esa carpeta.');
+}
+function undoMove(){
+ const rec=undoMovement;if(!rec||rec.user!==state.user)return toast('No hay movimientos para deshacer.');
+ const xs=rec.entries.map(e=>({x:entity(e.id),previous:folder(e.previous)}));
+ if(xs.some(({x,previous})=>!x||!previous||!canEdit(x)||!canEdit(previous)||siblings(x,previous.id).some(y=>y.name.toLocaleLowerCase()===x.name.toLocaleLowerCase())))return toast('No se puede deshacer: algún permiso o nombre de carpeta ha cambiado.');
+ for(const {x,previous} of xs){if(kind(x)==='folder')x.parentId=previous.id;else x.folderId=previous.id;x.modified=dateNow()}
+ undoMovement=null;log(xs.length+' movimiento(s) deshechos');draw();toast('Movimiento deshecho. Los archivos volvieron a su ubicación anterior.');
+}
+function saveMove(id){return saveMoveBatch()}
+function help(){modal('Cómo organizar tus documentos',`<div class="shortsteps"><div class="step"><strong>1. Entra en una carpeta</strong>Haz clic en “Abrir” o doble clic sobre la carpeta. Puedes crear nuevas carpetas dentro de ella.</div><div class="step"><strong>2. Sube un archivo</strong>Usa “Subir archivos aquí” o arrástralos desde tu computador. Primero se abre una ventana para revisarlos: PDF con desplazamiento, imágenes con zoom, botón de expansión en la esquina inferior derecha y opción de quitar archivos equivocados. Ningún archivo se guarda antes de pulsar “Confirmar subida”. ZIP, Office y otros formatos también se admiten, pero algunos no tienen vista previa en el navegador. Si un nombre se repite, se crea una copia numerada.</div><div class="step"><strong>3. Cambia un archivo de lugar</strong>Pulsa “Mover”, selecciona la carpeta de destino y confirma. Puedes seleccionar varios con las casillas. En computador también puedes arrastrar un elemento sobre una carpeta.</div><div class="step"><strong>4. Crea muchas carpetas de una vez</strong>Pulsa “Crear estructura”. Escribe nombres en líneas, usa dos espacios para indicar subcarpetas y mira la vista previa antes de crear todo de una vez.</div><div class="step"><strong>5. Crea los meses automáticamente</strong>Entra en la carpeta de destino, pulsa “Crear meses”, deja seleccionados enero–diciembre o elige solo algunos y confirma. Los meses ya existentes no se duplican.</div><div class="step"><strong>6. Importa carpetas de tu computador</strong>Pulsa “Subir carpeta completa”, escoge una carpeta en Mac o Windows, y se conservarán sus carpetas internas y documentos. También puedes arrastrar una carpeta a la pantalla en navegadores compatibles.</div><div class="step"><strong>7. Decide quién puede usarlo</strong>Pulsa “Compartir” para dar acceso “Solo ver” o “Puede editar” a una persona o a todos los usuarios. Compartir está reservado al propietario.</div></div><p class="hint">Demo local: los archivos se guardan en este navegador. Compartir entre equipos necesita un servidor. Las carpetas vacías también se importan al arrastrarlas desde navegadores compatibles; al elegir carpetas con el selector algunos navegadores omiten las vacías.</p>`, '<button class="btn primary" data-modal-close>Entendido</button>',true)}
+async function duplicate(id){const x=file(id);if(!x||!canEdit(x))return toast('Necesitas permiso de edición para hacer una copia.');let blob=null;if(!x.demo){try{blob=await loadBlob(id);if(!blob)throw Error('missing')}catch{return toast('No se encontró el contenido original en este navegador.')}}
+ const name=uniqueName(x.name,x.folderId),realName=name===x.name?'Copia de '+name:name;
+ const finalName=uniqueName(realName,x.folderId),newId='d'+db.next++;
+ if(blob)try{await saveBlob(newId,blob)}catch{return toast('No se pudo guardar la copia.');}
+ db.files.push({id:newId,name:finalName,folderId:x.folderId,owner:x.owner,size:x.size,modified:dateNow(),demo:x.demo,acl:{users:{},everyone:'none'},version:1});log('Copia creada: '+finalName,newId);close();draw();toast('Copia creada en la carpeta actual: '+finalName);
+}
+function cascade(id,deleted){const x=entity(id);if(!x)return;x.deleted=deleted;if(kind(x)==='folder'){db.folders.filter(a=>a.parentId===id).forEach(a=>cascade(a.id,deleted));db.files.filter(a=>a.folderId===id).forEach(a=>cascade(a.id,deleted))}}
+function del(id){const x=entity(id);if(!canEdit(x))return toast('Se requiere permiso de edición.');modal('Mover a papelera',`<p>¿Mover <strong>${esc(x.name)}</strong> a la papelera?</p><p class="hint">Si es una carpeta, también se ocultarán temporalmente sus subcarpetas y archivos.</p>`,`<button class="btn primary" data-act="confirmDelete" data-id="${id}">Mover a papelera</button>`)}
+function doBulkDelete(){const all=selectedItems();if(!all.length)return toast('No hay elementos seleccionados.');for(const x of all)cascade(x.id,true);log(all.length+' elemento(s) enviados a la papelera');selection.clear();close();draw();toast(all.length+' elemento(s) enviados a la papelera.');}
+function doDelete(id){const x=entity(id);if(!canEdit(x))return toast('Acceso denegado.');cascade(id,true);log('Movido a papelera: '+x.name,id);close();draw();toast('Movido a la papelera.')}
+function restore(id){const x=entity(id);if(!x||x.owner!==state.user)return toast('Solo el propietario puede restaurar.');let p=folder(parent(x));while(p){p.deleted=false;p=folder(p.parentId)}cascade(id,false);log('Restaurado: '+x.name,id);draw();toast('Elemento restaurado.')}
+function purge(id){const x=entity(id);if(!x||x.owner!==state.user)return toast('Solo el propietario puede eliminarlo.');modal('Eliminar definitivamente',`<p>Eliminar definitivamente <strong>${esc(x.name)}</strong> y sus contenidos. Esta acción no se puede deshacer.</p>`,`<button class="btn primary" data-act="confirmPurge" data-id="${id}">Eliminar definitivamente</button>`)}
+async function doPurge(id){const x=entity(id);if(!x||x.owner!==state.user)return toast('Acceso denegado.');const ids=[id];for(let i=0;i<ids.length;i++)for(const f of db.folders.filter(a=>a.parentId===ids[i]))ids.push(f.id);const deletedFileIds=db.files.filter(f=>ids.includes(f.folderId)||ids.includes(f.id)).map(f=>f.id);db.files=db.files.filter(f=>!deletedFileIds.includes(f.id));db.folders=db.folders.filter(f=>!ids.includes(f.id));for(const fid of deletedFileIds)await eraseBlob(fid);log('Eliminado definitivamente: '+x.name);close();draw();toast('Eliminado definitivamente.')}
+function star(id){const x=entity(id);if(!canView(x))return; x.starred=!x.starred;log((x.starred?'Destacado: ':'Quitado de destacados: ')+x.name,id);close();draw()}
+function replace(id){const x=file(id);if(!canEdit(x))return toast('Se requiere acceso de edición.');modal('Seleccionar nueva versión',`<p>Vas a reemplazar el contenido de <strong>${esc(x.name)}</strong>.</p><label class="field" for="replaceFile">Selecciona el documento</label><input id="replaceFile" class="textinput" type="file" data-replace-id="${id}"><p class="hint">Verás el documento antes de confirmar. La extensión debe coincidir; la versión anterior no queda archivada en esta demostración.</p>`)}
+async function saveReplace(id){const x=file(id);if(!canEdit(x))return toast('Acceso denegado.');const f=$('replaceFile')?.files[0];if(!f)return toast('Selecciona un archivo.');try{await saveBlob(id,f);x.size=f.size;x.demo=false;x.version=(x.version||1)+1;x.modified=dateNow();log('Nueva versión '+x.version+' de '+x.name,id);close();draw();toast('Nueva versión guardada.')}catch{toast('No se pudo guardar la nueva versión.')}}
+async function editText(id){const x=file(id);if(!canEdit(x))return toast('Se requiere edición.');let t='';if(!x.demo)try{const b=await loadBlob(id);t=b?await b.text():''}catch{}modal('Editar contenido de texto',`<p class="hint">${esc(x.name)} · guardado al pulsar Guardar</p><textarea id="editorText" class="textinput texteditor">${esc(t)}</textarea>`,`<button class="btn primary" data-act="saveText" data-id="${id}">Guardar contenido</button>`,true)}
+async function saveText(id){const x=file(id);if(!canEdit(x))return toast('Acceso denegado.');const t=$('editorText').value;try{const b=new Blob([t],{type:'text/plain;charset=utf-8'});await saveBlob(id,b);x.demo=false;x.size=b.size;x.version=(x.version||1)+1;x.modified=dateNow();log('Texto editado: '+x.name,id);close();draw();toast('Contenido guardado.')}catch{toast('Error al guardar texto.')}}
+function nav(n){selection.clear();if(n==='home'||n==='files')openOwnedRoot();else if(n==='shared')openSharedRoot();else{state.section=n;state.folder=null;state.search='';$('searchInput').value='';draw()}}
+app.addEventListener('click',e=>{if(e.detail>1&&performance.now()-lastOpenButtonAt<600)return;const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-modal-close'))return close();if(b.dataset.nav)return nav(b.dataset.nav);const a=b.dataset.act,id=b.dataset.id;switch(a){case'crumb':return jumpFolder(id);case'open':if(e.detail>1)return;lastOpenButtonAt=performance.now();return jumpFolder(id);case'sharedhome':return openSharedRoot();case'view':return view(id);case'download':return download(id);case'share':return share(id);case'more':return more(id);case'savefolder':return saveFolder();case'grant':return grant(id);case'saveeveryone':return everyone(id);case'revoke':return revoke(id,b.dataset.target);case'copyref':return copyRef(id);case'rename':return rename(id);case'saveRename':return saveRename(id);case'move':return move(id);case'saveMove':return saveMove(id);case'chooseDest':return chooseDest(id);case'saveMoveBatch':return saveMoveBatch();case'duplicate':return duplicate(id);case'stagePick':if(stage){stage.index=Number(b.dataset.idx);stage.zoom=100;return renderUploadReview()}return;case'stageRemove':if(stage){stage.files.splice(Number(b.dataset.idx),1);stage.index=Math.min(stage.index,stage.files.length-1);stage.zoom=100;return renderUploadReview()}return;case'stageAdd':return $('fileInput').click();case'stageExpand':return toggleStageExpand();case'stageMinus':return stageZoom(-25);case'stagePlus':return stageZoom(25);case'stageReset':return stageZoom(0);case'stageConfirm':return confirmStageUpload();case'uploadhere':return $('fileInput').click();case'newhere':return newFolder();case'openLastImport':if(lastImportedFolder&&canView(folder(lastImportedFolder)))return jumpFolder(lastImportedFolder);return;case'dismissImport':$('importNotice').hidden=true;lastImportedFolder=null;return;case'bulkhere':return createStructure();case'monthshere':return createMonths();case'monthPreset':return selectMonthsPreset(b.dataset.preset);case'saveMonths':return saveMonths();case'folderhere':return $('folderInput').click();case'outlineExample':$('outlineText').value=exampleOutline;return refreshOutline();case'saveStructure':return saveStructure();case'delete':return del(id);case'confirmDelete':return doDelete(id);case'confirmBulkDelete':return doBulkDelete();case'restore':return restore(id);case'purge':return purge(id);case'confirmPurge':return doPurge(id);case'star':return star(id);case'replace':return replace(id);case'saveReplace':return saveReplace(id);case'edittext':return editText(id);case'saveText':return saveText(id);}});
+app.addEventListener('dblclick',e=>{if(performance.now()-lastOpenButtonAt<500||e.target.closest('button,select,input,textarea'))return;const row=e.target.closest('[data-row-id]');if(row&&folder(row.dataset.rowId)&&state.section!=='trash')jumpFolder(row.dataset.rowId)});
+app.addEventListener('change',e=>{if(e.target.matches('[data-permission]'))updateRole(e.target.dataset.entity,e.target.dataset.permission,e.target.value);
+ if(e.target.matches('[data-pick]')){if(e.target.checked)selection.add(e.target.dataset.pick);else selection.delete(e.target.dataset.pick);draw()}
+ if(e.target.id==='selectAll'){const visible=items().filter(pickable);for(const x of visible)e.target.checked?selection.add(x.id):selection.delete(x.id);draw()}
+});
+$('helpButton').addEventListener('click',help);$('undoMove').addEventListener('click',undoMove);
+$('goUp').addEventListener('click',()=>{const p=folder(state.folder)?.parentId;if(p&&canView(folder(p)))jumpFolder(p)});
+$('bulkMove').addEventListener('click',()=>openMove([...selection]));
+$('bulkDelete').addEventListener('click',()=>{
+ const all=selectedItems();if(!all.length)return;
+ modal('Mover seleccionados a la papelera',`¿Mover <strong>${all.length} elementos</strong> a la papelera? También se ocultará el contenido de las carpetas seleccionadas.`, `<button class="btn primary" data-act="confirmBulkDelete">Mover a papelera</button>`);
+});
+$('clearSelection').addEventListener('click',clearSelection);
+$('newFolder').addEventListener('click',newFolder);$('bulkFolders').addEventListener('click',createStructure);$('createMonths').addEventListener('click',createMonths);$('uploadFolderButton').addEventListener('click',()=>$('folderInput').click());$('folderInput').addEventListener('change',async e=>{const files=[...e.target.files];e.target.value='';if(!files.length)return;await importDirectory(files.map(file=>({file,path:file.webkitRelativePath||file.name,dir:false})));});$('modalMount').addEventListener('change',e=>{if(e.target.id==='replaceFile'&&e.target.files?.length){const id=e.target.dataset.replaceId;reviewUpload([...e.target.files],file(id)?.folderId,id)}});$('modalMount').addEventListener('input',e=>{if(e.target.id==='outlineText')refreshOutline();if(e.target.classList.contains('monthcheck')){monthSelectedPreset='custom';refreshMonths()}});$('uploadButton').addEventListener('click',()=>$('fileInput').click());$('fileInput').addEventListener('change',e=>{const chosen=[...e.target.files];e.target.value='';reviewUpload(chosen,stage?.destination||state.folder)});
+$('tabMine').addEventListener('click',openOwnedRoot);$('tabShared').addEventListener('click',openSharedRoot);
+$('searchInput').addEventListener('input',e=>{selection.clear();state.search=e.target.value.trim();draw()});$('typeFilter').addEventListener('change',e=>{selection.clear();state.type=e.target.value;draw()});$('sortBy').addEventListener('change',e=>{state.sort=e.target.value;draw()});$('listBtn').addEventListener('click',()=>{state.layout='list';draw()});$('gridBtn').addEventListener('click',()=>{state.layout='grid';draw()});
+$('modalMount').addEventListener('wheel',e=>{if(stage&&e.ctrlKey&&e.target.closest('#stageViewport')){const v=stageClass(stage.files[stage.index]);if(v==='image'||v==='text'){e.preventDefault();stageZoom(e.deltaY<0?25:-25)}}},{passive:false});
+$('modalMount').addEventListener('click',e=>{if(e.target.dataset.backdrop)close()});document.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='Enter'&&e.target.id==='folderName')saveFolder();if(e.key==='Enter'&&e.target.id==='renameInput')saveRename($('modalMount').querySelector('[data-act="saveRename"]')?.dataset.id)});
+$('userSelect').addEventListener('change',e=>{selection.clear();undoMovement=null;state.user=e.target.value;state.section='files';state.folder=rootOfUser();state.search='';$('searchInput').value='';$('userBadge').textContent=user(state.user).initial;close();draw();toast('Simulando sesión: '+user(state.user).name)});
+$('resetDemo').addEventListener('click',async()=>{if(!confirm('¿Reiniciar la demostración? Se borrarán los archivos subidos y los permisos locales.'))return;const ids=db.files.filter(f=>!f.demo).map(f=>f.id);for(const id of ids)await eraseBlob(id);db=structuredClone(seed);selection.clear();undoMovement=null;persist();state.user='u1';$('userSelect').value='u1';$('userBadge').textContent='PR';state.section='files';state.folder='f1';state.search='';$('searchInput').value='';close();draw();toast('Demostración reiniciada. Se quitaron los archivos locales y sus permisos.')});
+const dz=$('dropzone');let depth=0;
+function dropHighlight(target,on){if(target)target.classList.toggle('drop-target',on)}
+app.addEventListener('dragstart',e=>{
+ const row=e.target.closest('[data-row-id]');if(!row||!canEdit(entity(row.dataset.rowId)))return;
+ dragId=row.dataset.rowId;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-kcprz-id',dragId);e.dataTransfer.setData('text/plain',entity(dragId).name);
+});
+app.addEventListener('dragend',()=>{dragId=null;app.querySelectorAll('.drop-target').forEach(x=>dropHighlight(x,false));$('dropCover').classList.add('hidden');depth=0});
+app.addEventListener('dragover',e=>{const row=e.target.closest('[data-row-id]');if(row&&folder(row.dataset.rowId)&&canEdit(folder(row.dataset.rowId))){e.preventDefault();e.dataTransfer.dropEffect='move';dropHighlight(row,true)}});
+app.addEventListener('dragleave',e=>{const row=e.target.closest('[data-row-id]');if(row&&!row.contains(e.relatedTarget))dropHighlight(row,false)});
+app.addEventListener('drop',e=>{const row=e.target.closest('[data-row-id]');if(!row||!folder(row.dataset.rowId)||!canEdit(folder(row.dataset.rowId)))return;
+ e.preventDefault();e.stopPropagation();dropHighlight(row,false);$('dropCover').classList.add('hidden');depth=0;
+ const internal=e.dataTransfer.getData('application/x-kcprz-id')||dragId;
+ if(internal){dragId=null;openMove([internal],row.dataset.rowId);return}
+ if(e.dataTransfer.items?.length||e.dataTransfer.files?.length)handleExternalDrop(e.dataTransfer,row.dataset.rowId);
+});
+dz.addEventListener('dragenter',e=>{e.preventDefault();if(dragId||e.dataTransfer?.types?.includes('application/x-kcprz-id')||!canCreate())return;depth++;$('dropCover').classList.remove('hidden')});
+dz.addEventListener('dragover',e=>{e.preventDefault()});
+dz.addEventListener('dragleave',e=>{e.preventDefault();depth=Math.max(0,depth-1);if(!depth)$('dropCover').classList.add('hidden')});
+dz.addEventListener('drop',e=>{e.preventDefault();depth=0;$('dropCover').classList.add('hidden');if(dragId||e.dataTransfer.getData('application/x-kcprz-id')){dragId=null;return}if(e.dataTransfer.items?.length||e.dataTransfer.files?.length)handleExternalDrop(e.dataTransfer)});
+
+draw();
+})();
+
+
+</script>
+</body>
+</html>
