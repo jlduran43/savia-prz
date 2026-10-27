@@ -159,13 +159,12 @@ class AdminPanelProvider extends PanelProvider
                         ->items([
 
                             NavigationItem::make('Explorador Drive PRZ')
-                                ->url(fn(): string => route('drive-prz.index'))
+                                ->url(fn(): string => route('drive-prz-v5.screen'))
                                 ->isActiveWhen(
-                                    fn(): bool => request()->routeIs('drive-prz.index')
+                                    fn(): bool => request()->routeIs('drive-prz-v5.screen')
                                 ),
 
                         ]),
-
                     // TERCERO: USUARIOS
                     ...(
                         auth()->user()?->rol === 'ADMIN'
