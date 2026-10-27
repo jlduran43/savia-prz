@@ -2871,6 +2871,210 @@
         return await respuesta.json();
       }
 
+      // ESTADO DEL EXPLORADOR REAL
+      let carpetaRealActual = null;
+      let rutaRealActual = [];
+
+      // MOSTRAR ARCHIVOS REALES DE MYSQL
+      async function mostrarArchivosReales(carpetaId = null) {
+
+        try {
+          const datos = await cargarDocumentosLaravel(carpetaId);
+
+          carpetaRealActual = carpetaId;
+          rutaRealActual = datos.trail || [];
+
+          const elementos = datos.items || [];
+
+          // Encabezado
+          document.getElementById('sectionTitle').textContent =
+            'Documentos';
+
+          document.getElementById('sectionSubtitle').textContent =
+            'Archivos almacenados en SAVIA PRZ';
+
+          document.getElementById('currentPlace').textContent =
+            rutaRealActual.length
+              ? rutaRealActual.map(x => x.name).join(' / ')
+              : 'Mis archivos';
+
+          // Contador
+          document.getElementById('sectionCounter').textContent =
+            `${elementos.length} elementos`;
+
+          document.getElementById('footCounter').textContent =
+            `${elementos.length} elementos almacenados en el servidor`;
+
+          // Navegación
+          document.getElementById('breadcrumbs').innerHTML =
+            `<button type="button" data-real-root>
+                Mis archivos
+            </button>` +
+            rutaRealActual.map(x =>
+              ` ${glyph('arrow')}
+                  <button type="button"
+                          data-real-folder="${x.id}">
+                      ${esc(x.name)}
+                  </button>`
+            ).join('');
+
+          // Carpeta vacía
+          if (!elementos.length) {
+            document.getElementById('filesArea').innerHTML = `
+                <div class="empty">
+                    ${glyph('folder')}
+                    <strong>Esta carpeta está vacía</strong>
+                    <p>No existen documentos en esta ubicación.</p>
+                </div>
+            `;
+            return;
+          }
+
+          // Tabla con el mismo diseño
+          document.getElementById('filesArea').innerHTML = `
+            <div class="tablewrap">
+                <table class="filetable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Tamaño</th>
+                            <th>Modificado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${elementos.map(x => {
+
+            const carpeta = x.type === 'folder';
+
+            const extension = carpeta
+              ? ''
+              : x.name.split('.').pop().toLowerCase();
+
+            const categoria = carpeta
+              ? 'folder'
+              : ['pdf', 'xlsx', 'csv', 'png',
+                'jpg', 'jpeg', 'webp', 'docx',
+                'txt'].includes(extension)
+                ? extension : 'other';
+
+            const icono = carpeta
+              ? 'folder'
+              : ['png', 'jpg', 'jpeg', 'webp']
+                .includes(extension)
+                ? 'image' : 'file';
+
+            const acciones = carpeta
+              ? `<button class="action"
+                                      data-real-folder="${x.id}">
+                                      Abrir
+                                   </button>`
+              : `<a class="action"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      href="/drive-prz-v5/files/${x.id}/preview">
+                                      Ver
+                                   </a>
+                                   <a class="action"
+                                      href="/drive-prz-v5/files/${x.id}/download">
+                                      Descargar
+                                   </a>`;
+
+            return `
+                                <tr>
+                                    <td>
+                                        <div class="namecell">
+                                            <span class="fileico ${categoria}">
+                                                ${glyph(icono)}
+                                            </span>
+
+                                            <div>
+                                                ${carpeta
+                ? `<button class="filename"
+                                                         data-real-folder="${x.id}">
+                                                         ${esc(x.name)}
+                                                       </button>`
+                : `<span class="filename">
+                                                         ${esc(x.name)}
+                                                       </span>`}
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="typepill">
+                                            ${carpeta ? 'Carpeta' : esc(extension.toUpperCase())}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        ${carpeta ? '—' : size(x.size)}
+                                    </td>
+
+                                    <td>
+                                        ${formatDate(x.modified)}
+                                    </td>
+
+                                    <td>
+                                        <div class="actions">
+                                            ${acciones}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+          }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        } catch (error) {
+          console.error('Error al consultar MySQL:', error);
+
+          document.getElementById('filesArea').innerHTML = `
+            <div class="empty">
+                <strong>No se pudieron cargar los archivos.</strong>
+                <p>Revisa la conexión con Laravel.</p>
+            </div>
+        `;
+        }
+      }
+
+      // ABRIR CARPETAS REALES
+      document.getElementById('filesArea')
+        .addEventListener('click', async event => {
+
+          const boton = event.target.closest('[data-real-folder]');
+
+          if (!boton) return;
+
+          event.preventDefault();
+
+          await mostrarArchivosReales(
+            Number(boton.dataset.realFolder)
+          );
+        });
+
+      // NAVEGACIÓN REAL POR CARPETAS
+      document.getElementById('breadcrumbs')
+        .addEventListener('click', async event => {
+
+          if (event.target.closest('[data-real-root]')) {
+            await mostrarArchivosReales();
+            return;
+          }
+
+          const boton = event.target.closest('[data-real-folder]');
+
+          if (boton) {
+            await mostrarArchivosReales(
+              Number(boton.dataset.realFolder)
+            );
+          }
+        });
+
       // COMPROBAR LA CONEXIÓN CON MYSQL
       async function comprobarConexionLaravel() {
         try {
@@ -3534,10 +3738,18 @@
       dz.addEventListener('dragleave', e => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) $('dropCover').classList.add('hidden') });
       dz.addEventListener('drop', e => { e.preventDefault(); depth = 0; $('dropCover').classList.add('hidden'); if (dragId || e.dataTransfer.getData('application/x-kcprz-id')) { dragId = null; return } if (e.dataTransfer.items?.length || e.dataTransfer.files?.length) handleExternalDrop(e.dataTransfer) });
 
-      // Verificar conexión con Laravel al iniciar
-      comprobarConexionLaravel();
-
       draw();
+
+      // Mostrar archivos reales de Laravel
+      mostrarArchivosReales();
+
+      // Ocultar temporalmente las operaciones de demostración
+      document.getElementById('createButtons').style.display = 'none';
+      document.getElementById('batchBar').hidden = true;
+      document.getElementById('userSelect').disabled = true;
+      document.getElementById('resetDemo').style.display = 'none';
+      document.getElementById('storageInfo').textContent =
+        'Documentos consultados desde SAVIA PRZ.';
     })();
 
 
