@@ -679,7 +679,6 @@
                         x-text="busy?'Guardando...':modal==='months'?'Crear '+newMonths.length+' carpetas':'Guardar'"></button>
                 </div>
             </div>
-        </div>
     </div>
     {{-- MODAL DE AYUDA --}}
 
