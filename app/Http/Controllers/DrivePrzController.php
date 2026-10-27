@@ -162,7 +162,7 @@ class DrivePrzController extends Controller
     public function upload(Request $request)
     {
         $d = $request->validate([
-            'carpeta_id' => ['required', 'integer'],
+            'carpeta_id' => ['nullable', 'integer'],
             'archivo' => [
                 'required',
                 'file',
@@ -175,7 +175,11 @@ class DrivePrzController extends Controller
             'archivo.mimes' => 'El tipo de archivo no está permitido.',
         ]);
 
-        $this->folder((int) $d['carpeta_id']);
+        $carpetaId = isset($d['carpeta_id'])
+            ? (int) $d['carpeta_id']
+            : null;
+
+        $this->parent($carpetaId);
 
         $archivo = $request->file('archivo');
 
@@ -193,7 +197,7 @@ class DrivePrzController extends Controller
         try {
             $doc = new Documento();
 
-            $doc->carpeta_id = (int) $d['carpeta_id'];
+            $doc->carpeta_id = $carpetaId;
             $doc->nombre_original = $archivo->getClientOriginalName();
             $doc->nombre_almacenado = basename($ruta);
             $doc->ruta_archivo = $ruta;
@@ -234,7 +238,7 @@ class DrivePrzController extends Controller
             $c->save();
         } else {
             $f = $this->file($id);
-            $f->nombre = trim($d['nombre']);
+            $f->nombre_original = trim($d['nombre']);
             $f->save();
         }
         return response()->json(['ok' => true]);

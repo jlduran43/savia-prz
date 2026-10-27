@@ -2875,6 +2875,76 @@
       let carpetaRealActual = null;
       let rutaRealActual = [];
 
+      // CREAR CARPETAS REALES EN LARAVEL
+      async function crearCarpetaLaravel() {
+        const nombre = window.prompt(
+          'Nombre de la nueva carpeta:'
+        );
+
+        if (nombre === null) return;
+
+        if (!nombre.trim()) {
+          alert('Debes ingresar un nombre.');
+          return;
+        }
+
+        const boton = document.getElementById('newFolder');
+        boton.disabled = true;
+
+        try {
+          const cookie = document.cookie
+            .split('; ')
+            .find(x => x.startsWith('XSRF-TOKEN='));
+
+          if (!cookie) {
+            throw new Error(
+              'No se encontró el token de seguridad. Recarga la página.'
+            );
+          }
+
+          const token = decodeURIComponent(
+            cookie.substring('XSRF-TOKEN='.length)
+          );
+
+          const respuesta = await fetch(ENDPOINTS.carpetas, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-XSRF-TOKEN': token
+            },
+            body: JSON.stringify({
+              nombre: nombre.trim(),
+              carpeta_padre_id: carpetaRealActual
+            })
+          });
+
+          const datos = await respuesta.json();
+
+          if (!respuesta.ok) {
+            const mensaje = datos.errors
+              ? Object.values(datos.errors).flat().join('\n')
+              : datos.message;
+
+            throw new Error(
+              mensaje || `Error HTTP ${respuesta.status}`
+            );
+          }
+
+          // Recargar el listado real
+          await mostrarArchivosReales(carpetaRealActual);
+
+          alert('Carpeta creada correctamente.');
+
+        } catch (error) {
+          console.error(error);
+          alert('No fue posible crear la carpeta: ' + error.message);
+        } finally {
+          boton.disabled = false;
+        }
+      }
+
       // MOSTRAR ARCHIVOS REALES DE MYSQL
       async function mostrarArchivosReales(carpetaId = null) {
 
@@ -3744,7 +3814,28 @@
       mostrarArchivosReales();
 
       // Ocultar temporalmente las operaciones de demostración
-      document.getElementById('createButtons').style.display = 'none';
+      // ACTIVAR CREACIÓN REAL DE CARPETAS
+      const botonesCrear = document.getElementById('createButtons');
+
+      botonesCrear.style.display = 'flex';
+
+      // Mantener temporalmente ocultas las demás acciones
+      botonesCrear.querySelectorAll('button').forEach(boton => {
+        boton.style.display =
+          boton.id === 'newFolder' ? 'inline-flex' : 'none';
+      });
+
+      // Interceptar el botón antes de los eventos antiguos
+      document.getElementById('newFolder').addEventListener(
+        'click',
+        function (evento) {
+          evento.preventDefault();
+          evento.stopImmediatePropagation();
+
+          crearCarpetaLaravel();
+        },
+        { capture: true }
+      );
       document.getElementById('batchBar').hidden = true;
       document.getElementById('userSelect').disabled = true;
       document.getElementById('resetDemo').style.display = 'none';
