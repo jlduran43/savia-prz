@@ -3022,6 +3022,72 @@
         }
       }
 
+      // RENOMBRAR DOCUMENTOS Y CARPETAS REALES
+      async function renombrarElementoLaravel(id, tipo, nombreActual) {
+
+        const nuevoNombre = prompt(
+          'Ingresa el nuevo nombre:',
+          nombreActual
+        );
+
+        if (nuevoNombre === null) return;
+
+        const nombre = nuevoNombre.trim();
+
+        if (!nombre || nombre === nombreActual) return;
+
+        const cookie = document.cookie
+          .split('; ')
+          .find(c => c.startsWith('XSRF-TOKEN='));
+
+        if (!cookie) {
+          alert('Sesión no disponible. Recarga la página.');
+          return;
+        }
+
+        const token = decodeURIComponent(
+          cookie.substring('XSRF-TOKEN='.length)
+        );
+
+        try {
+          const respuesta = await fetch(
+            `${API}/${tipo}/${id}`,
+            {
+              method: 'PATCH',
+              credentials: 'same-origin',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': token
+              },
+              body: JSON.stringify({
+                nombre: nombre
+              })
+            }
+          );
+
+          const datos = await respuesta.json();
+
+          if (!respuesta.ok) {
+            const mensaje = datos.errors
+              ? Object.values(datos.errors).flat().join('\n')
+              : datos.message;
+
+            throw new Error(
+              mensaje || `Error HTTP ${respuesta.status}`
+            );
+          }
+
+          await mostrarArchivosReales(carpetaRealActual);
+
+          alert('Nombre actualizado correctamente.');
+
+        } catch (error) {
+          console.error(error);
+          alert('Error al renombrar: ' + error.message);
+        }
+      }
+
       // MOSTRAR ARCHIVOS REALES DE MYSQL
       async function mostrarArchivosReales(carpetaId = null) {
 
@@ -3165,10 +3231,20 @@
                                     </td>
 
                                     <td>
-                                        <div class="actions">
-                                            ${acciones}
-                                        </div>
-                                    </td>
+    <div class="actions">
+        ${acciones}
+
+        <button
+            type="button"
+            class="action"
+            data-laravel-rename="${x.id}"
+            data-laravel-kind="${carpeta ? 'folders' : 'files'}"
+            data-laravel-name="${esc(x.name)}"
+            title="Cambiar nombre">
+            Renombrar
+        </button>
+    </div>
+</td>
                                 </tr>
                             `;
           }).join('')}
@@ -3924,7 +4000,7 @@
             ? 'inline-flex'
             : 'none';
       });
-      
+
       // Interceptar el botón antes de los eventos antiguos
       document.getElementById('newFolder').addEventListener(
         'click',
@@ -3941,6 +4017,52 @@
       document.getElementById('resetDemo').style.display = 'none';
       document.getElementById('storageInfo').textContent =
         'Documentos consultados desde SAVIA PRZ.';
+
+      // INTERCEPTAR RENOMBRAR REAL
+      document.getElementById('filesArea').addEventListener(
+        'click',
+        function (evento) {
+
+          const boton = evento.target.closest(
+            '[data-laravel-rename]'
+          );
+
+          if (!boton) return;
+
+          evento.preventDefault();
+          evento.stopImmediatePropagation();
+
+          renombrarElementoLaravel(
+            Number(boton.dataset.laravelRename),
+            boton.dataset.laravelKind,
+            boton.dataset.laravelName
+          );
+        },
+        true
+      );
+
+      // INTERCEPTAR RENOMBRAR REAL
+      document.getElementById('filesArea').addEventListener(
+        'click',
+        function (evento) {
+
+          const boton = evento.target.closest(
+            '[data-laravel-rename]'
+          );
+
+          if (!boton) return;
+
+          evento.preventDefault();
+          evento.stopImmediatePropagation();
+
+          renombrarElementoLaravel(
+            Number(boton.dataset.laravelRename),
+            boton.dataset.laravelKind,
+            boton.dataset.laravelName
+          );
+        },
+        true
+      );
     })();
 
 
