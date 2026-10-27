@@ -46,8 +46,22 @@ class DrivePrzController extends Controller
 
     public function screen()
     {
-        return response()->file(
-            resource_path('drive-prz/index.html')
+        $ruta = resource_path('drive-prz/index.html');
+
+        abort_unless(
+            is_file($ruta),
+            404,
+            'No se encontró el archivo HTML de Drive PRZ.'
+        );
+
+        return response(
+            file_get_contents($ruta),
+            200,
+            [
+                'Content-Type' => 'text/html; charset=UTF-8',
+                'Content-Disposition' => 'inline',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
         );
     }
 
