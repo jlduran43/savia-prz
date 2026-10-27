@@ -312,7 +312,7 @@ Route::middleware(['auth'])
         Route::post('/files', [
             DrivePrzController::class,
             'upload'
-        ])->name('files');
+        ])->name('files.upload');
 
         // Renombrar carpetas o documentos
         Route::patch('/{kind}/{id}', [

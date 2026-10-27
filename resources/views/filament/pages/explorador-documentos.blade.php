@@ -136,7 +136,39 @@ if (this.modal === 'move') {
 },
  async removeItem(){if(!confirm('¿Eliminar '+this.selected.name+'?'))return;await this.run(async()=>{await this.request('/'+(this.selected.type==='folder'?'folders':'files')+'/'+this.selected.id,'DELETE');this.notice='Elemento eliminado.'})},
  context(e,item){this.ctx={show:true,x:Math.min(e.clientX,innerWidth-205),y:Math.min(e.clientY,innerHeight-180),item}},
- async uploadFiles(e){const files=[...e.target.files];e.target.value='';if(!files.length)return;if(!this.current){alert('Primero crea o abre una carpeta para subir documentos.');return}await this.run(async()=>{for(const f of files){const body=new FormData();body.append('archivo',f);body.append('carpeta_id',this.current);await this.request('/files', 'POST', body)}this.notice=files.length+' archivos subidos.'})},
+ async uploadFiles(e) {
+    const files = [...e.target.files];
+
+    e.target.value = '';
+
+    if (!files.length) return;
+
+    if (this.current === null) {
+        alert('Primero crea o abre una carpeta para subir documentos.');
+        return;
+    }
+
+    await this.run(async () => {
+
+        for (const archivo of files) {
+
+            const body = new FormData();
+
+            body.append('archivo', archivo);
+
+            body.append('carpeta_id', this.current);
+
+            await this.request(
+                '/files',
+                'POST',
+                body
+            );
+        }
+
+        this.notice =
+            files.length + ' archivo(s) subido(s) correctamente.';
+    });
+},
  async uploadDirectory(e){const files=[...e.target.files];e.target.value='';if(!files.length)return;await this.run(async()=>{let created=0;let dirs=new Map([['',this.current]]);const paths=[...new Set(files.flatMap(f=>{let parts=(f.webkitRelativePath||f.name).split('/');return parts.slice(0,-1).map((_,i)=>parts.slice(0,i+1).join('/'))}))].sort((a,b)=>a.split('/').length-b.split('/').length);for(const p of paths){const split=p.split('/'),parent=split.slice(0,-1).join('/');let d=await this.request('/ensure-folder','POST',{nombre:split.at(-1),carpeta_padre_id:dirs.get(parent)});dirs.set(p,d.id);created++}for(const f of files){let p=(f.webkitRelativePath||f.name).split('/').slice(0,-1).join('/');let id=dirs.get(p);if(id==null){throw Error('Primero crea o abre una carpeta de destino.')}let body=new FormData();body.append('archivo',f);body.append('carpeta_id',id);await this.request('/files', 'POST', body)}this.notice=created+' carpetas procesadas y '+files.length+' archivos subidos.'})}
 }}
 </script>
