@@ -152,8 +152,19 @@ class AdminPanelProvider extends PanelProvider
                             ...TipoVehiculoResource::getNavigationItems(),
                         ]),
 
+                    // TERCERO: DRIVE PRZ
                     NavigationGroup::make()
-                        ->label('Drive PRZ'),
+                        ->label('Drive PRZ')
+                        ->icon('heroicon-o-circle-stack')
+                        ->items([
+
+                            NavigationItem::make('Explorador Drive PRZ')
+                                ->url(fn(): string => route('drive-prz.index'))
+                                ->isActiveWhen(
+                                    fn(): bool => request()->routeIs('drive-prz.index')
+                                ),
+
+                        ]),
 
                     // TERCERO: USUARIOS
                     ...(

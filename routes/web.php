@@ -353,3 +353,11 @@ Route::middleware(['auth'])
             'preview'
         ])->name('preview');
     });
+
+    Route::middleware(['auth'])
+    ->get('/drive-prz', function () {
+        return response()->file(
+            resource_path('drive-prz/index.html')
+        );
+    })
+    ->name('drive-prz.index');
