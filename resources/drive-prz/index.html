@@ -2697,7 +2697,16 @@
     .prz-multi-option strong, .prz-multi-option small { display: block; overflow-wrap: anywhere; }
     .prz-multi-option small { color: #8295aa; font-size: 11px; }
 
-  </style>
+  
+/* Permisos granulares, respetando el modal Drive PRZ */
+.prz-permission-box{background:#f8fbff;border:1px solid #dce8f4;border-radius:9px;padding:13px;margin:12px 0;color:#425e7b}
+.prz-permission-box>strong{font-size:12px}
+.prz-flag-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.prz-flag{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #e0e9f3;border-radius:7px;background:#fff;font-size:12px}
+.prz-flag input{accent-color:#1664bd}
+.prz-saved-flags{width:100%;font-size:11px;color:#55718b}
+@media(max-width:560px){.prz-flag-grid{grid-template-columns:1fr}}
+</style>
 </head>
 
 <body>
@@ -3164,19 +3173,21 @@
                 <div id="przShareSelected" class="prz-multi-selected" aria-live="polite"></div>
                 <div id="przShareChoices" class="prz-multi-choices hidden" role="group" aria-label="Usuarios de SAVIA PRZ"></div>
               </div>
-              <select id="przShareNewRole" class="select" disabled><option value="view">Solo ver</option><option value="edit">Puede editar</option></select>
+              <select id="przShareNewRole" class="select" disabled><option value="view">Solo ver</option><option value="edit">Puede editar</option><option value="custom">Personalizado</option></select>
               <button type="button" class="btn primary" id="przShareAdd" disabled>Agregar</button>
             </div>
+            <div id="przShareCustomBox" class="prz-permission-box hidden"></div>
             <p class="hint">Selecciona una o varias cuentas activas. Todas recibirán el permiso elegido.</p>
           </div>
           <div class="shareblock">
             <label class="field">2. Compartir con todos los usuarios del sistema</label>
             <div class="shareform">
               <label class="switchlabel"><input type="checkbox" id="przShareEveryone" disabled> Habilitar</label>
-              <select class="select" id="przShareEveryoneRole" disabled><option value="view">Solo ver</option><option value="edit">Puede editar</option></select>
+              <select class="select" id="przShareEveryoneRole" disabled><option value="view">Solo ver</option><option value="edit">Puede editar</option><option value="custom">Personalizado</option></select>
               <button type="button" class="btn" id="przShareApply" disabled>Aplicar</button>
             </div>
           </div>
+          <div id="przShareGeneralCustomBox" class="prz-permission-box hidden"></div>
           <div class="sharepeople"><label class="field">Personas con acceso</label><div id="przSharePeople">Consultando permisos...</div></div>
           <div class="notice">Los permisos heredados de carpetas superiores no pueden reducirse desde un archivo hijo.</div>
           <p id="przShareError" class="hint" role="alert" style="color:#b33c46"></p>
@@ -3186,6 +3197,21 @@
         const errorBox = q('przShareError');
         let users = [], info = {}, busy = false;
         const selectedIds = new Set();
+        const names = {view:'Ver',download:'Descargar',copy:'Copiar',rename:'Renombrar',move:'Mover',delete:'Enviar a papelera',upload:'Subir archivos',create_folder:'Crear subcarpetas'};
+        const newFlags = {view:true,download:true};
+        const generalFlags = {view:true,download:true};
+        const flagsHtml = (flags, prefix) => Object.entries(names)
+          .filter(([k]) => tipo === 'folders' || !['upload','create_folder'].includes(k))
+          .map(([key,label]) => `<label class="prz-flag"><input type="checkbox" data-flag-prefix="${prefix}" data-flag="${key}" ${flags[key] ? 'checked' : ''} ${key==='view' ? 'disabled' : ''}><span>${label}</span></label>`).join('');
+        const refreshCustom = () => {
+          for(const [selector,role,flags,prefix] of [
+            ['przShareCustomBox',q('przShareNewRole').value,newFlags,'new'],
+            ['przShareGeneralCustomBox',q('przShareEveryoneRole').value,generalFlags,'general']]) {
+            const box=q(selector);box.classList.toggle('hidden',role!=='custom');
+            if(role==='custom')box.innerHTML=`<strong>Acciones permitidas</strong><div class="prz-flag-grid">${flagsHtml(flags,prefix)}</div>`;
+          }
+        };
+        const rolePayload = (role, flags) => role === 'custom' ? {role,permissions:{...flags,view:true}} : {role};
         const availableUsers = () => users.filter(u => u && u.email && Number.isFinite(Number(u.id)));
         const canShare = () => !!info.can_share;
         const canOperate = () => canShare() && !busy;
@@ -3214,18 +3240,19 @@
             ? 'Los permisos se gestionan desde SAVIA PRZ. <strong>Puedes compartir este elemento con otros usuarios.</strong>'
             : 'Este elemento fue compartido contigo. <strong>Solo el propietario puede administrar sus permisos.</strong>';
           q('przShareEveryone').checked = !!info.everyone?.enabled;
-          q('przShareEveryoneRole').value = info.everyone?.role === 'edit' ? 'edit' : 'view';
+          q('przShareEveryoneRole').value = ['view','edit','custom'].includes(info.everyone?.role) ? info.everyone.role : 'view';
+          if(info.everyone?.permissions)Object.assign(generalFlags,info.everyone.permissions);
           const owner = info.owner;
           const permissions = info.people || [];
           q('przSharePeople').innerHTML = `${owner ? `<div class="person"><span class="avatar">${esc((owner.name || 'U').slice(0,2).toUpperCase())}</span><div class="personmain"><strong>${esc(owner.name)}</strong><small>Propietario del elemento</small></div><span class="role">Propietario</span></div>` : ''}
-          ${permissions.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0,2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option></select><button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
+          ${permissions.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0,2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option><option value="custom" ${p.role === 'custom' ? 'selected' : ''}>Personalizado</option></select>${p.role === 'custom' ? `<div class="prz-saved-flags">${Object.keys(p.permissions||{}).filter(k=>p.permissions[k]).map(k=>esc(names[k]||k)).join(' · ')}</div>` : ''}<button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
           if (info.inherited?.length) {
-            q('przSharePeople').insertAdjacentHTML('beforeend', `<div class="inherited"><strong>Permisos heredados de carpetas superiores</strong>${info.inherited.map(p => `<div class="person"><strong>${esc(p.name)}</strong><span class="role">${p.role === 'edit' ? 'Puede editar' : 'Solo ver'}</span></div>`).join('')}</div>`);
+            q('przSharePeople').insertAdjacentHTML('beforeend', `<div class="inherited"><strong>Permisos heredados de carpetas superiores</strong>${info.inherited.map(p => `<div class="person"><strong>${esc(p.name)}</strong><span class="role">${p.role === 'edit' ? 'Puede editar' : (p.role === 'custom' ? 'Personalizado' : 'Solo ver')}</span></div>`).join('')}</div>`);
           }
         };
         const updateControls = () => {
           ['przShareSearch','przShareNewRole','przShareEveryone','przShareEveryoneRole','przShareApply'].forEach(k => { q(k).disabled = !canOperate(); });
-          renderSelection();
+          renderSelection(); refreshCustom();
         };
         const refresh = async () => {
           info = await apiCompartir(base);
@@ -3241,6 +3268,12 @@
           finally { busy = false; if (frame.isConnected && q('przShareAdd')) { renderPermissions(); updateControls(); renderChoices(); } }
         };
         q('przShareSearch').addEventListener('input', renderChoices);
+        q('przShareNewRole').addEventListener('change',refreshCustom);
+        q('przShareEveryoneRole').addEventListener('change',refreshCustom);
+        frame.addEventListener('change',e=>{
+          const el=e.target.closest('[data-flag-prefix][data-flag]');if(!el)return;
+          (el.dataset.flagPrefix==='new'?newFlags:generalFlags)[el.dataset.flag]=el.checked;
+        });
         q('przShareChoices').addEventListener('change', e => {
           const checkbox = e.target.closest('[data-share-user]');
           if (!checkbox || busy) return;
@@ -3261,7 +3294,7 @@
           let completed = 0; const failures = [];
           for (const u of pending) {
             try {
-              await apiCompartir(`${base}/people`, 'POST', {email:u.email, role:q('przShareNewRole').value});
+              await apiCompartir(`${base}/people`, 'POST', {email:u.email, ...rolePayload(q('przShareNewRole').value,newFlags)});
               selectedIds.delete(Number(u.id)); completed++;
             } catch (e) { failures.push(`${u.email}: ${e.message}`); }
           }
@@ -3274,20 +3307,20 @@
             renderPermissions(); updateControls(); renderChoices();
           }
         });
-        q('przShareApply').addEventListener('click', () => execute(() => apiCompartir(`${base}/everyone`, 'PUT', {enabled:q('przShareEveryone').checked, role:q('przShareEveryoneRole').value})));
+        q('przShareApply').addEventListener('click', () => execute(() => apiCompartir(`${base}/everyone`, 'PUT', {enabled:q('przShareEveryone').checked, ...rolePayload(q('przShareEveryoneRole').value,generalFlags)})));
         q('przSharePeople').addEventListener('click', e => {
           const b = e.target.closest('.przShareRevoke');
           if (b) execute(() => apiCompartir(`${base}/people/${b.dataset.userId}`, 'DELETE', {}));
         });
         q('przSharePeople').addEventListener('change', e => {
           const sel = e.target.closest('.przSharePersonRole');
-          if (sel) execute(() => apiCompartir(`${base}/people/${sel.dataset.userId}`, 'PUT', {role:sel.value}));
+          if (sel) execute(() => apiCompartir(`${base}/people/${sel.dataset.userId}`, 'PUT', rolePayload(sel.value,sel.value==='custom'?(info.people||[]).find(p=>Number(p.id)===Number(sel.dataset.userId))?.permissions || {view:true,download:true}:null)));
         });
         try {
           const results = await Promise.all([apiCompartir(base), apiCompartir(`${API}/sharing/users`)]);
           info = results[0]; users = results[1].users || [];
           if (!frame.isConnected || !q('przSharePeople')) return;
-          renderPermissions(); updateControls();
+          renderPermissions(); updateControls(); refreshCustom();
           if (canShare()) renderChoices();
         } catch(e) {
           if (frame.isConnected && errorBox.isConnected) {
