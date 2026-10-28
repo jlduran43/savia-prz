@@ -3445,8 +3445,11 @@
               ? Object.values(datos.errors).flat().join(' ')
               : (datos.message || `Error HTTP ${res.status}`));
             close();
-            await mostrarArchivosReales(carpetaInicial);
-            toast(`«${nombre}» movido a ${ruta(elegido)}.`);
+           await mostrarArchivosReales(carpetaInicial);
+
+const nombreDestino = ruta(elegido).split(' / ').pop();
+
+toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           } catch (error) {
             errorBox.textContent = error.message;
             confirmar.disabled = false;
