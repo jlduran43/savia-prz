@@ -2857,6 +2857,13 @@
               class="batchspacer"></span><button id="bulkMove" type="button">📁 Mover seleccionados</button><button
               id="bulkDelete" type="button">🗑 Mover a papelera</button><button id="clearSelection" type="button">Quitar
               selección</button></div>
+          <div id="realBatchBar" class="batchbar" hidden>
+            <strong id="realSelectedCount">0 seleccionados</strong>
+            <span class="batchspacer"></span>
+            <button id="realBulkMove" type="button">📁 Mover seleccionados</button>
+            <button id="realBulkTrash" type="button" disabled title="Pendiente: papelera recuperable en Laravel">🗑 Mover a papelera</button>
+            <button id="realClearSelection" type="button">Quitar selección</button>
+          </div>
           <div class="toolbar"><label class="searchwrap"><svg>
                 <use href="#i-search" />
               </svg><input id="searchInput" placeholder="Buscar documentos o carpetas..." autocomplete="off"
@@ -3290,6 +3297,47 @@
         }
       }
 
+      // Selección de elementos REALES (no usa el almacenamiento del prototipo).
+      const realSelection = new Map();
+      let realVisible = [];
+      function realKey(x) { return (x.type === 'folder' ? 'folders:' : 'files:') + x.id; }
+      function updateRealSelection() {
+        const bar = document.getElementById('realBatchBar');
+        const n = realSelection.size;
+        bar.hidden = n === 0;
+        document.getElementById('realSelectedCount').textContent = `${n} seleccionado${n === 1 ? '' : 's'}`;
+        document.getElementById('realBulkMove').disabled = !n;
+        document.querySelectorAll('#filesArea [data-real-check]').forEach(ch => {
+          ch.checked = realSelection.has(ch.dataset.realCheck);
+          ch.closest('tr, .tile')?.classList.toggle('selected-row', ch.checked);
+        });
+        const all = document.getElementById('realSelectAll');
+        if (all) {
+          const keys = realVisible.map(realKey);
+          all.checked = keys.length > 0 && keys.every(k => realSelection.has(k));
+          all.indeterminate = keys.some(k => realSelection.has(k)) && !all.checked;
+        }
+      }
+      function clearRealSelection() { realSelection.clear(); updateRealSelection(); }
+      document.getElementById('filesArea').addEventListener('change', e => {
+        const ch = e.target.closest('[data-real-check]');
+        if (ch) {
+          const item = realVisible.find(x => realKey(x) === ch.dataset.realCheck);
+          if (!item) return;
+          if (ch.checked) realSelection.set(realKey(item), item);
+          else realSelection.delete(realKey(item));
+          updateRealSelection();
+        } else if (e.target.id === 'realSelectAll') {
+          realVisible.forEach(item => {
+            if (e.target.checked) realSelection.set(realKey(item), item);
+            else realSelection.delete(realKey(item));
+          });
+          updateRealSelection();
+        }
+      });
+      document.getElementById('realClearSelection').addEventListener('click', clearRealSelection);
+      document.getElementById('realBulkMove').addEventListener('click', abrirMoverSeleccionadosLaravel);
+
       async function mostrarArchivosReales(carpetaId = null) {
 
         try {
@@ -3299,6 +3347,10 @@
           rutaRealActual = datos.trail || [];
 
           const elementos = datos.items || [];
+          // Una selección nunca se arrastra entre carpetas ni recargas.
+          realSelection.clear();
+          realVisible = elementos;
+          updateRealSelection();
 
           // Encabezado
           document.getElementById('sectionTitle').textContent =
@@ -3350,6 +3402,7 @@
                 <table class="filetable">
                     <thead>
                         <tr>
+                            <th class="selcol"><input type="checkbox" id="realSelectAll" class="checkall" aria-label="Seleccionar todos los elementos visibles"></th>
                             <th>Nombre</th>
                             <th>Tipo</th>
                             <th>Tamaño</th>
@@ -3398,6 +3451,7 @@
 
             return `
                                 <tr>
+                                    <td class="selcol"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"></td>
                                     <td>
                                         <div class="namecell">
                                             <span class="fileico ${categoria}">
@@ -3463,6 +3517,100 @@
             </div>
         `;
         }
+      }
+
+      // Mover varios elementos reales reutilizando los endpoints existentes.
+      async function abrirMoverSeleccionadosLaravel() {
+        const seleccion = [...realSelection.values()];
+        if (!seleccion.length) return;
+        const origen = carpetaRealActual;
+        let carpetas;
+        try {
+          const respuesta = await fetch(ENDPOINTS.destinos, {
+            credentials: 'same-origin', headers: {Accept:'application/json'}
+          });
+          if (!respuesta.ok) throw new Error(`No se pudieron cargar los destinos (HTTP ${respuesta.status}).`);
+          carpetas = (await respuesta.json()).folders || [];
+        } catch (e) { toast(e.message); return; }
+        const mapa = new Map(carpetas.map(c => [Number(c.id), c]));
+        const parent = c => c.carpeta_padre_id == null ? null : Number(c.carpeta_padre_id);
+        const ruta = id => {
+          const a = [], seen = new Set();
+          while (id !== null && mapa.has(id) && !seen.has(id)) {
+            seen.add(id); const c = mapa.get(id); a.unshift(c.nombre); id = parent(c);
+          }
+          return ['Mis archivos', ...a].join(' / ');
+        };
+        const esPropiaODebajo = destino => seleccion.some(item => {
+          if (item.type !== 'folder') return false;
+          const seen = new Set();
+          while (destino !== null && mapa.has(destino) && !seen.has(destino)) {
+            if (destino === Number(item.id)) return true;
+            seen.add(destino); destino = parent(mapa.get(destino));
+          }
+          return false;
+        });
+        const hijos = id => carpetas.filter(c => parent(c) === id)
+          .sort((a,b) => a.nombre.localeCompare(b.nombre,'es'));
+        const tree = (id=null, level=0, seen=new Set()) => {
+          if (level > 30) return '';
+          return hijos(id).map(c => {
+            const cid=Number(c.id); if(seen.has(cid)) return '';
+            const next=new Set(seen); next.add(cid);
+            return `<button type="button" class="folderoption real-bulk-dest" data-destino="${cid}" style="padding-left:${12+level*19}px" ${esPropiaODebajo(cid)?'disabled':''}>${glyph('folder')} <span>${esc(c.nombre)}</span></button>`+tree(cid,level+1,next);
+          }).join('');
+        };
+        let destino = origen;
+        modal('Mover a otra carpeta',
+          `<p class="hint">Vas a mover <strong>${seleccion.length} elemento(s)</strong>. Selecciona una carpeta de destino:</p>
+          <div class="folderpicker" style="max-height:360px">
+            <button type="button" class="folderoption real-bulk-dest" data-destino="root">${glyph('folder')} <span>Mis archivos</span></button>${tree()}
+          </div>
+          <div class="moveproof"><strong>Destino elegido:</strong> <span id="realBulkPath"></span><div class="smallmuted">Los permisos heredados pueden cambiar al mover archivos.</div></div>
+          <p id="realBulkError" class="hint" style="color:#b33c46" role="alert"></p>`,
+          `<button type="button" class="btn primary" id="realBulkConfirm">Mover aquí</button>`, true);
+        const mount = document.getElementById('modalMount');
+        const boton = mount.querySelector('#realBulkConfirm');
+        const error = mount.querySelector('#realBulkError');
+        const actualizar = () => {
+          mount.querySelectorAll('.real-bulk-dest').forEach(b => b.classList.toggle('active',
+            (b.dataset.destino==='root'?null:Number(b.dataset.destino))===destino));
+          mount.querySelector('#realBulkPath').textContent = ruta(destino);
+          boton.disabled = destino===origen || esPropiaODebajo(destino);
+          error.textContent = boton.disabled ? 'Elige una carpeta válida diferente al origen.' : '';
+        };
+        mount.querySelectorAll('.real-bulk-dest').forEach(b => b.addEventListener('click', () => {
+          destino=b.dataset.destino==='root'?null:Number(b.dataset.destino); actualizar();
+        }));
+        actualizar();
+        boton.addEventListener('click', async () => {
+          if (destino===origen || esPropiaODebajo(destino)) return;
+          boton.disabled=true; boton.textContent='Moviendo...';
+          const cookie=document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='));
+          if (!cookie) { error.textContent='No se encontró token CSRF. Recarga la página.'; boton.textContent='Mover aquí'; boton.disabled=false; return; }
+          let completados=0; const fallos=[];
+          for (const item of seleccion) {
+            try {
+              const kind=item.type==='folder'?'folders':'files';
+              const res=await fetch(`${API}/${kind}/${item.id}/move`, {
+                method:'POST',credentials:'same-origin',
+                headers:{'Content-Type':'application/json','Accept':'application/json','X-XSRF-TOKEN':decodeURIComponent(cookie.substring(11))},
+                body:JSON.stringify({destino_id:destino})
+              });
+              const data=await res.json().catch(()=>({}));
+              if(!res.ok) throw new Error(data.message||`HTTP ${res.status}`);
+              completados++;
+            } catch(e) { fallos.push(`${item.name}: ${e.message}`); }
+          }
+          await mostrarArchivosReales(origen);
+          if (!fallos.length) {
+            close(); toast(`${completados} elemento(s) movidos a ${ruta(destino).split(' / ').pop()}.`);
+          } else {
+            error.textContent=`${completados} movidos; ${fallos.length} sin mover: ${fallos.join('; ')}`;
+            boton.textContent='Cerrar'; boton.disabled=false;
+            boton.onclick=()=>close();
+          }
+        });
       }
 
       // MOVER ELEMENTOS REALES: conserva el modal de Drive PRZ y usa MySQL.
