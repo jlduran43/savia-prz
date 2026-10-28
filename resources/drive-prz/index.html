@@ -4015,6 +4015,115 @@
       dz.addEventListener('dragleave', e => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) $('dropCover').classList.add('hidden') });
       dz.addEventListener('drop', e => { e.preventDefault(); depth = 0; $('dropCover').classList.add('hidden'); if (dragId || e.dataTransfer.getData('application/x-kcprz-id')) { dragId = null; return } if (e.dataTransfer.items?.length || e.dataTransfer.files?.length) handleExternalDrop(e.dataTransfer) });
 
+      // CREACIÓN MASIVA REAL: utiliza DrivePrzController@bulk y conserva el modal original.
+      function analizarEstructuraReal(texto) {
+        const rutas = new Set(), errores = [], pila = [];
+        let nivelPrevio = 0;
+        const lineas = texto.replace(/\r\n?/g, '\n').split('\n');
+        lineas.forEach((linea, indice) => {
+          if (!linea.trim()) return;
+          const sangria = (linea.match(/^[\t ]*/) || [''])[0];
+          const tabs = (sangria.match(/\t/g) || []).length;
+          const espacios = (sangria.match(/ /g) || []).length;
+          if (espacios % 2 !== 0) {
+            errores.push(`Línea ${indice+1}: usa 2 espacios o un Tab por nivel.`); return;
+          }
+          const nivel = tabs + espacios/2;
+          let contenido = linea.trim().replace(/^(?:[-*•]\s+|\d+[.)]\s+)/, '').trim();
+          if (nivel > nivelPrevio + 1 || (nivel && !pila[nivel-1])) {
+            errores.push(`Línea ${indice+1}: falta la carpeta del nivel anterior.`); return;
+          }
+          const segmentos = contenido.split(/\s*\/\s*/).map(x=>x.trim());
+          if (segmentos.some(x=>!x || x==='.' || x==='..' || x.length>120 || /[\\<>\x00-\x1f]/.test(x))) {
+            errores.push(`Línea ${indice+1}: nombre de carpeta no válido.`); return;
+          }
+          const padre = nivel ? pila[nivel-1] : [];
+          let actual = [...padre];
+          for (const segmento of segmentos) {
+            actual.push(segmento);
+            if (actual.length > 12) { errores.push(`Línea ${indice+1}: máximo 12 niveles.`); break; }
+            rutas.add(actual.join('/'));
+          }
+          pila[nivel] = actual;
+          pila.length = nivel+1;
+          nivelPrevio = nivel;
+        });
+        if (rutas.size>100) errores.push('Máximo 100 carpetas por operación.');
+        return {rutas:[...rutas], errores};
+      }
+
+      function abrirModalEstructuraLaravel() {
+        const destino = rutaRealActual.length
+          ? 'Mis archivos / '+rutaRealActual.map(x=>x.name).join(' / ')
+          : 'Mis archivos';
+        modal('Crear varias carpetas y subcarpetas', `
+          <div class="notice">Se crearán dentro de <strong>${esc(destino)}</strong>.
+          Primero revisa la vista previa; nada se crea hasta que pulses “Crear carpetas”.</div>
+          <div class="outlineexamples"><label class="field" for="przOutlineReal">Escribe o pega tu lista</label>
+          <button type="button" id="przEjemploReal">Insertar ejemplo</button></div>
+          <textarea class="textinput outlineinput" id="przOutlineReal" spellcheck="false"
+          placeholder="Personal&#10;  Contratos&#10;    2026&#10;    2027&#10;Proyectos&#10;  Informes"></textarea>
+          <p class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta usa
+          <kbd>2 espacios</kbd> o <kbd>Tab</kbd> al inicio; también puedes escribir
+          <kbd>Proyectos / Informes / 2026</kbd>.</p>
+          <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
+          <span>Revisa el árbol antes de confirmar.</span></div>
+          <div id="przOutlinePreviewReal" class="outlinepreview" aria-live="polite">
+          <span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div>
+          <div id="przOutlineErrorReal" class="outlineerror" role="alert" hidden></div>
+        `, `<button type="button" class="btn primary" id="przGuardarEstructuraReal" disabled>Crear carpetas</button>`, true);
+        const campo=$('przOutlineReal'), preview=$('przOutlinePreviewReal'), errores=$('przOutlineErrorReal'), guardar=$('przGuardarEstructuraReal');
+        const actualizar=()=>{
+          const resultado=analizarEstructuraReal(campo.value);
+          $('przOutlineCountReal').textContent=`${resultado.rutas.length} carpeta${resultado.rutas.length===1?'':'s'}`;
+          errores.hidden=!resultado.errores.length;
+          errores.textContent=resultado.errores.join(' | ');
+          guardar.disabled=!resultado.rutas.length || !!resultado.errores.length;
+          const arbol=[];
+          for (const ruta of resultado.rutas) {
+            const partes=ruta.split('/');
+            arbol.push(`<li style="padding-left:${(partes.length-1)*14}px"><span class="outlineicon">📁</span>${esc(partes.at(-1))}</li>`);
+          }
+          preview.innerHTML=arbol.length?`<ul>${arbol.join('')}</ul>`:'<span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span>';
+        };
+        campo.addEventListener('input',actualizar);
+        $('przEjemploReal').addEventListener('click',()=>{
+          campo.value='Personal\n  Contratos\n    2026\n    2027\nProyectos\n  Informes'.replace(/\\n/g,'\n');
+          actualizar(); campo.focus();
+        });
+        guardar.addEventListener('click', async ()=>{
+          const resultado=analizarEstructuraReal(campo.value);
+          if (!resultado.rutas.length || resultado.errores.length) {actualizar();return;}
+          guardar.disabled=true; guardar.textContent='Creando...';
+          try {
+            const cookie=document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='));
+            if(!cookie) throw new Error('Falta token de seguridad. Recarga la página.');
+            const respuesta=await fetch(ENDPOINTS.estructuras, {
+              method:'POST', credentials:'same-origin',
+              headers:{'Content-Type':'application/json','Accept':'application/json',
+              'X-XSRF-TOKEN':decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))},
+              body:JSON.stringify({carpeta_padre_id:carpetaRealActual,estructura:resultado.rutas.join('\n')})
+            });
+            const datos=await respuesta.json().catch(()=>({}));
+            if(!respuesta.ok) throw new Error(datos.message || (datos.errors?Object.values(datos.errors).flat().join(', '):`HTTP ${respuesta.status}`));
+            close();
+            await mostrarArchivosReales(carpetaRealActual);
+            toast(`${datos.created ?? 0} carpetas creadas correctamente.`);
+          } catch(e) {
+            errores.hidden=false;errores.textContent=e.message;
+          } finally {
+            if(guardar.isConnected) { guardar.disabled=false;guardar.textContent='Crear carpetas'; }
+          }
+        });
+        campo.focus();
+      }
+
+      // Captura antes del listener del prototipo para evitar escritura en localStorage.
+      $('bulkFolders').addEventListener('click',e=>{
+        e.preventDefault();e.stopImmediatePropagation();
+        abrirModalEstructuraLaravel();
+      },true);
+
       // REVISIÓN REAL ANTES DE SUBIR: sustituye la subida inmediata.
       // Conserva subirArchivosLaravel(), que ya utiliza MySQL y storage privado.
       let archivosEnRevision = [];
@@ -4220,7 +4329,7 @@
 
       botonesCrear.querySelectorAll('button').forEach(boton => {
         boton.style.display =
-          ['newFolder', 'uploadButton'].includes(boton.id)
+          ['newFolder', 'bulkFolders', 'uploadButton'].includes(boton.id)
             ? 'inline-flex'
             : 'none';
       });
