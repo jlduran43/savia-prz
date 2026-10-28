@@ -3251,12 +3251,12 @@
                                       data-real-folder="${x.id}">
                                       Abrir
                                    </button>`
-              : `<a class="action"
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      href="/drive-prz-v5/files/${x.id}/preview">
+              : `<button type="button" class="action"
+                                      data-real-preview="${x.id}"
+                                      data-preview-name="${esc(x.name)}"
+                                      data-preview-size="${Number(x.size) || 0}">
                                       Ver
-                                   </a>
+                                   </button>
                                    <a class="action"
                                       href="/drive-prz-v5/files/${x.id}/download">
                                       Descargar
@@ -3331,6 +3331,48 @@
         `;
         }
       }
+
+      // VISTA PREVIA REAL: diseño original, archivos almacenados en Laravel.
+      // No se ejecuta HTML, SVG, PHP ni código suministrado por usuarios.
+      function verArchivoLaravel(id, nombre, bytes) {
+        const extension = nombre.includes('.')
+          ? nombre.split('.').pop().toLowerCase() : '';
+        const puedePrevisualizar = ['pdf', 'jpg', 'jpeg', 'png'].includes(extension);
+        const ruta = `${API}/files/${encodeURIComponent(id)}/preview`;
+        const descarga = `${API}/files/${encodeURIComponent(id)}/download`;
+        const tipo = extension ? `Archivo ${extension.toUpperCase()}` : 'Archivo';
+
+        let contenido;
+        if (puedePrevisualizar && extension === 'pdf') {
+          contenido = `<iframe src="${ruta}" title="Vista previa PDF de ${esc(nombre)}" loading="lazy"></iframe>`;
+        } else if (puedePrevisualizar) {
+          contenido = `<img src="${ruta}" alt="Vista previa de ${esc(nombre)}"
+                            onerror="this.style.display='none';this.parentElement.querySelector('.preview-error').hidden=false">
+                       <p class="preview-error" hidden>No fue posible visualizar la imagen. Puedes descargar el archivo.</p>`;
+        } else {
+          contenido = `<span class="fileico other" style="width:80px;height:80px;margin:0 auto 15px">${glyph('file')}</span>
+                       <strong style="display:block;color:#6e849c;font-size:16px">${esc(nombre)}</strong>
+                       <p>Descarga el archivo para verlo con una aplicación compatible.</p>`;
+        }
+
+        modal('Vista previa de archivo',
+          `<div class="previewbox" id="activePreview">${contenido}</div>
+           <p class="hint">${esc(tipo)} · ${size(bytes)}</p>`,
+          `<a class="btn primary" href="${descarga}" download>Descargar</a>`, true);
+      }
+
+      // Interceptamos únicamente el botón Ver del listado real.
+      $('filesArea').addEventListener('click', event => {
+        const boton = event.target.closest('[data-real-preview]');
+        if (!boton) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        verArchivoLaravel(
+          Number(boton.dataset.realPreview),
+          boton.dataset.previewName,
+          Number(boton.dataset.previewSize)
+        );
+      }, true);
 
       // ABRIR CARPETAS REALES
       document.getElementById('filesArea')
