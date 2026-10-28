@@ -1899,6 +1899,8 @@
       white-space: nowrap
     }
 
+    .monthitem .monthalready[hidden] { display: none; }
+
     .monthitem .monthalready {
       display: block;
       font-size: 10.5px;
@@ -4124,6 +4126,144 @@
         abrirModalEstructuraLaravel();
       },true);
 
+      // CREAR MESES REALES: modal original, persistencia en Laravel/MySQL.
+      async function abrirMesesLaravel() {
+        const destinoId = carpetaRealActual;
+        const rutaDestino = rutaRealActual.length
+          ? 'Mis archivos / ' + rutaRealActual.map(c => c.name).join(' / ')
+          : 'Mis archivos';
+        const nombres = ['enero','febrero','marzo','abril','mayo','junio',
+          'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        const nombreMes = n => String(n).padStart(2,'0') + '. ' + nombres[n - 1];
+        const existentes = new Set();
+        let listaCargada = false, ocupado = false, preset = 'all';
+        const items = nombres.map((_, i) => {
+          const n = i + 1;
+          return `<label class="monthitem chosen" data-prz-mes="${n}">
+            <input class="monthcheck" type="checkbox" value="${n}" checked
+              aria-label="${esc(nombreMes(n))}">
+            <span><span class="monthname">${esc(nombreMes(n))}</span>
+            <span class="monthalready" hidden>Ya existe</span></span></label>`;
+        }).join('');
+        modal('Crear carpetas mensuales', `
+          <div class="notice">Destino: <strong>${esc(rutaDestino)}</strong>.<br>
+          Elige los meses que necesitas. Se crearán directamente en esta carpeta.</div>
+          <div class="monthquick" role="group" aria-label="Selección rápida de meses">
+            <strong>Seleccionar:</strong>
+            <button type="button" class="monthpreset" data-prz-preset="all">Los 12 meses</button>
+            <button type="button" class="monthpreset" data-prz-preset="first">Enero–junio</button>
+            <button type="button" class="monthpreset" data-prz-preset="last">Julio–diciembre</button>
+            <button type="button" class="monthpreset" data-prz-preset="missing">Solo faltantes</button>
+            <button type="button" class="monthpreset" data-prz-preset="none">Ninguno</button>
+          </div>
+          <fieldset class="monthfieldset"><legend>Meses que deseas crear</legend>
+            <div class="monthgrid">${items}</div></fieldset>
+          <p class="monthsummary noaction" id="przResumenMeses" role="status" aria-live="polite">Comprobando meses existentes...</p>
+          <p class="monthhint">Los nombres siguen el formato «01. enero» hasta «12. diciembre».
+          Los meses que ya existen no se duplicarán.</p>
+          <p id="przErrorMeses" class="outlineerror" role="alert" hidden></p>`,
+          `<button type="button" class="btn primary" id="przGuardarMeses" disabled>Crear carpetas</button>`, true);
+        const contenedor = $('modalMount');
+        const ventana = contenedor.querySelector('.modal');
+        ventana?.classList.add('monthsmodal');
+        const checks = [...ventana.querySelectorAll('.monthcheck')];
+        const guardar = $('przGuardarMeses');
+        const resumen = $('przResumenMeses');
+        const error = $('przErrorMeses');
+        const seleccionados = () => checks.filter(c => c.checked).map(c => Number(c.value));
+        function actualizar() {
+          if (!ventana.isConnected) return;
+          const elegidos = seleccionados();
+          const nuevos = elegidos.filter(n => !existentes.has(nombreMes(n).toLowerCase()));
+          const ya = elegidos.length - nuevos.length;
+          checks.forEach(c => {
+            const n = Number(c.value), presente = existentes.has(nombreMes(n).toLowerCase());
+            c.closest('.monthitem').classList.toggle('chosen', c.checked);
+            c.closest('.monthitem').classList.toggle('existing', presente);
+            c.closest('.monthitem').querySelector('.monthalready').hidden = !presente;
+          });
+          ventana.querySelectorAll('[data-prz-preset]').forEach(b => {
+            const activo = b.dataset.przPreset === preset;
+            b.classList.toggle('on', activo);
+            b.setAttribute('aria-pressed', String(activo));
+          });
+          resumen.textContent = !listaCargada ? 'Comprobando meses existentes...'
+            : !elegidos.length ? 'Selecciona al menos un mes.'
+            : nuevos.length ? `${elegidos.length} mes(es) seleccionado(s) · ${nuevos.length} carpeta(s) nueva(s)${ya ? ` · ${ya} ya existente(s)` : ''}.`
+            : 'Todos los meses seleccionados ya existen. No hay carpetas nuevas que crear.';
+          resumen.classList.toggle('noaction', !nuevos.length || !listaCargada);
+          guardar.disabled = ocupado || !listaCargada || !nuevos.length;
+          if (!ocupado) guardar.textContent = nuevos.length ? `Crear ${nuevos.length} carpeta${nuevos.length === 1 ? '' : 's'}` : 'No hay carpetas nuevas';
+        }
+        ventana.querySelectorAll('[data-prz-preset]').forEach(b => b.addEventListener('click', () => {
+          if (ocupado || !listaCargada) return;
+          preset = b.dataset.przPreset;
+          checks.forEach(c => {
+            const n = Number(c.value);
+            c.checked = preset === 'all' || (preset === 'first' && n <= 6) ||
+              (preset === 'last' && n >= 7) ||
+              (preset === 'missing' && !existentes.has(nombreMes(n).toLowerCase()));
+          });
+          actualizar();
+        }));
+        checks.forEach(c => c.addEventListener('change', () => { preset = 'custom'; actualizar(); }));
+        actualizar();
+        try {
+          const datos = await cargarDocumentosLaravel(destinoId);
+          if (!ventana.isConnected) return;
+          (datos.items || []).filter(x => x.type === 'folder').forEach(x => existentes.add(x.name.trim().toLowerCase()));
+          listaCargada = true;
+          actualizar();
+        } catch (e) {
+          if (!ventana.isConnected) return;
+          error.hidden = false;
+          error.textContent = 'No se pudieron consultar las carpetas existentes: ' + e.message;
+          return;
+        }
+        guardar.addEventListener('click', async () => {
+          if (ocupado || !listaCargada || !ventana.isConnected) return;
+          const elegidos = seleccionados();
+          const nuevos = elegidos.filter(n => !existentes.has(nombreMes(n).toLowerCase()));
+          if (!nuevos.length) return;
+          // El destino no puede cambiar mientras se confirma la operación.
+          if (carpetaRealActual !== destinoId) {
+            error.hidden = false; error.textContent = 'Cambió la carpeta actual. Cierra y vuelve a abrir esta ventana.';
+            return;
+          }
+          ocupado = true;
+          guardar.disabled = true;
+          guardar.textContent = 'Creando...';
+          error.hidden = true;
+          try {
+            const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+            if (!cookie) throw new Error('No se encontró el token de seguridad. Recarga la página.');
+            const respuesta = await fetch(ENDPOINTS.meses, {
+              method: 'POST', credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length)) },
+              body: JSON.stringify({carpeta_padre_id: destinoId, meses: elegidos})
+            });
+            const datos = await respuesta.json().catch(() => ({}));
+            if (!respuesta.ok) throw new Error(datos.errors
+              ? Object.values(datos.errors).flat().join(' ') : datos.message || `HTTP ${respuesta.status}`);
+            close();
+            await mostrarArchivosReales(destinoId);
+            toast(`${datos.created ?? 0} carpetas mensuales creadas.${datos.skipped ? ` ${datos.skipped} ya existían.` : ''}`);
+          } catch (e) {
+            if (ventana.isConnected) { error.hidden = false; error.textContent = e.message; }
+            else alert('Los meses se guardaron, pero falló la actualización: ' + e.message);
+          } finally {
+            ocupado = false;
+            actualizar();
+          }
+        });
+      }
+      $('createMonths').addEventListener('click', e => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        abrirMesesLaravel();
+      }, true);
+
       // REVISIÓN REAL ANTES DE SUBIR: sustituye la subida inmediata.
       // Conserva subirArchivosLaravel(), que ya utiliza MySQL y storage privado.
       let archivosEnRevision = [];
@@ -4329,7 +4469,7 @@
 
       botonesCrear.querySelectorAll('button').forEach(boton => {
         boton.style.display =
-          ['newFolder', 'bulkFolders', 'uploadButton'].includes(boton.id)
+          ['newFolder', 'bulkFolders', 'createMonths', 'uploadButton'].includes(boton.id)
             ? 'inline-flex'
             : 'none';
       });
