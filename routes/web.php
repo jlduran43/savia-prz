@@ -361,3 +361,24 @@ Route::middleware(['auth'])
         );
     })
     ->name('drive-prz.index');
+
+Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
+    $usuario = auth()->user();
+
+    $nombre = trim(
+        ($usuario->nombre ?? $usuario->name ?? '') . ' ' .
+        ($usuario->apellido ?? '')
+    );
+
+    return response()->json([
+        'id' => $usuario->id,
+        'nombre' => $nombre,
+        'email' => $usuario->email,
+        'rol' => $usuario->rol,
+        'iniciales' => collect(preg_split('/\s+/u', $nombre))
+            ->filter()
+            ->take(2)
+            ->map(fn ($parte) => mb_strtoupper(mb_substr($parte, 0, 1)))
+            ->implode(''),
+    ]);
+});

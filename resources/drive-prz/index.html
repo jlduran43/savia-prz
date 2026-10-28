@@ -2757,13 +2757,16 @@
     <header class="topbar">
       <div class="brand"><span class="brandicon">PRZ</span> DRIVE PRZ</div>
       <div class="toplabel">Gestión documental</div>
-      <div class="topright"><label class="actorlabel">Simular usuario <select id="userSelect">
-            <option value="u1">Administración PRZ</option>
-            <option value="u2">María González</option>
-            <option value="u3">Pedro Rojas</option>
-            <option value="u4">Ana Torres</option>
-          </select></label><button id="resetDemo" class="resetmini" title="Reiniciar demo">↺</button><span
-          class="avatar" id="userBadge">PR</span></div>
+      <div class="topright">
+    <div class="actorlabel">
+        <span>Sesión iniciada como</span>
+        <strong id="usuarioNombreReal">Cargando...</strong>
+    </div>
+
+    <div class="avatar" id="usuarioAvatarReal">
+        --
+    </div>
+</div>
     </header>
     <div class="shell">
       <aside class="sidebar" aria-label="Navegación">
@@ -4882,6 +4885,47 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           boton.dataset.shareName
         );
       }, true);
+
+      let usuarioActualLaravel = null;
+
+async function cargarUsuarioActualLaravel() {
+    const respuesta = await fetch(
+        '/drive-prz-v5/usuario-actual',
+        {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json'
+            }
+        }
+    );
+
+    if (!respuesta.ok) {
+        throw new Error('No fue posible obtener el usuario actual.');
+    }
+
+    const usuario = await respuesta.json();
+    usuarioActualLaravel = usuario;
+
+    // Nombre del usuario en el encabezado
+    const nombre = document.getElementById('usuarioNombreReal');
+
+    if (nombre) {
+        nombre.textContent = usuario.nombre;
+    }
+
+    // Iniciales del avatar
+    const avatar = document.getElementById('usuarioAvatarReal');
+
+    if (avatar) {
+        avatar.textContent = usuario.iniciales;
+    }
+
+    return usuario;
+}
+
+cargarUsuarioActualLaravel().catch(error => {
+    console.error('Error al cargar usuario:', error);
+});
     })();
 
 
