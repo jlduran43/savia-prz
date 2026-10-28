@@ -4865,11 +4865,12 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         },
         { capture: true }
       );
+      // Mantener ocultas las acciones masivas de demostración
       document.getElementById('batchBar').hidden = true;
-      document.getElementById('userSelect').disabled = true;
-      document.getElementById('resetDemo').style.display = 'none';
+
+      // Información del almacenamiento real
       document.getElementById('storageInfo').textContent =
-        'Documentos consultados desde SAVIA PRZ.';
+  'Documentos consultados desde SAVIA PRZ.';
 
       // Compartir: abre el modal del sistema y consulta permisos reales.
       document.getElementById('filesArea').addEventListener('click', event => {
