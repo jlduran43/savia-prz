@@ -4272,7 +4272,7 @@
       let previewUrlRevision = null;
       let carpetaDestinoRevision = null;
       let rutaDestinoRevision = '';
-      const extensionesPermitidas = new Set(['pdf','doc','docx','xls','xlsx','jpg','jpeg','png']);
+      const MAX_ARCHIVO_BYTES = 20 * 1024 * 1024; // Límite actual de Laravel por archivo
 
       function limpiarVistaRevision() {
         if (previewUrlRevision) URL.revokeObjectURL(previewUrlRevision);
@@ -4379,8 +4379,7 @@
         fondo.querySelector('#przReviewConfirm').textContent = `Confirmar subida (${archivosEnRevision.length})`;
         if (!archivo) return;
         const ext = archivo.name.split('.').pop().toLowerCase();
-        if (!extensionesPermitidas.has(ext)) estado.textContent = 'Formato no admitido por Laravel: ' + ext.toUpperCase();
-        else if (archivo.size > 20 * 1024 * 1024) estado.textContent = 'Este archivo supera el máximo de 20 MB.';
+        if (archivo.size > MAX_ARCHIVO_BYTES) estado.textContent = 'Este archivo supera el máximo de 20 MB por archivo.';
         if (['pdf','png','jpg','jpeg'].includes(ext)) {
           previewUrlRevision = URL.createObjectURL(archivo);
           if (ext === 'pdf') {
@@ -4400,12 +4399,10 @@
       }
       async function confirmarRevision() {
         if (revisionEnCurso || !archivosEnRevision.length) return;
-        const invalidos = archivosEnRevision.filter(f =>
-          !extensionesPermitidas.has(f.name.split('.').pop().toLowerCase()) || f.size > 20 * 1024 * 1024
-        );
+        const invalidos = archivosEnRevision.filter(f => f.size > MAX_ARCHIVO_BYTES);
         if (invalidos.length) {
           document.getElementById('przReviewStatus').textContent =
-            'Quita los archivos no admitidos o mayores de 20 MB: ' + invalidos.map(f => f.name).join(', ');
+            'Quita los archivos que superan 20 MB por archivo: ' + invalidos.map(f => f.name).join(', ');
           return;
         }
         if (carpetaDestinoRevision !== carpetaRealActual) {

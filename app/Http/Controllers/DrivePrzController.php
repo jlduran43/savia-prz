@@ -167,12 +167,10 @@ class DrivePrzController extends Controller
                 'required',
                 'file',
                 'max:20480',
-                'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png',
             ],
         ], [
             'archivo.required' => 'Debes seleccionar un archivo.',
             'archivo.max' => 'El archivo supera el máximo de 20 MB.',
-            'archivo.mimes' => 'El tipo de archivo no está permitido.',
         ]);
 
         $carpetaId = isset($d['carpeta_id'])
