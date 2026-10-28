@@ -2912,37 +2912,59 @@
           : 'Mis archivos';
       };
 
-      // CREAR CARPETAS REALES EN LARAVEL
-      async function crearCarpetaLaravel() {
-        const nombre = window.prompt(
-          'Nombre de la nueva carpeta:'
+      // CREAR CARPETAS REALES EN LARAVEL CON MODAL DEL EXPLORADOR
+      function abrirModalCarpetaLaravel() {
+        const destino = rutaRealActual.length
+          ? 'Mis archivos / ' + rutaRealActual.map(c => c.name).join(' / ')
+          : 'Mis archivos';
+
+        modal(
+          'Crear nueva carpeta',
+          `<form id="przFormCarpetaReal">
+             <label class="field" for="przNombreCarpetaReal">Nombre</label>
+             <input class="textinput" id="przNombreCarpetaReal"
+                    maxlength="120" required autocomplete="off"
+                    placeholder="Ej. Contratos 2026">
+             <p class="hint">Se creará dentro de <strong>${esc(destino)}</strong>.
+             Puedes abrirla y crear nuevas subcarpetas.</p>
+             <p id="przErrorCarpetaReal" class="hint"
+                role="alert" style="color:#b42318;display:none"></p>
+           </form>`,
+          `<button type="submit" form="przFormCarpetaReal"
+                   class="btn primary" id="przGuardarCarpetaReal">Crear carpeta</button>`
         );
 
-        if (nombre === null) return;
+        // Mismo diseño de la captura, sin modificar los demás modales.
+        const ventana = $('modalMount').querySelector('.modal');
+        if (ventana) ventana.style.width = 'min(650px, 100%)';
+        $('przFormCarpetaReal').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await crearCarpetaLaravel();
+        });
+      }
 
-        if (!nombre.trim()) {
-          alert('Debes ingresar un nombre.');
+      async function crearCarpetaLaravel() {
+        const campo = $('przNombreCarpetaReal');
+        const boton = $('przGuardarCarpetaReal');
+        const errorVista = $('przErrorCarpetaReal');
+        if (!campo || !boton) return;
+
+        const nombre = campo.value.trim();
+        errorVista.style.display = 'none';
+        if (!nombre) {
+          campo.setCustomValidity('Ingresa un nombre para la carpeta.');
+          campo.reportValidity();
+          campo.setCustomValidity('');
           return;
         }
 
-        const boton = document.getElementById('newFolder');
         boton.disabled = true;
-
+        boton.textContent = 'Creando...';
         try {
-          const cookie = document.cookie
-            .split('; ')
+          const cookie = document.cookie.split('; ')
             .find(x => x.startsWith('XSRF-TOKEN='));
-
-          if (!cookie) {
-            throw new Error(
-              'No se encontró el token de seguridad. Recarga la página.'
-            );
-          }
-
-          const token = decodeURIComponent(
-            cookie.substring('XSRF-TOKEN='.length)
-          );
-
+          if (!cookie) throw new Error('No se encontró el token de sesión. Recarga la página.');
+          const token = decodeURIComponent(cookie.substring('XSRF-TOKEN='.length));
           const respuesta = await fetch(ENDPOINTS.carpetas, {
             method: 'POST',
             credentials: 'same-origin',
@@ -2952,33 +2974,36 @@
               'X-XSRF-TOKEN': token
             },
             body: JSON.stringify({
-              nombre: nombre.trim(),
+              nombre,
               carpeta_padre_id: carpetaRealActual
             })
           });
 
-          const datos = await respuesta.json();
-
+          const datos = await respuesta.json().catch(() => ({}));
           if (!respuesta.ok) {
             const mensaje = datos.errors
-              ? Object.values(datos.errors).flat().join('\n')
+              ? Object.values(datos.errors).flat().join(' ')
               : datos.message;
-
-            throw new Error(
-              mensaje || `Error HTTP ${respuesta.status}`
-            );
+            throw new Error(mensaje || `Error HTTP ${respuesta.status}`);
           }
 
-          // Recargar el listado real
+          close();
           await mostrarArchivosReales(carpetaRealActual);
-
-          alert('Carpeta creada correctamente.');
-
+          toast('Carpeta creada. Puedes abrirla desde el listado.');
         } catch (error) {
-          console.error(error);
-          alert('No fue posible crear la carpeta: ' + error.message);
+          console.error('No se pudo crear la carpeta:', error);
+          // Mostrar errores dentro de la ventana, sin perder el nombre ingresado.
+          if (errorVista.isConnected) {
+            errorVista.textContent = error.message;
+            errorVista.style.display = 'block';
+          } else {
+            alert('La carpeta se creó, pero hubo un problema al actualizar el listado: ' + error.message);
+          }
         } finally {
-          boton.disabled = false;
+          if (boton.isConnected) {
+            boton.disabled = false;
+            boton.textContent = 'Crear carpeta';
+          }
         }
       }
 
@@ -4207,7 +4232,7 @@
           evento.preventDefault();
           evento.stopImmediatePropagation();
 
-          crearCarpetaLaravel();
+          abrirModalCarpetaLaravel();
         },
         { capture: true }
       );
