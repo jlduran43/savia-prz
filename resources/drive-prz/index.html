@@ -3362,7 +3362,10 @@
       }
 
       // Interceptamos únicamente el botón Ver del listado real.
-      $('filesArea').addEventListener('click', event => {
+      document.getElementById('filesArea').addEventListener(
+    'click',
+    function (evento) {
+        // Mantén aquí el código original del evento.
         const boton = event.target.closest('[data-real-preview]');
         if (!boton) return;
         event.preventDefault();
@@ -3372,8 +3375,9 @@
           boton.dataset.previewName,
           Number(boton.dataset.previewSize)
         );
-      }, true);
-
+    }
+);
+      
       // ABRIR CARPETAS REALES
       document.getElementById('filesArea')
         .addEventListener('click', async event => {
