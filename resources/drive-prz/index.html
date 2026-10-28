@@ -4416,6 +4416,12 @@
           const resultado = await subirArchivosLaravel([...archivosEnRevision]);
           revisionEnCurso = false;
           if (resultado.errores.length) {
+            if (resultado.subidos > 0) {
+              const destino = rutaDestinoRevision;
+              const aviso = `${resultado.subidos} archivo(s) subido(s) correctamente a ${destino}. Algunos archivos no pudieron subirse; revisa los errores de esta ventana.`;
+              showImportNotice(aviso, null);
+              toast(`${resultado.subidos} archivo(s) guardado(s) en ${destino}.`);
+            }
             boton.disabled = false;
             boton.textContent = `Reintentar subida (${resultado.errores.length})`;
             document.getElementById('przReviewStatus').textContent =
@@ -4429,8 +4435,12 @@
             dibujarRevision();
             document.getElementById('przReviewStatus').textContent = estadoPrevio;
           } else {
+            const destino = rutaDestinoRevision;
             cerrarRevision();
-            alert(`${resultado.subidos} archivo(s) subido(s) correctamente.`);
+            if (resultado.subidos > 0) {
+              showImportNotice(`${resultado.subidos} archivo(s) subido(s) correctamente a ${destino}. Puedes encontrarlos en la lista.`, null);
+              toast(`${resultado.subidos} archivo(s) guardado(s) en ${destino}.`);
+            }
           }
         } catch (error) {
           revisionEnCurso = false;
