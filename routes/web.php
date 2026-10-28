@@ -11,6 +11,7 @@ use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory as ExcelIOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Html as ExcelHtmlWriter;
 use App\Http\Controllers\DrivePrzController;
+use App\Http\Controllers\DrivePrzSharingController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
     return view(
@@ -352,9 +353,16 @@ Route::middleware(['auth'])
             DrivePrzController::class,
             'preview'
         ])->name('preview');
+
+        Route::get('/sharing/users', [DrivePrzSharingController::class, 'users'])->name('sharing.users');
+        Route::get('/{kind}/{id}/sharing', [DrivePrzSharingController::class, 'show'])->whereIn('kind', ['files', 'folders'])->whereNumber('id')->name('sharing.show');
+        Route::post('/{kind}/{id}/sharing/people', [DrivePrzSharingController::class, 'store'])->whereIn('kind', ['files', 'folders'])->whereNumber('id')->name('sharing.store');
+        Route::put('/{kind}/{id}/sharing/people/{userId}', [DrivePrzSharingController::class, 'update'])->whereIn('kind', ['files', 'folders'])->whereNumber('id')->whereNumber('userId')->name('sharing.update');
+        Route::delete('/{kind}/{id}/sharing/people/{userId}', [DrivePrzSharingController::class, 'destroy'])->whereIn('kind', ['files', 'folders'])->whereNumber('id')->whereNumber('userId')->name('sharing.destroy');
+        Route::put('/{kind}/{id}/sharing/everyone', [DrivePrzSharingController::class, 'general'])->whereIn('kind', ['files', 'folders'])->whereNumber('id')->name('sharing.general');
     });
 
-    Route::middleware(['auth'])
+Route::middleware(['auth'])
     ->get('/drive-prz', function () {
         return response()->file(
             resource_path('drive-prz/index.html')
@@ -367,7 +375,7 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 
     $nombre = trim(
         ($usuario->nombre ?? $usuario->name ?? '') . ' ' .
-        ($usuario->apellido ?? '')
+            ($usuario->apellido ?? '')
     );
 
     return response()->json([
@@ -378,7 +386,7 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
         'iniciales' => collect(preg_split('/\s+/u', $nombre))
             ->filter()
             ->take(2)
-            ->map(fn ($parte) => mb_strtoupper(mb_substr($parte, 0, 1)))
+            ->map(fn($parte) => mb_strtoupper(mb_substr($parte, 0, 1)))
             ->implode(''),
     ]);
 });
