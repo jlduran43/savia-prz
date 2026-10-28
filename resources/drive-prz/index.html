@@ -2631,6 +2631,32 @@
         scroll-behavior: auto !important
       }
     }
+
+    /* DRIVE PRZ: revisión de archivos integrada al explorador real */
+    .prz-review-backdrop{position:fixed;inset:0;background:rgba(12,28,48,.53);z-index:120;display:flex;align-items:center;justify-content:center;padding:12px}
+    .prz-review-modal{width:min(1390px,98vw);height:min(785px,94dvh);background:#fff;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 90px #0f294855;color:var(--text)}
+    .prz-review-head,.prz-review-foot{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;gap:12px;flex:none;background:#fff}
+    .prz-review-head{border-bottom:1px solid var(--line)}.prz-review-head h2{font-size:19px;margin:0;color:var(--navy);font-weight:780}
+    .prz-review-foot{border-top:1px solid var(--line);justify-content:flex-end}
+    .prz-review-close{border:0;background:#f3f6fa;color:#708398;padding:8px;display:flex;align-items:center;border-radius:9px}
+    .prz-review-body{padding:20px 24px 26px;min-height:0;display:flex;flex-direction:column;gap:14px;flex:1}
+    .prz-review-destination{font-size:13px;color:#657d95;line-height:1.7}.prz-review-destination strong{color:#245477}
+    .prz-review-layout{display:grid;grid-template-columns:minmax(245px,330px) minmax(0,1fr);gap:20px;min-height:0;flex:1}
+    .prz-review-sidebar{display:flex;flex-direction:column;border:1px solid #dce6f1;border-radius:12px;overflow:hidden;background:#fbfcfe;min-height:0}
+    .prz-review-sidebar-head{background:#f2f7fc;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px;font-weight:750}
+    .prz-review-list{overflow-y:auto;padding:8px;min-height:0;flex:1}
+    .prz-review-item{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid transparent;border-radius:10px;margin-bottom:6px}
+    .prz-review-item.active{background:#e8f3ff;border-color:#74b2f6}.prz-review-pick{display:flex;gap:9px;align-items:center;text-align:left;flex:1;min-width:0;padding:4px;border:0;background:none}
+    .prz-review-fileicon{width:43px;height:43px;border-radius:9px;display:grid;place-items:center;background:white;border:1px solid #e1e8f0;color:#236aab;font-size:12px;font-weight:800;flex:none}
+    .prz-review-itemname{display:block;font-weight:750;font-size:12px;color:#203b57;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.prz-review-itemmeta{font-size:11px;color:#8b9caf;display:block}
+    .prz-review-remove{padding:7px;border:0;border-radius:6px;background:transparent;color:#a46672;font-size:19px}
+    .prz-review-content{display:flex;flex-direction:column;min-height:0;gap:10px}.prz-review-filename{font-weight:750;font-size:13px;color:#213e5a;overflow-wrap:anywhere}
+    .prz-review-preview{position:relative;flex:1;min-height:160px;border:1px solid #d9e4f0;border-radius:11px;background:repeating-conic-gradient(#f6f9fd 0% 25%,#ecf3f9 0% 50%) 50%/24px 24px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .prz-review-preview img{display:block;max-width:100%;max-height:100%;object-fit:contain}.prz-review-preview iframe{display:block;width:100%;height:100%;border:0;background:white}
+    .prz-review-placeholder{text-align:center;color:#698198;padding:24px;line-height:1.8}.prz-review-placeholder strong{display:block;color:#294f73;font-size:14px}.prz-review-placeholder-icon{font-size:42px;display:block;margin-bottom:12px}
+    .prz-review-hint{background:#f3f8fe;color:#65809e;padding:10px;border-radius:7px;font-size:11px}.prz-review-status{font-size:12px;color:#795334}
+    .prz-review-modal .btn.primary{background:#1664bd;border-color:#1664bd}.prz-review-modal .btn{white-space:nowrap}
+    @media(max-width:720px){.prz-review-head,.prz-review-foot{padding:12px 15px}.prz-review-body{padding:10px;gap:7px}.prz-review-layout{grid-template-columns:1fr;grid-template-rows:minmax(100px,165px) minmax(0,1fr);gap:9px}.prz-review-list{display:flex;overflow-x:auto;overflow-y:hidden}.prz-review-item{min-width:175px;max-width:220px}.prz-review-head h2{font-size:16px}}
   </style>
 </head>
 
@@ -2875,6 +2901,17 @@
       let carpetaRealActual = null;
       let rutaRealActual = [];
 
+      window.drivePrzGetCurrentFolder = function () {
+        return carpetaRealActual;
+      };
+
+      window.drivePrzGetCurrentPath = function () {
+        return rutaRealActual.length
+          ? 'Mis archivos / ' +
+          rutaRealActual.map(c => c.name).join(' / ')
+          : 'Mis archivos';
+      };
+
       // CREAR CARPETAS REALES EN LARAVEL
       async function crearCarpetaLaravel() {
         const nombre = window.prompt(
@@ -2947,7 +2984,7 @@
 
       // SUBIR ARCHIVOS REALES A SAVIA PRZ
       async function subirArchivosLaravel(archivos) {
-        if (!archivos.length) return;
+        if (!archivos.length) return { subidos: 0, errores: [] };
 
         const boton = document.getElementById('uploadButton');
         const tokenCookie = document.cookie
@@ -2955,8 +2992,7 @@
           .find(c => c.startsWith('XSRF-TOKEN='));
 
         if (!tokenCookie) {
-          alert('No se encontró el token de seguridad. Recarga la página.');
-          return;
+          throw new Error('No se encontró el token de seguridad. Recarga la página.');
         }
 
         const token = decodeURIComponent(
@@ -3008,14 +3044,7 @@
 
           await mostrarArchivosReales(carpetaRealActual);
 
-          if (errores.length) {
-            alert(
-              `${subidos} archivo(s) subido(s).\n\n` +
-              `Errores:\n${errores.join('\n')}`
-            );
-          } else {
-            alert(`${subidos} archivo(s) subido(s) correctamente.`);
-          }
+          return { subidos, errores };
 
         } finally {
           boton.disabled = false;
@@ -3961,26 +3990,196 @@
       dz.addEventListener('dragleave', e => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) $('dropCover').classList.add('hidden') });
       dz.addEventListener('drop', e => { e.preventDefault(); depth = 0; $('dropCover').classList.add('hidden'); if (dragId || e.dataTransfer.getData('application/x-kcprz-id')) { dragId = null; return } if (e.dataTransfer.items?.length || e.dataTransfer.files?.length) handleExternalDrop(e.dataTransfer) });
 
-      // INTERCEPTAR EL BOTÓN DE SUBIDA ORIGINAL
+      // REVISIÓN REAL ANTES DE SUBIR: sustituye la subida inmediata.
+      // Conserva subirArchivosLaravel(), que ya utiliza MySQL y storage privado.
+      let archivosEnRevision = [];
+      let indiceRevision = 0;
+      let revisionEnCurso = false;
+      let previewUrlRevision = null;
+      let carpetaDestinoRevision = null;
+      let rutaDestinoRevision = '';
+      const extensionesPermitidas = new Set(['pdf','doc','docx','xls','xlsx','jpg','jpeg','png']);
+
+      function limpiarVistaRevision() {
+        if (previewUrlRevision) URL.revokeObjectURL(previewUrlRevision);
+        previewUrlRevision = null;
+      }
+      function cerrarRevision() {
+        if (revisionEnCurso) return;
+        limpiarVistaRevision();
+        archivosEnRevision = [];
+        const elemento = document.getElementById('przReviewBackdrop');
+        if (elemento) elemento.remove();
+      }
+      function agregarRevision(archivos) {
+        const anteriores = new Set(archivosEnRevision.map(f => `${f.name}|${f.size}|${f.lastModified}`));
+        for (const f of archivos) {
+          const k = `${f.name}|${f.size}|${f.lastModified}`;
+          if (!anteriores.has(k)) { archivosEnRevision.push(f); anteriores.add(k); }
+        }
+        if (indiceRevision >= archivosEnRevision.length) indiceRevision = Math.max(0, archivosEnRevision.length - 1);
+        dibujarRevision();
+      }
+      function abrirRevision(archivos) {
+        if (!archivos.length) return;
+        if (!document.getElementById('przReviewBackdrop')) {
+          archivosEnRevision = [];
+          indiceRevision = 0;
+          carpetaDestinoRevision = carpetaRealActual;
+          rutaDestinoRevision = rutaRealActual.length
+            ? 'Mis archivos / ' + rutaRealActual.map(c => c.name).join(' / ')
+            : 'Mis archivos';
+          const fondo = document.createElement('div');
+          fondo.id = 'przReviewBackdrop';
+          fondo.className = 'prz-review-backdrop';
+          fondo.innerHTML = `
+            <section class="prz-review-modal" role="dialog" aria-modal="true" aria-labelledby="przReviewTitle">
+              <header class="prz-review-head">
+                <h2 id="przReviewTitle">Revisar archivos antes de subir</h2>
+                <button type="button" class="prz-review-close" data-review-close aria-label="Cerrar">✕</button>
+              </header>
+              <div class="prz-review-body">
+                <div class="prz-review-destination">Destino: <strong id="przReviewDestination"></strong>. Revisa los archivos y confirma solo cuando sean correctos.</div>
+                <div class="prz-review-layout">
+                  <aside class="prz-review-sidebar">
+                    <div class="prz-review-sidebar-head"><span id="przReviewCount"></span><button type="button" class="btn" id="przReviewAdd">+ Añadir</button></div>
+                    <div class="prz-review-list" id="przReviewList"></div>
+                  </aside>
+                  <div class="prz-review-content">
+                    <div class="prz-review-filename" id="przReviewFilename"></div>
+                    <div class="prz-review-preview" id="przReviewPreview"></div>
+                    <div class="prz-review-hint">Los documentos se enviarán a SAVIA PRZ únicamente al confirmar. PDF e imágenes tienen vista previa; Office conserva su archivo original.</div>
+                    <div class="prz-review-status" id="przReviewStatus" aria-live="polite"></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="prz-review-foot">
+                <button type="button" class="btn" data-review-close>Cerrar</button>
+                <button type="button" class="btn primary" id="przReviewConfirm">Confirmar subida</button>
+              </footer>
+            </section>`;
+          document.body.appendChild(fondo);
+          fondo.querySelectorAll('[data-review-close]').forEach(b => b.addEventListener('click', cerrarRevision));
+          fondo.addEventListener('click', e => { if (e.target === fondo) cerrarRevision(); });
+          fondo.querySelector('#przReviewAdd').addEventListener('click', () => document.getElementById('fileInput').click());
+          fondo.querySelector('#przReviewConfirm').addEventListener('click', confirmarRevision);
+        }
+        agregarRevision(archivos);
+      }
+      function dibujarRevision() {
+        const fondo = document.getElementById('przReviewBackdrop');
+        if (!fondo) return;
+        limpiarVistaRevision();
+        fondo.querySelector('#przReviewDestination').textContent = rutaDestinoRevision;
+        fondo.querySelector('#przReviewCount').textContent = `${archivosEnRevision.length} archivo(s) seleccionado(s)`;
+        const lista = fondo.querySelector('#przReviewList');
+        lista.replaceChildren();
+        archivosEnRevision.forEach((f, i) => {
+          const ext = f.name.split('.').pop().toLowerCase();
+          const fila = document.createElement('div');
+          fila.className = 'prz-review-item' + (i === indiceRevision ? ' active' : '');
+          const elegir = document.createElement('button');
+          elegir.type = 'button'; elegir.className = 'prz-review-pick';
+          const icono = document.createElement('span');
+          icono.className = 'prz-review-fileicon'; icono.textContent = ext.toUpperCase().slice(0,5);
+          const detalle = document.createElement('span'); detalle.style.minWidth = '0';
+          const nombre = document.createElement('strong'); nombre.className = 'prz-review-itemname'; nombre.textContent = f.name;
+          const meta = document.createElement('small'); meta.className = 'prz-review-itemmeta'; meta.textContent = `${ext.toUpperCase()} · ${size(f.size)}`;
+          detalle.append(nombre, meta); elegir.append(icono, detalle);
+          elegir.addEventListener('click', () => { indiceRevision = i; dibujarRevision(); });
+          const quitar = document.createElement('button'); quitar.type = 'button'; quitar.className = 'prz-review-remove';
+          quitar.textContent = '×'; quitar.title = 'Quitar archivo'; quitar.setAttribute('aria-label','Quitar ' + f.name);
+          quitar.addEventListener('click', () => {
+            archivosEnRevision.splice(i,1);
+            if (!archivosEnRevision.length) return cerrarRevision();
+            indiceRevision = Math.min(indiceRevision, archivosEnRevision.length - 1);
+            dibujarRevision();
+          });
+          fila.append(elegir, quitar); lista.appendChild(fila);
+        });
+        const archivo = archivosEnRevision[indiceRevision];
+        const contenedor = fondo.querySelector('#przReviewPreview');
+        const estado = fondo.querySelector('#przReviewStatus');
+        contenedor.replaceChildren(); estado.textContent = '';
+        fondo.querySelector('#przReviewFilename').textContent = archivo?.name || '';
+        fondo.querySelector('#przReviewConfirm').textContent = `Confirmar subida (${archivosEnRevision.length})`;
+        if (!archivo) return;
+        const ext = archivo.name.split('.').pop().toLowerCase();
+        if (!extensionesPermitidas.has(ext)) estado.textContent = 'Formato no admitido por Laravel: ' + ext.toUpperCase();
+        else if (archivo.size > 20 * 1024 * 1024) estado.textContent = 'Este archivo supera el máximo de 20 MB.';
+        if (['pdf','png','jpg','jpeg'].includes(ext)) {
+          previewUrlRevision = URL.createObjectURL(archivo);
+          if (ext === 'pdf') {
+            const marco = document.createElement('iframe'); marco.title = 'Vista previa de ' + archivo.name;
+            marco.src = previewUrlRevision; contenedor.appendChild(marco);
+          } else {
+            const img = document.createElement('img'); img.alt = 'Vista previa de ' + archivo.name;
+            img.src = previewUrlRevision; contenedor.appendChild(img);
+          }
+        } else {
+          const lugar = document.createElement('div'); lugar.className = 'prz-review-placeholder';
+          const figura = document.createElement('span'); figura.className = 'prz-review-placeholder-icon'; figura.textContent = '📦';
+          const nombre = document.createElement('strong'); nombre.textContent = archivo.name;
+          const texto = document.createElement('span'); texto.textContent = 'Este formato no tiene vista previa integrada. Se guardará sin modificar su contenido.';
+          lugar.append(figura,nombre,texto); contenedor.appendChild(lugar);
+        }
+      }
+      async function confirmarRevision() {
+        if (revisionEnCurso || !archivosEnRevision.length) return;
+        const invalidos = archivosEnRevision.filter(f =>
+          !extensionesPermitidas.has(f.name.split('.').pop().toLowerCase()) || f.size > 20 * 1024 * 1024
+        );
+        if (invalidos.length) {
+          document.getElementById('przReviewStatus').textContent =
+            'Quita los archivos no admitidos o mayores de 20 MB: ' + invalidos.map(f => f.name).join(', ');
+          return;
+        }
+        if (carpetaDestinoRevision !== carpetaRealActual) {
+          document.getElementById('przReviewStatus').textContent = 'La carpeta actual cambió. Cierra esta revisión y vuelve a seleccionar los archivos.';
+          return;
+        }
+        revisionEnCurso = true;
+        const boton = document.getElementById('przReviewConfirm');
+        boton.disabled = true; boton.textContent = 'Subiendo archivos…';
+        try {
+          const resultado = await subirArchivosLaravel([...archivosEnRevision]);
+          revisionEnCurso = false;
+          if (resultado.errores.length) {
+            boton.disabled = false;
+            boton.textContent = `Reintentar subida (${resultado.errores.length})`;
+            document.getElementById('przReviewStatus').textContent =
+              `${resultado.subidos} archivo(s) subidos. Errores: ${resultado.errores.join(' | ')}`;
+            archivosEnRevision = archivosEnRevision.filter(f =>
+              resultado.errores.some(e => e.startsWith(f.name + ':'))
+            );
+            indiceRevision = 0;
+            // Mantener abierta la revisión de los archivos pendientes.
+            const estadoPrevio = document.getElementById('przReviewStatus').textContent;
+            dibujarRevision();
+            document.getElementById('przReviewStatus').textContent = estadoPrevio;
+          } else {
+            cerrarRevision();
+            alert(`${resultado.subidos} archivo(s) subido(s) correctamente.`);
+          }
+        } catch (error) {
+          revisionEnCurso = false;
+          boton.disabled = false;
+          boton.textContent = `Confirmar subida (${archivosEnRevision.length})`;
+          document.getElementById('przReviewStatus').textContent = 'Error de subida: ' + error.message;
+        }
+      }
       document.addEventListener('click', function (evento) {
         if (!evento.target.closest('#uploadButton')) return;
-
         evento.preventDefault();
-        evento.stopPropagation();
-
+        evento.stopImmediatePropagation();
         document.getElementById('fileInput').click();
       }, true);
-
-      // INTERCEPTAR LA SELECCIÓN DE ARCHIVOS
       document.addEventListener('change', function (evento) {
         if (evento.target.id !== 'fileInput') return;
-
-        evento.stopPropagation();
-
-        const archivos = [...evento.target.files];
+        evento.stopImmediatePropagation();
+        const archivos = Array.from(evento.target.files || []);
         evento.target.value = '';
-
-        subirArchivosLaravel(archivos);
+        abrirRevision(archivos);
       }, true);
 
       draw();
