@@ -2670,23 +2670,6 @@
 .prz-folder-progress progress{display:block;width:100%;height:10px;margin-top:8px;accent-color:var(--blue)}
 .prz-folder-errors{margin-top:10px;color:#9b3b31;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
 .prz-folder-modal .notice{margin-bottom:12px}
-
-/* Quitar subrayado del botón Descargar */
-a.action,
-a.action:hover,
-a.action:focus,
-a.action:active,
-a.btn,
-a.btn:hover {
-    text-decoration: none !important;
-}
-
-/* Mantener apariencia de botón */
-a.action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
 </style>
 </head>
 
@@ -3318,6 +3301,10 @@ a.action {
     <div class="actions">
         ${acciones}
 
+        <button type="button" class="action move-action"
+            data-real-move="${x.id}"
+            data-move-kind="${carpeta ? 'folders' : 'files'}"
+            data-move-name="${esc(x.name)}">Mover</button>
         <button
             type="button"
             class="action"
@@ -3349,6 +3336,134 @@ a.action {
         }
       }
 
+      // MOVER ELEMENTOS REALES: conserva el modal de Drive PRZ y usa MySQL.
+      async function abrirMoverLaravel(id, tipo, nombre) {
+        const carpetaInicial = carpetaRealActual;
+        let carpetas;
+        try {
+          const respuesta = await fetch(ENDPOINTS.destinos, {
+            credentials: 'same-origin', headers: { Accept: 'application/json' }
+          });
+          if (!respuesta.ok) throw new Error('No se pudo cargar el árbol de destinos.');
+          const resultado = await respuesta.json();
+          carpetas = resultado.folders || [];
+        } catch (error) {
+          alert(error.message);
+          return;
+        }
+
+        const porId = new Map(carpetas.map(c => [Number(c.id), c]));
+        const ruta = destino => {
+          const partes = [], vistos = new Set();
+          let actual = destino;
+          while (actual !== null && porId.has(actual) && !vistos.has(actual)) {
+            vistos.add(actual);
+            const c = porId.get(actual);
+            partes.unshift(c.nombre);
+            actual = c.carpeta_padre_id == null ? null : Number(c.carpeta_padre_id);
+          }
+          return 'Mis archivos' + (partes.length ? ' / ' + partes.join(' / ') : '');
+        };
+        const esDescendiente = destino => {
+          if (tipo !== 'folders') return false;
+          const vistos = new Set();
+          let cursor = destino;
+          while (cursor !== null && porId.has(cursor) && !vistos.has(cursor)) {
+            if (cursor === id) return true;
+            vistos.add(cursor);
+            const c = porId.get(cursor);
+            cursor = c.carpeta_padre_id == null ? null : Number(c.carpeta_padre_id);
+          }
+          return false;
+        };
+        const invalido = destino => destino === carpetaInicial || esDescendiente(destino);
+        const hijos = parent => carpetas
+          .filter(c => (c.carpeta_padre_id == null ? null : Number(c.carpeta_padre_id)) === parent)
+          .sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+        let elegido = carpetaInicial;
+        const opciones = (parent = null, profundidad = 0, vistos = new Set()) => {
+          if (profundidad > 30) return '';
+          return hijos(parent).map(c => {
+            const cid = Number(c.id);
+            if (vistos.has(cid)) return '';
+            const nuevas = new Set(vistos); nuevas.add(cid);
+            return `<button type="button" class="folderoption prz-move-option" data-destino="${cid}"
+               style="padding-left:${12 + profundidad * 19}px" ${esDescendiente(cid) ? 'disabled' : ''}>
+                 ${glyph('folder')} <span>${esc(c.nombre)}</span>
+               </button>` + opciones(cid, profundidad + 1, nuevas);
+          }).join('');
+        };
+
+        // Utilizamos el mismo modal y componentes visuales del HTML original.
+        modal('Mover a otra carpeta',
+          `<p class="hint">Vas a mover <strong>${esc(nombre)}</strong>. Selecciona una carpeta de destino:</p>
+           <div class="folderpicker prz-move-tree" style="max-height:360px">
+             <button class="folderoption prz-move-option" type="button" data-destino="root">
+               ${glyph('folder')} <span>Mis archivos</span>
+             </button>
+             ${opciones()}
+           </div>
+           <div class="moveproof"><strong>Destino elegido:</strong> <span id="przMoveDestination"></span>
+           <div class="smallmuted">Los permisos heredados pueden cambiar al mover archivos a otra carpeta.</div></div>
+           <p id="przMoveError" class="hint" style="color:#b33c46" role="alert"></p>`,
+          `<button type="button" class="btn primary" id="przMoveConfirm">Mover aquí</button>`, true);
+
+        const mount = document.getElementById('modalMount');
+        const confirmar = mount.querySelector('#przMoveConfirm');
+        const errorBox = mount.querySelector('#przMoveError');
+        const actualizar = () => {
+          mount.querySelectorAll('.prz-move-option').forEach(b => {
+            b.classList.toggle('active', (b.dataset.destino === 'root' ? null : Number(b.dataset.destino)) === elegido);
+          });
+          mount.querySelector('#przMoveDestination').textContent = ruta(elegido);
+          confirmar.disabled = invalido(elegido);
+          errorBox.textContent = invalido(elegido) ? 'Elige otra carpeta distinta a la actual.' : '';
+        };
+        mount.querySelectorAll('.prz-move-option').forEach(b => b.addEventListener('click', () => {
+          elegido = b.dataset.destino === 'root' ? null : Number(b.dataset.destino);
+          actualizar();
+        }));
+        actualizar();
+        confirmar.addEventListener('click', async () => {
+          if (invalido(elegido)) return;
+          confirmar.disabled = true;
+          confirmar.textContent = 'Moviendo...';
+          errorBox.textContent = '';
+          try {
+            const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+            if (!cookie) throw new Error('No se encontró el token CSRF. Recarga la página.');
+            const res = await fetch(`${API}/${tipo}/${id}/move`, {
+              method: 'POST', credentials: 'same-origin',
+              headers: {
+                'Content-Type': 'application/json', 'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))
+              },
+              body: JSON.stringify({ destino_id: elegido })
+            });
+            const datos = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(datos.errors
+              ? Object.values(datos.errors).flat().join(' ')
+              : (datos.message || `Error HTTP ${res.status}`));
+            close();
+            await mostrarArchivosReales(carpetaInicial);
+            toast(`«${nombre}» movido a ${ruta(elegido)}.`);
+          } catch (error) {
+            errorBox.textContent = error.message;
+            confirmar.disabled = false;
+            confirmar.textContent = 'Mover aquí';
+          }
+        });
+      }
+
+      // Captura solo los botones reales; no invoca el movimiento de demostración.
+      document.getElementById('filesArea').addEventListener('click', e => {
+        const btn = e.target.closest('[data-real-move]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        abrirMoverLaravel(Number(btn.dataset.realMove), btn.dataset.moveKind, btn.dataset.moveName);
+      }, true);
+
       // VISTA PREVIA REAL: diseño original, archivos almacenados en Laravel.
       // No se ejecuta HTML, SVG, PHP ni código suministrado por usuarios.
       function verArchivoLaravel(id, nombre, bytes) {
@@ -3379,10 +3494,7 @@ a.action {
       }
 
       // Interceptamos únicamente el botón Ver del listado real.
-      document.getElementById('filesArea').addEventListener(
-    'click',
-    function (evento) {
-        // Mantén aquí el código original del evento.
+      document.getElementById('filesArea').addEventListener('click', event => {
         const boton = event.target.closest('[data-real-preview]');
         if (!boton) return;
         event.preventDefault();
@@ -3392,9 +3504,8 @@ a.action {
           boton.dataset.previewName,
           Number(boton.dataset.previewSize)
         );
-    }
-);
-      
+      }, true);
+
       // ABRIR CARPETAS REALES
       document.getElementById('filesArea')
         .addEventListener('click', async event => {
@@ -4767,20 +4878,6 @@ a.action {
         },
         true
       );
-
-      // MOSTRAR NOTIFICACIÓN AL DESCARGAR ARCHIVOS
-document.addEventListener('click', function (evento) {
-
-    const enlace = evento.target.closest(
-        'a[href*="/download"]'
-    );
-
-    if (!enlace) return;
-
-    // No detener ni bloquear la descarga
-    toast('Descarga iniciada.');
-
-});
     })();
 
 
