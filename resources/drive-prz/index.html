@@ -2659,7 +2659,18 @@
     .prz-review-hint{background:#f3f8fe;color:#65809e;padding:10px;border-radius:7px;font-size:11px}.prz-review-status{font-size:12px;color:#795334}
     .prz-review-modal .btn.primary{background:#1664bd;border-color:#1664bd}.prz-review-modal .btn{white-space:nowrap}
     @media(max-width:720px){.prz-review-head,.prz-review-foot{padding:12px 15px}.prz-review-body{padding:10px;gap:7px}.prz-review-layout{grid-template-columns:1fr;grid-template-rows:minmax(100px,165px) minmax(0,1fr);gap:9px}.prz-review-list{display:flex;overflow-x:auto;overflow-y:hidden}.prz-review-item{min-width:175px;max-width:220px}.prz-review-head h2{font-size:16px}}
-  </style>
+  
+/* DRIVE PRZ: revisión de importación de carpetas al servidor */
+.prz-folder-modal{width:min(900px,96vw);max-height:92dvh;display:flex;flex-direction:column;overflow:hidden}
+.prz-folder-modal .modalbody{overflow:auto;min-height:0}
+.prz-folder-tree{max-height:45vh;overflow:auto;border:1px solid #dce7f2;border-radius:10px;background:#fafcff;padding:13px 18px;color:#334f6b;font-size:13px}
+.prz-folder-tree-row{padding:4px 0;display:flex;align-items:center;gap:8px;overflow-wrap:anywhere}
+.prz-folder-tree-row span{min-width:0;overflow-wrap:anywhere}
+.prz-folder-progress{margin-top:13px;color:#316183;font-size:12px}
+.prz-folder-progress progress{display:block;width:100%;height:10px;margin-top:8px;accent-color:var(--blue)}
+.prz-folder-errors{margin-top:10px;color:#9b3b31;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+.prz-folder-modal .notice{margin-bottom:12px}
+</style>
 </head>
 
 <body>
@@ -4463,6 +4474,156 @@
         abrirRevision(archivos);
       }, true);
 
+      // SUBIR CARPETA COMPLETA: importación real con estructura original.
+      let importacionCarpeta = null;
+      const SEGURIDAD_CARPETA = 20 * 1024 * 1024;
+      const folderToken = () => {
+        const c = document.cookie.split('; ').find(x => x.startsWith('XSRF-TOKEN='));
+        if (!c) throw new Error('No se encontró XSRF-TOKEN. Recarga la página.');
+        return decodeURIComponent(c.slice('XSRF-TOKEN='.length));
+      };
+      async function folderApi(url, body, token) {
+        const r = await fetch(url, {
+          method:'POST', credentials:'same-origin',
+          headers:{'Accept':'application/json','Content-Type':'application/json','X-XSRF-TOKEN':token},
+          body:JSON.stringify(body)
+        });
+        const result = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(result.errors ? Object.values(result.errors).flat().join('; ') : (result.message || 'HTTP '+r.status));
+        return result;
+      }
+      function cerrarImportacionCarpeta() {
+        if(importacionCarpeta?.busy) return;
+        document.getElementById('przFolderBackdrop')?.remove();
+        importacionCarpeta=null;
+      }
+      function abrirImportacionCarpeta(files) {
+        if (!files.length) return;
+        const nombreRaiz = (files[0].webkitRelativePath || '').split('/')[0];
+        if (!nombreRaiz) { alert('Selecciona una carpeta completa desde el explorador de archivos.'); return; }
+        const entries = files.map(file => ({file,path:file.webkitRelativePath || `${nombreRaiz}/${file.name}`}));
+        const problemas = entries.filter(e => e.file.size > SEGURIDAD_CARPETA);
+        const folders = new Set([nombreRaiz]);
+        for(const e of entries) {
+          const parts=e.path.split('/');
+          if(parts.some(x=>!x || x==='.' || x==='..' || x.length>120 || /[\\<>\x00-\x1f]/.test(x)) || parts.length>13){
+            alert('La carpeta contiene nombres o niveles no válidos: '+e.path); return;
+          }
+          for(let i=1;i<parts.length;i++) folders.add(parts.slice(0,i).join('/'));
+        }
+        if(folders.size>500 || files.length>1000) { alert('Máximo 500 carpetas y 1000 archivos por importación. Divide la carpeta en partes.'); return; }
+        const destino=carpetaRealActual;
+        const ruta=rutaRealActual.length ? 'Mis archivos / '+rutaRealActual.map(x=>x.name).join(' / ') : 'Mis archivos';
+        importacionCarpeta={entries,folders:[...folders].sort((a,b)=>a.split('/').length-b.split('/').length || a.localeCompare(b)),destination:destino,path:ruta,busy:false};
+        const backdrop=document.createElement('div');
+        backdrop.id='przFolderBackdrop'; backdrop.className='modalback';
+        backdrop.innerHTML=`<div class="modal prz-folder-modal" role="dialog" aria-modal="true" aria-labelledby="przFolderTitle">
+          <div class="modalheader"><h2 id="przFolderTitle">Revisar carpeta antes de subir</h2><button type="button" class="close" data-folder-close aria-label="Cerrar">✕</button></div>
+          <div class="modalbody">
+            <p class="notice">Destino: <strong id="przFolderDest"></strong>. Se conservarán las subcarpetas y archivos. Nada se guardará antes de confirmar.</p>
+            <p id="przFolderSummary" class="outlinehelp"></p>
+            <div class="prz-folder-tree" id="przFolderTree"></div>
+            <div class="prz-folder-progress" id="przFolderProgress" hidden><span id="przFolderProgressText"></span><progress id="przFolderProgressBar" max="100" value="0"></progress></div>
+            <div class="prz-folder-errors" id="przFolderErrors" role="status" aria-live="polite"></div>
+          </div>
+          <div class="modalfoot"><button type="button" class="btn" data-folder-close>Cerrar</button><button type="button" class="btn primary" id="przFolderConfirm">Confirmar subida (${files.length})</button></div>
+        </div>`;
+        document.body.append(backdrop);
+        backdrop.querySelector('#przFolderDest').textContent=ruta;
+        backdrop.querySelector('#przFolderSummary').textContent=`${importacionCarpeta.folders.length} carpeta(s) y ${files.length} archivo(s). Tamaño total: ${size(files.reduce((n,f)=>n+f.size,0))}. Límite de 20 MB por archivo.`;
+        const tree=backdrop.querySelector('#przFolderTree');
+        const rows=[...importacionCarpeta.folders.map(path=>({path,folder:true})),...entries.map(x=>({path:x.path,folder:false}))];
+        rows.sort((a,b)=>a.path.localeCompare(b.path,'es'));
+        for(const row of rows.slice(0,500)) {
+          const node=document.createElement('div');node.className='prz-folder-tree-row';
+          node.style.paddingLeft=Math.min(row.path.split('/').length-1,12)*15+'px';
+          const symbol=document.createElement('span');symbol.textContent=row.folder?'📁':'📄';
+          const label=document.createElement('span');label.textContent=row.path.split('/').at(-1);
+          node.append(symbol,label);tree.append(node);
+        }
+        if(rows.length>500) {const hint=document.createElement('p'); hint.textContent=`… y ${rows.length-500} elementos más`;tree.append(hint);}
+        if(problemas.length){
+          backdrop.querySelector('#przFolderErrors').textContent='No se pueden subir archivos mayores a 20 MB: '+problemas.map(x=>x.path).join(', ');
+          backdrop.querySelector('#przFolderConfirm').disabled=true;
+        }
+        backdrop.querySelectorAll('[data-folder-close]').forEach(el=>el.addEventListener('click',cerrarImportacionCarpeta));
+        backdrop.addEventListener('click',e=>{if(e.target===backdrop)cerrarImportacionCarpeta()});
+        backdrop.querySelector('#przFolderConfirm').addEventListener('click',confirmarImportacionCarpeta);
+      }
+      async function confirmarImportacionCarpeta() {
+        const info=importacionCarpeta;
+        if(!info || info.busy) return;
+        info.busy=true;
+        const backdrop=document.getElementById('przFolderBackdrop');
+        const confirm=backdrop.querySelector('#przFolderConfirm');confirm.disabled=true;
+        backdrop.querySelectorAll('[data-folder-close]').forEach(b=>b.disabled=true);
+        const progress=backdrop.querySelector('#przFolderProgress');progress.hidden=false;
+        const progressText=backdrop.querySelector('#przFolderProgressText');
+        const progressBar=backdrop.querySelector('#przFolderProgressBar');
+        const errors=backdrop.querySelector('#przFolderErrors');errors.textContent='';
+        let carpetasCreadas=0,subidos=0;
+        const errores=[];
+        const ids=new Map();
+        const total=info.folders.length+info.entries.length;
+        let done=0;
+        try {
+          const token=folderToken();
+          for(const path of info.folders) {
+            const segments=path.split('/');
+            const parentPath=segments.slice(0,-1).join('/');
+            const parentId=parentPath?ids.get(parentPath):info.destination;
+            if(parentPath && !parentId) throw new Error('No se pudo determinar la carpeta padre de '+path);
+            progressText.textContent=`Preparando carpeta: ${path}`;
+            const response=await folderApi(`${API}/ensure-folder`,{nombre:segments.at(-1),carpeta_padre_id:parentId??null},token);
+            if(!response.id) throw new Error('Laravel no devolvió el ID de la carpeta '+path);
+            ids.set(path,response.id);carpetasCreadas++;
+            progressBar.value=Math.round(++done/total*100);
+          }
+          for(const entry of info.entries) {
+            const parts=entry.path.split('/');
+            const parentPath=parts.slice(0,-1).join('/');
+            const folderId=ids.get(parentPath);
+            if(!folderId){errores.push(entry.path+': no se encontró la carpeta destino');continue;}
+            const form=new FormData(); form.append('archivo',entry.file,entry.file.name);form.append('carpeta_id',folderId);
+            progressText.textContent=`Subiendo: ${entry.path}`;
+            try {
+              const r=await fetch(ENDPOINTS.subir,{method:'POST',credentials:'same-origin',headers:{'Accept':'application/json','X-XSRF-TOKEN':token},body:form});
+              const result=await r.json().catch(()=>({}));
+              if(!r.ok)throw new Error(result.errors?Object.values(result.errors).flat().join('; '):(result.message||'HTTP '+r.status));
+              subidos++;
+            } catch(e) {errores.push(entry.path+': '+e.message);}
+            progressBar.value=Math.round(++done/total*100);
+          }
+          await mostrarArchivosReales(info.destination);
+          if(errores.length){
+            errors.textContent=`${subidos} de ${info.entries.length} archivos subidos. Errores:\n`+errores.join('\n');
+            progressText.textContent='Subida parcial. Revisa los errores antes de cerrar.';
+            info.busy=false;
+            backdrop.querySelectorAll('[data-folder-close]').forEach(b=>b.disabled=false);
+            confirm.textContent='Subida parcial';
+            return;
+          }
+          importacionCarpeta.busy=false;
+          cerrarImportacionCarpeta();
+          showImportNotice(`${subidos} archivo(s) guardado(s) en la carpeta «${info.folders[0]}» con su estructura de subcarpetas.`,null);
+          toast(`${subidos} archivo(s) y estructura de carpetas guardados correctamente.`);
+        } catch(e) {
+          info.busy=false;
+          errors.textContent='No se pudo completar la importación: '+e.message+'. Las carpetas ya creadas permanecerán; puedes revisar el destino antes de reintentar.';
+          progressText.textContent='Importación interrumpida';
+          backdrop.querySelectorAll('[data-folder-close]').forEach(b=>b.disabled=false);
+        }
+      }
+      document.getElementById('uploadFolderButton').addEventListener('click',function(e){
+        e.preventDefault();e.stopImmediatePropagation();
+        document.getElementById('folderInput').click();
+      },true);
+      document.getElementById('folderInput').addEventListener('change',function(e){
+        e.stopImmediatePropagation();
+        const files=Array.from(e.target.files||[]);e.target.value='';
+        abrirImportacionCarpeta(files);
+      },true);
+
       draw();
 
       // Mostrar archivos reales de Laravel
@@ -4476,7 +4637,7 @@
 
       botonesCrear.querySelectorAll('button').forEach(boton => {
         boton.style.display =
-          ['newFolder', 'bulkFolders', 'createMonths', 'uploadButton'].includes(boton.id)
+          ['newFolder', 'bulkFolders', 'createMonths', 'uploadButton', 'uploadFolderButton'].includes(boton.id)
             ? 'inline-flex'
             : 'none';
       });
