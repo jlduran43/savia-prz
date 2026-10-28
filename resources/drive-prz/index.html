@@ -584,24 +584,6 @@
       background: #ecf5ff
     }
 
-    /* Los enlaces de descarga deben lucir como botones, sin subrayado. */
-    a.action,
-    a.action:link,
-    a.action:visited,
-    a.action:hover,
-    a.action:focus,
-    a.action:active,
-    a.btn,
-    a.btn:link,
-    a.btn:visited,
-    a.btn:hover,
-    a.btn:focus,
-    a.btn:active {
-      text-decoration: none !important;
-    }
-
-
-
     .dots {
       border: 0;
       background: none;
@@ -3108,72 +3090,111 @@
       }
 
       // RENOMBRAR DOCUMENTOS Y CARPETAS REALES
-      async function renombrarElementoLaravel(id, tipo, nombreActual) {
-
-        const nuevoNombre = prompt(
-          'Ingresa el nuevo nombre:',
-          nombreActual
-        );
-
-        if (nuevoNombre === null) return;
-
-        const nombre = nuevoNombre.trim();
-
-        if (!nombre || nombre === nombreActual) return;
-
-        const cookie = document.cookie
-          .split('; ')
-          .find(c => c.startsWith('XSRF-TOKEN='));
-
-        if (!cookie) {
-          alert('Sesión no disponible. Recarga la página.');
-          return;
+      // COMPARTIR EN SAVIA PRZ. Estos endpoints requieren soporte real en Laravel.
+      async function apiCompartir(path, method = 'GET', payload = null) {
+        const headers = {Accept: 'application/json'};
+        if (payload !== null) {
+          const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+          if (!cookie) throw new Error('Sesión no disponible. Recarga la página.');
+          headers['X-XSRF-TOKEN'] = decodeURIComponent(cookie.substring('XSRF-TOKEN='.length));
+          headers['Content-Type'] = 'application/json';
         }
-
-        const token = decodeURIComponent(
-          cookie.substring('XSRF-TOKEN='.length)
-        );
-
-        try {
-          const respuesta = await fetch(
-            `${API}/${tipo}/${id}`,
-            {
-              method: 'PATCH',
-              credentials: 'same-origin',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': token
-              },
-              body: JSON.stringify({
-                nombre: nombre
-              })
-            }
-          );
-
-          const datos = await respuesta.json();
-
-          if (!respuesta.ok) {
-            const mensaje = datos.errors
-              ? Object.values(datos.errors).flat().join('\n')
-              : datos.message;
-
-            throw new Error(
-              mensaje || `Error HTTP ${respuesta.status}`
-            );
+        const res = await fetch(path, {
+          method, credentials: 'same-origin', headers,
+          ...(payload === null ? {} : {body: JSON.stringify(payload)})
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (res.status === 404 || res.status === 405) {
+            throw new Error('La función Compartir aún no está habilitada en Laravel. Debes configurar sus rutas y permisos.');
           }
-
-          await mostrarArchivosReales(carpetaRealActual);
-
-          alert('Nombre actualizado correctamente.');
-
-        } catch (error) {
-          console.error(error);
-          alert('Error al renombrar: ' + error.message);
+          throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || `Error HTTP ${res.status}`));
         }
+        return data;
       }
 
-      // MOSTRAR ARCHIVOS REALES DE MYSQL
+      async function abrirCompartirLaravel(id, tipo, nombre) {
+        const base = `${API}/${tipo}/${id}/sharing`;
+        const etiqueta = tipo === 'folders' ? 'carpeta' : 'documento';
+        modal(`Compartir ${etiqueta}`, `
+          <p class="sharetitle">${glyph(tipo === 'folders' ? 'folder' : 'file')} <strong>${esc(nombre)}</strong></p>
+          <div class="notice">Los permisos se gestionan desde SAVIA PRZ. <strong>Solo el propietario puede compartir.</strong></div>
+          <div class="shareblock">
+            <label class="field">1. Compartir con personas concretas</label>
+            <div class="shareform">
+              <input class="textinput" id="przShareUser" list="przShareUsers" placeholder="Nombre o correo electrónico" autocomplete="off" disabled>
+              <datalist id="przShareUsers"></datalist>
+              <select id="przShareNewRole" class="select" disabled><option value="view">Solo ver</option><option value="edit">Puede editar</option></select>
+              <button type="button" class="btn primary" id="przShareAdd" disabled>Agregar</button>
+            </div>
+            <p class="hint">Las personas deben tener una cuenta activa de SAVIA PRZ.</p>
+          </div>
+          <div class="shareblock">
+            <label class="field">2. Compartir con todos los usuarios del sistema</label>
+            <div class="shareform">
+              <label class="switchlabel"><input type="checkbox" id="przShareEveryone" disabled> Habilitar</label>
+              <select class="select" id="przShareEveryoneRole" disabled><option value="view">Solo ver</option><option value="edit">Puede editar</option></select>
+              <button type="button" class="btn" id="przShareApply" disabled>Aplicar</button>
+            </div>
+          </div>
+          <div class="sharepeople"><label class="field">Personas con acceso</label><div id="przSharePeople">Consultando permisos...</div></div>
+          <div class="notice">Los permisos heredados de carpetas superiores no pueden reducirse desde un archivo hijo.</div>
+          <p id="przShareError" class="hint" role="alert" style="color:#b33c46"></p>
+        `, '<button type="button" class="btn primary" data-modal-close>Listo</button>', true);
+        const frame = document.getElementById('modalMount');
+        const q = id => frame.querySelector('#' + id);
+        const errorBox = q('przShareError');
+        let users = [];
+        let info = {};
+        const pintar = () => {
+          q('przShareEveryone').checked = !!info.everyone?.enabled;
+          q('przShareEveryoneRole').value = info.everyone?.role === 'edit' ? 'edit' : 'view';
+          const owner = info.owner;
+          const permisos = info.people || [];
+          q('przSharePeople').innerHTML = `${owner ? `<div class="person"><span class="avatar">${esc((owner.name || 'U').slice(0,2).toUpperCase())}</span><div class="personmain"><strong>${esc(owner.name)}</strong><small>Propietario del elemento</small></div><span class="role">Propietario</span></div>` : ''}
+          ${permisos.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0,2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${info.can_share ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option></select><button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${info.can_share ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
+          if (info.inherited?.length) {
+            q('przSharePeople').insertAdjacentHTML('beforeend', `<div class="inherited"><strong>Permisos heredados de carpetas superiores</strong>${info.inherited.map(p => `<div class="person"><strong>${esc(p.name)}</strong><span class="role">${p.role === 'edit' ? 'Puede editar' : 'Solo ver'}</span></div>`).join('')}</div>`);
+          }
+        };
+        const actualizar = async () => {
+          info = await apiCompartir(base);
+          if (!frame.isConnected || !q('przSharePeople')) return;
+          pintar();
+          const habilitar = !!info.can_share;
+          ['przShareUser','przShareNewRole','przShareAdd','przShareEveryone','przShareEveryoneRole','przShareApply'].forEach(k => q(k).disabled = !habilitar);
+        };
+        const ejecutar = async (action) => {
+          errorBox.textContent = '';
+          try { await action(); await actualizar(); toast('Permisos actualizados correctamente.'); }
+          catch(e) { errorBox.textContent = e.message; }
+        };
+        q('przShareAdd').addEventListener('click', () => ejecutar(async () => {
+          const email = q('przShareUser').value.trim();
+          if (!email) throw new Error('Selecciona una persona.');
+          await apiCompartir(`${base}/people`, 'POST', {email, role:q('przShareNewRole').value});
+          q('przShareUser').value = '';
+        }));
+        q('przShareApply').addEventListener('click', () => ejecutar(() => apiCompartir(`${base}/everyone`, 'PUT', {enabled:q('przShareEveryone').checked, role:q('przShareEveryoneRole').value})));
+        q('przSharePeople').addEventListener('click', e => {
+          const b = e.target.closest('.przShareRevoke');
+          if (b) ejecutar(() => apiCompartir(`${base}/people/${b.dataset.userId}`, 'DELETE', {}));
+        });
+        q('przSharePeople').addEventListener('change', e => {
+          const sel = e.target.closest('.przSharePersonRole');
+          if (sel) ejecutar(() => apiCompartir(`${base}/people/${sel.dataset.userId}`, 'PUT', {role:sel.value}));
+        });
+        try {
+          const results = await Promise.all([apiCompartir(base), apiCompartir(`${API}/sharing/users`)]);
+          info = results[0]; users = results[1].users || [];
+          if (!frame.isConnected || !q('przShareUsers')) return;
+          q('przShareUsers').innerHTML = users.map(u => `<option value="${esc(u.email)}">${esc(u.name)}</option>`).join('');
+          pintar();
+          const habilitar = !!info.can_share;
+          ['przShareUser','przShareNewRole','przShareAdd','przShareEveryone','przShareEveryoneRole','przShareApply'].forEach(k => q(k).disabled = !habilitar);
+        } catch(e) { if (frame.isConnected && errorBox.isConnected) { errorBox.textContent = e.message; q('przSharePeople').textContent = 'No se pudieron consultar los permisos.'; } }
+      }
+
       async function mostrarArchivosReales(carpetaId = null) {
 
         try {
@@ -3323,15 +3344,10 @@
             data-real-move="${x.id}"
             data-move-kind="${carpeta ? 'folders' : 'files'}"
             data-move-name="${esc(x.name)}">Mover</button>
-        <button
-            type="button"
-            class="action"
-            data-laravel-rename="${x.id}"
-            data-laravel-kind="${carpeta ? 'folders' : 'files'}"
-            data-laravel-name="${esc(x.name)}"
-            title="Cambiar nombre">
-            Renombrar
-        </button>
+        <button type="button" class="action"
+            data-real-share="${x.id}"
+            data-share-kind="${carpeta ? 'folders' : 'files'}"
+            data-share-name="${esc(x.name)}">Compartir</button>
     </div>
 </td>
                                 </tr>
@@ -4854,51 +4870,18 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
       document.getElementById('storageInfo').textContent =
         'Documentos consultados desde SAVIA PRZ.';
 
-      // INTERCEPTAR RENOMBRAR REAL
-      document.getElementById('filesArea').addEventListener(
-        'click',
-        function (evento) {
-
-          const boton = evento.target.closest(
-            '[data-laravel-rename]'
-          );
-
-          if (!boton) return;
-
-          evento.preventDefault();
-          evento.stopImmediatePropagation();
-
-          renombrarElementoLaravel(
-            Number(boton.dataset.laravelRename),
-            boton.dataset.laravelKind,
-            boton.dataset.laravelName
-          );
-        },
-        true
-      );
-
-      // INTERCEPTAR RENOMBRAR REAL
-      document.getElementById('filesArea').addEventListener(
-        'click',
-        function (evento) {
-
-          const boton = evento.target.closest(
-            '[data-laravel-rename]'
-          );
-
-          if (!boton) return;
-
-          evento.preventDefault();
-          evento.stopImmediatePropagation();
-
-          renombrarElementoLaravel(
-            Number(boton.dataset.laravelRename),
-            boton.dataset.laravelKind,
-            boton.dataset.laravelName
-          );
-        },
-        true
-      );
+      // Compartir: abre el modal del sistema y consulta permisos reales.
+      document.getElementById('filesArea').addEventListener('click', event => {
+        const boton = event.target.closest('[data-real-share]');
+        if (!boton) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        abrirCompartirLaravel(
+          Number(boton.dataset.realShare),
+          boton.dataset.shareKind,
+          boton.dataset.shareName
+        );
+      }, true);
     })();
 
 
