@@ -691,6 +691,20 @@ Route::middleware(['auth'])
 
         ])->name('preview');
 
+        Route::post('/logout', function (
+            \Illuminate\Http\Request $request
+        ) {
+            \Illuminate\Support\Facades\Auth::logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Sesión cerrada correctamente.'
+            ]);
+        })->name('logout');
+
 
 
         Route::get('/sharing/users', [DrivePrzSharingController::class, 'users'])->name('sharing.users');
