@@ -5205,6 +5205,106 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         abrirImportacionCarpeta(files);
       },true);
 
+
+      // Papelera real de SAVIA PRZ: no usa los datos de demostración.
+      let trashRealActive = false;
+      let trashRealItems = [];
+      function marcarNavReal(seccion) {
+        document.querySelectorAll('#przApp [data-nav]').forEach(b =>
+          b.classList.toggle('active', b.dataset.nav === seccion));
+      }
+      function csrfTrashReal() {
+        const c = document.cookie.split('; ').find(x => x.startsWith('XSRF-TOKEN='));
+        return c ? decodeURIComponent(c.slice(11)) : '';
+      }
+      async function trashRequest(url, method = 'GET') {
+        const res = await fetch(url, {
+          method, credentials: 'same-origin',
+          headers: {'Accept':'application/json', 'X-XSRF-TOKEN':csrfTrashReal()}
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `Error HTTP ${res.status}`);
+        return data;
+      }
+      function renderTrashReal() {
+        if (!trashRealActive) return;
+        const q = document.getElementById('searchInput').value.toLocaleLowerCase('es').trim();
+        const tipo = document.getElementById('typeFilter').value;
+        const orden = document.getElementById('sortBy').value;
+        const layout = document.getElementById('gridBtn').classList.contains('on') ? 'grid' : 'list';
+        let items = trashRealItems.filter(x => {
+          const ext = x.type === 'folder' ? 'folder' : (x.name.split('.').pop() || '').toLowerCase();
+          const matches = tipo === 'all' || tipo === ext ||
+            (tipo === 'png' && ['png','jpg','jpeg','webp'].includes(ext)) ||
+            (tipo === 'xlsx' && ['xlsx','csv'].includes(ext)) ||
+            (tipo === 'docx' && ['doc','docx','txt'].includes(ext));
+          return matches && x.name.toLocaleLowerCase('es').includes(q);
+        });
+        items.sort((a,b) => orden === 'recent' ? new Date(b.modified) - new Date(a.modified) :
+          orden === 'size' ? (b.size || 0) - (a.size || 0) : a.name.localeCompare(b.name, 'es'));
+        const ops = x => `<button class="action" data-trash-restore="${x.type}:${x.id}">Restaurar</button>
+          <button class="dots" data-trash-purge="${x.type}:${x.id}" title="Eliminar definitivamente" aria-label="Eliminar definitivamente">${glyph('trash')}</button>`;
+        const icono = x => {
+          const ext = x.type === 'folder' ? 'folder' : x.name.split('.').pop().toLowerCase();
+          const cls = ['pdf','xlsx','csv','docx','png','jpg','jpeg','webp'].includes(ext) ? ext : x.type === 'folder' ? 'folder' : 'other';
+          return `<span class="fileico ${cls}">${glyph(x.type === 'folder' ? 'folder' : ['png','jpg','jpeg','webp'].includes(ext) ? 'image' : 'file')}</span>`;
+        };
+        document.getElementById('sectionCounter').textContent = `${items.length} elementos`;
+        document.getElementById('footCounter').textContent = `${items.length} elementos · ${items.filter(x => x.type === 'file').length} archivos · SAVIA PRZ`;
+        const area = document.getElementById('filesArea');
+        if (!items.length) {area.innerHTML = `<div class="empty">${glyph('trash')}<strong>${q ? 'No se encontraron resultados' : 'La papelera está vacía'}</strong><p>Los elementos enviados a la papelera aparecerán aquí.</p></div>`;return;}
+        if (layout === 'grid') {
+          area.innerHTML = `<div class="griditems">${items.map(x => `<article class="tile"><div class="tiletop">${icono(x)}</div><strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong><span class="filemeta">${x.type === 'folder' ? 'Carpeta' : 'Archivo'} · ${formatDate(x.modified)}</span><div class="tilefoot">${ops(x)}</div></article>`).join('')}</div>`;
+        } else {
+          area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th class="selcol"><input type="checkbox" disabled aria-label="Seleccionar"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr><td></td><td><div class="namecell">${icono(x)}<div><strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${ops(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+        }
+      }
+      async function abrirPapeleraReal() {
+        trashRealActive = true;
+        marcarNavReal('trash');
+        document.getElementById('sectionTitle').textContent = 'Papelera';
+        document.getElementById('sectionSubtitle').textContent = 'Recupera los elementos eliminados.';
+        document.getElementById('currentPlace').textContent = 'Papelera';
+        document.getElementById('breadcrumbs').innerHTML = '<strong>Papelera</strong>';
+        document.getElementById('createButtons').style.display = 'none';
+        document.getElementById('goUp').disabled = true;
+        document.getElementById('realBatchBar').hidden = true;
+        document.getElementById('batchBar').hidden = true;
+        document.getElementById('helperLine').textContent = 'Restaura elementos o elimínalos definitivamente.';
+        document.getElementById('searchInput').value = '';
+        document.getElementById('typeFilter').value = 'all';
+        document.getElementById('filesArea').innerHTML = '<div class="empty">Cargando papelera...</div>';
+        try { trashRealItems = (await trashRequest(`${API}/trash`)).items || []; renderTrashReal(); }
+        catch (e) {document.getElementById('filesArea').innerHTML = `<div class="empty"><strong>No se pudo cargar la papelera.</strong><p>${esc(e.message)}</p></div>`;}
+      }
+      document.getElementById('przApp').addEventListener('click', async e => {
+        const restore = e.target.closest('[data-trash-restore]');
+        const purge = e.target.closest('[data-trash-purge]');
+        if (!trashRealActive || !(restore || purge)) return;
+        e.preventDefault();e.stopImmediatePropagation();
+        const [kind, id] = (restore || purge).dataset[restore ? 'trashRestore' : 'trashPurge'].split(':');
+        const item = trashRealItems.find(x => x.type === kind && String(x.id) === id);
+        if (!item) return;
+        if (restore) {
+          restore.disabled = true;
+          try { await trashRequest(`${API}/trash/${kind === 'folder' ? 'folders' : 'files'}/${id}/restore`, 'POST'); toast('Elemento restaurado correctamente.'); await abrirPapeleraReal(); }
+          catch(err) {restore.disabled = false; toast(err.message);}
+          return;
+        }
+        modal('Eliminar definitivamente', `<p>Eliminar definitivamente <strong>${esc(item.name)}</strong> y sus contenidos. Esta acción no se puede deshacer.</p><p id="trashActionError" role="alert" style="color:#b42318"></p>`, `<button class="btn primary" id="trashConfirmFinal" type="button">Eliminar definitivamente</button>`);
+        document.getElementById('trashConfirmFinal').onclick = async function() {
+          this.disabled = true;
+          try { await trashRequest(`${API}/trash/${kind === 'folder' ? 'folders' : 'files'}/${id}`, 'DELETE'); close(); toast('Elemento eliminado definitivamente.'); await abrirPapeleraReal(); }
+          catch(err) {document.getElementById('trashActionError').textContent=err.message;this.disabled=false;}
+        };
+      }, true);
+      ['searchInput','typeFilter','sortBy','listBtn','gridBtn'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'click', () => {
+          if (trashRealActive) queueMicrotask(renderTrashReal);
+        }, true);
+        if (id === 'typeFilter' || id === 'sortBy') document.getElementById(id).addEventListener('change', () => {if (trashRealActive) renderTrashReal();}, true);
+      });
+
       // Drive PRZ: trabajar exclusivamente con documentos reales.
       // No ejecutar draw(), porque carga los datos del prototipo.
 
@@ -5227,8 +5327,13 @@ document.getElementById('przApp')
 
         const seccion = boton.dataset.nav;
 
-        if (seccion === 'home' || seccion === 'files') {
-
+        if (seccion === 'trash') {
+            abrirPapeleraReal();
+        } else if (seccion === 'home' || seccion === 'files') {
+            trashRealActive = false;
+            marcarNavReal('files');
+            document.getElementById('createButtons').style.display = 'flex';
+            document.getElementById('goUp').disabled = false;
             mostrarArchivosReales(null);
 
         } else {

@@ -21,7 +21,6 @@ Route::get('/admin/compras/formulario-contenido', function () {
         'filament.pages.formulario-requerimiento-compra-contenido'
 
     );
-
 })
 
     ->middleware('auth')
@@ -65,7 +64,6 @@ Route::get('/exportar-registros', function () {
         $nombreArchivo
 
     );
-
 });
 
 
@@ -107,7 +105,6 @@ Route::get('/prueba-session/guardar', function () {
 
 
     return 'Sesión guardada. Ahora entra a /prueba-session/leer';
-
 });
 
 
@@ -121,7 +118,6 @@ Route::get('/prueba-session/leer', function () {
         'session_id' => session()->getId(),
 
     ];
-
 });
 
 
@@ -155,7 +151,6 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
     if (!$disco->exists($documento->ruta_archivo)) {
 
         abort(404, 'El archivo no existe en el servidor.');
-
     }
 
 
@@ -167,7 +162,6 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
         $documento->nombre_original
 
     );
-
 })
 
     ->middleware('auth')
@@ -197,7 +191,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
     if (!$disco->exists($documento->ruta_archivo)) {
 
         abort(404, 'El documento no existe.');
-
     }
 
 
@@ -255,7 +248,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
 
         ]);
-
     }
 
 
@@ -265,7 +257,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
     if (!in_array($extension, ['doc', 'docx', 'xls', 'xlsx'], true)) {
 
         abort(415, 'Este tipo de archivo no admite vista previa.');
-
     }
 
 
@@ -279,7 +270,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
     if ($temporal === false) {
 
         abort(500, 'No fue posible preparar la vista previa.');
-
     }
 
 
@@ -311,7 +301,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             $writer = WordIOFactory::createWriter($word, 'HTML');
 
             $writer->save($temporal);
-
         } else {
 
 
@@ -345,13 +334,10 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
                 $writer->save($temporal);
-
             } finally {
 
                 $excel->disconnectWorksheets();
-
             }
-
         }
 
 
@@ -367,9 +353,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
                 'No fue posible leer la vista previa.'
 
             );
-
         }
-
     } catch (\Throwable $e) {
 
 
@@ -385,7 +369,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             'No fue posible generar la vista previa de este documento.'
 
         );
-
     } finally {
 
 
@@ -393,9 +376,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         if (file_exists($temporal)) {
 
             unlink($temporal);
-
         }
-
     }
 
 
@@ -417,7 +398,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; object-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
 
     ]);
-
 })
 
     ->middleware('auth')
@@ -475,7 +455,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
         'xls' => 'application/vnd.ms-excel',
 
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-
     };
 
 
@@ -511,7 +490,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
 
     return $response;
-
 })
 
     ->middleware(['auth', 'signed', 'throttle:20,1'])
@@ -644,6 +622,25 @@ Route::middleware(['auth'])
 
             ->name('delete');
 
+        // Consultar elementos de la papelera
+        Route::get('/trash', [
+            DrivePrzController::class,
+            'trash'
+        ])->name('trash');
+
+        // Restaurar archivos o carpetas
+        Route::post('/trash/{kind}/{id}/restore', [
+            DrivePrzController::class,
+            'restore'
+        ])->whereIn('kind', ['folders', 'files'])
+            ->name('restore');
+
+        // Eliminar definitivamente
+        Route::delete('/trash/{kind}/{id}', [
+            DrivePrzController::class,
+            'forceDelete'
+        ])->whereIn('kind', ['folders', 'files'])
+            ->name('force-delete');
 
 
         // Mover carpetas o documentos
@@ -719,7 +716,6 @@ Route::middleware(['auth'])
                     ->whereNumber('id')
                     ->name('leer');
             });
-
     });
 
 
@@ -733,7 +729,6 @@ Route::middleware(['auth'])
             resource_path('drive-prz/index.html')
 
         );
-
     })
 
     ->name('drive-prz.index');
@@ -777,5 +772,4 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
             ->implode(''),
 
     ]);
-
 });
