@@ -3948,6 +3948,11 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
       }
       function fileName(x) { const p = permDetails(x); return `<div class="namecell">${icon(x)}<div><button class="filename" data-act="${kind(x) === 'folder' ? 'open' : 'view'}" data-id="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button><div class="filemeta">${kind(x) === 'folder' ? 'Doble clic para abrir' : x.demo ? 'Archivo de referencia · sin contenido' : 'Archivo guardado en este navegador'}${x.starred ? ' · ★' : ''}${x.owner !== state.user ? ' · Compartido por ' + esc(user(x.owner).name) : ''}${p.level && p.level < 3 ? ' · ' + roleLabel(p.role) : ''}</div></div></div>` }
       function draw() {
+        // No permitir que el prototipo reemplace
+        // los documentos reales de SAVIA PRZ.
+        if (window.drivePrzLaravelActivo === true) {
+          return;
+        }
         const titles = { files: 'Documentos', shared: 'Compartidos conmigo', starred: 'Destacados', trash: 'Papelera', activity: 'Actividad reciente' }, sub = { files: 'Gestiona y organiza los archivos de tu equipo.', shared: 'Archivos y carpetas que otras personas han compartido contigo.', starred: 'Acceso rápido a los elementos que marcaste.', trash: 'Recupera los elementos eliminados.', activity: 'Movimientos registrados en este navegador.' };
         $('sectionTitle').textContent = titles[state.section]; $('sectionSubtitle').textContent = sub[state.section];
         const current = folder(state.folder), place = current ? pathOf(current.id) : titles[state.section];
@@ -5112,8 +5117,68 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
       // Drive PRZ: trabajar exclusivamente con documentos reales.
       // No ejecutar draw(), porque carga los datos del prototipo.
 
-      // Mostrar documentos desde Laravel y MySQL.
+      // Activar exclusivamente los datos reales de SAVIA PRZ.
+      window.drivePrzLaravelActivo = true;
+
+      // Cargar documentos desde Laravel y MySQL.
       mostrarArchivosReales();
+
+      // Evitar que la navegación vuelva al prototipo.
+document.getElementById('przApp')
+    .addEventListener('click', function(evento) {
+
+        const boton = evento.target.closest('[data-nav]');
+
+        if (!boton) return;
+
+        evento.preventDefault();
+        evento.stopImmediatePropagation();
+
+        const seccion = boton.dataset.nav;
+
+        if (seccion === 'home' || seccion === 'files') {
+
+            mostrarArchivosReales(null);
+
+        } else {
+
+            // Las demás secciones requieren sus
+            // respectivas consultas reales a Laravel.
+            toast(
+                'Esta sección todavía no está conectada ' +
+                'a los datos reales de SAVIA PRZ.'
+            );
+        }
+
+    }, true);
+
+// Pestañas principales.
+['tabMine', 'tabShared'].forEach(id => {
+
+    const boton = document.getElementById(id);
+
+    if (!boton) return;
+
+    boton.addEventListener('click', function(evento) {
+
+        evento.preventDefault();
+        evento.stopImmediatePropagation();
+
+        if (id === 'tabMine') {
+
+            mostrarArchivosReales(null);
+
+        } else {
+
+            toast(
+                'La sección Compartidos requiere ' +
+                'su listado real desde Laravel.'
+            );
+        }
+
+    }, true);
+
+});
 
       // Ocultar temporalmente las operaciones de demostración
       // ACTIVAR CREACIÓN REAL DE CARPETAS
