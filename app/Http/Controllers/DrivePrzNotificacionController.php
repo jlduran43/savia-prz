@@ -27,8 +27,7 @@ class DrivePrzNotificacionController extends Controller
                 'n.mensaje',
                 'n.leida_at',
                 'n.created_at',
-                'u.nombre as remitente_nombre',
-                'u.apellido as remitente_apellido'
+                'u.name as remitente_nombre'
             )
             ->orderByDesc('n.created_at')
             ->limit(30)
