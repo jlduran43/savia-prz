@@ -3312,6 +3312,31 @@
         const names = {view:'Ver',download:'Descargar',copy:'Copiar',rename:'Renombrar',move:'Mover',delete:'Enviar a papelera',upload:'Subir archivos',create_folder:'Crear subcarpetas'};
         const newFlags = {view:true,download:true};
         const generalFlags = {view:true,download:true};
+        // Selección temporal: no se guarda entre aperturas del modal.
+        // Los accesos existentes se consultan siempre desde Laravel.
+        const limpiarSeleccionTemporal = () => {
+          selectedIds.clear();
+          const buscador = q('przShareSearch');
+          if (buscador) buscador.value = '';
+          const rol = q('przShareNewRole');
+          if (rol) rol.value = 'view';
+          Object.keys(newFlags).forEach(k => delete newFlags[k]);
+          Object.assign(newFlags, {view:true,download:true});
+          if (frame.isConnected && q('przShareSelected')) {
+            renderSelection();
+            refreshCustom();
+            renderChoices();
+          }
+        };
+        // Al cerrar (X, Cerrar, Listo, Escape o fondo) descartar únicamente
+        // los destinatarios pendientes, nunca permisos persistidos en MySQL.
+        const observarCierre = new MutationObserver(() => {
+          if (!frame.querySelector('#przShareSelected')) {
+            selectedIds.clear();
+            observarCierre.disconnect();
+          }
+        });
+        observarCierre.observe(frame, {childList:true});
         const flagsHtml = (flags, prefix) => Object.entries(names)
           .filter(([k]) => tipo === 'folders' || !['upload','create_folder'].includes(k))
           .map(([key,label]) => `<label class="prz-flag"><input type="checkbox" data-flag-prefix="${prefix}" data-flag="${key}" ${flags[key] ? 'checked' : ''} ${key==='view' ? 'disabled' : ''}><span>${label}</span></label>`).join('');
@@ -3415,7 +3440,13 @@
           busy = false;
           if (frame.isConnected && q('przShareAdd')) {
             if (completed) toast(`${completed} usuario(s) agregado(s) correctamente.`);
-            if (failures.length) errorBox.textContent = `Se guardaron ${completed} de ${pending.length}. Pendientes: ${failures.join(' | ')}`;
+            if (failures.length) {
+              // Dejar marcados solo los usuarios que fallaron para reintentar.
+              errorBox.textContent = `Se guardaron ${completed} de ${pending.length}. Pendientes: ${failures.join(' | ')}`;
+            } else if (completed) {
+              // Se completó el envío: limpiar buscador, checks y rol temporal.
+              limpiarSeleccionTemporal();
+            }
             renderPermissions(); updateControls(); renderChoices();
           }
         });
@@ -3432,6 +3463,8 @@
           const results = await Promise.all([apiCompartir(base), apiCompartir(`${API}/sharing/users`)]);
           info = results[0]; users = results[1].users || [];
           if (!frame.isConnected || !q('przSharePeople')) return;
+          // Reiniciar el formulario para cada apertura del modal.
+          limpiarSeleccionTemporal();
           renderPermissions(); updateControls(); refreshCustom();
           if (canShare()) renderChoices();
         } catch(e) {

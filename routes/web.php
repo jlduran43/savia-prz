@@ -14,6 +14,7 @@ use App\Http\Controllers\DrivePrzController;
 use App\Http\Controllers\DrivePrzSharingController;
 use App\Http\Controllers\DrivePrzNotificacionController;
 use App\Http\Controllers\DrivePrzSharedController;
+use App\Http\Controllers\DrivePrzEnlaceController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
 
@@ -791,4 +792,25 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
             ->implode(''),
 
     ]);
+});
+
+// Administración de enlaces: requiere login
+
+Route::middleware('auth')->group(function () {
+
+    Route::post('/drive-prz-v5/enlaces/{id}', [
+        DrivePrzEnlaceController::class,
+        'generar'
+    ])->name('drive-prz.enlaces.generar');
+
+    Route::get('/drive-prz-v5/enlaces/{id}', [
+        DrivePrzEnlaceController::class,
+        'estado'
+    ])->name('drive-prz.enlaces.estado');
+
+    Route::delete('/drive-prz-v5/enlaces/{id}', [
+        DrivePrzEnlaceController::class,
+        'revocar'
+    ])->name('drive-prz.enlaces.revocar');
+
 });
