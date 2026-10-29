@@ -15,7 +15,7 @@ class DrivePrzEnlaceController extends Controller
         $documento = Documento::findOrFail($id);
 
         abort_unless(
-            (int) $documento->creado_por === (int) auth()->id(),
+            (int) $documento->subido_por === (int) auth()->id(),
             403,
             'Solo el propietario puede administrar enlaces externos.'
         );
