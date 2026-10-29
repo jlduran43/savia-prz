@@ -13,6 +13,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Html as ExcelHtmlWriter;
 use App\Http\Controllers\DrivePrzController;
 use App\Http\Controllers\DrivePrzSharingController;
 use App\Http\Controllers\DrivePrzNotificacionController;
+use App\Http\Controllers\DrivePrzSharedController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
 
@@ -641,6 +642,10 @@ Route::middleware(['auth'])
             'forceDelete'
         ])->whereIn('kind', ['folders', 'files'])
             ->name('force-delete');
+
+        Route::get('/shared', [DrivePrzSharedController::class, 'listing'])->name('shared.list');
+        Route::get('/shared/files/{id}/preview', [DrivePrzSharedController::class, 'preview'])->whereNumber('id')->name('shared.preview');
+        Route::get('/shared/files/{id}/download', [DrivePrzSharedController::class, 'download'])->whereNumber('id')->name('shared.download');
 
 
         // Mover carpetas o documentos

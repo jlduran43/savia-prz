@@ -5410,9 +5410,96 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         document.getElementById('listBtn').classList.toggle('on', realLayout === 'list');
         document.getElementById('gridBtn').classList.toggle('on', realLayout === 'grid');
         if (trashRealActive) renderTrashReal();
+        else if (sharedRealActive) sharedRealRender();
         else dibujarArchivosReales();
       });
 
+      // COMPARTIDOS REALES: exclusivamente desde MySQL, nunca datos del prototipo.
+      let sharedRealActive = false;
+      let sharedRealItems = [];
+      let sharedRealFolder = null;
+      let sharedRealTrail = [];
+      let sharedRealBusy = false;
+      function sharedRealRender() {
+        if (!sharedRealActive) return;
+        const q = document.getElementById('searchInput').value.toLocaleLowerCase('es').trim();
+        const tipo = document.getElementById('typeFilter').value;
+        const orden = document.getElementById('sortBy').value;
+        const items = sharedRealItems.filter(x => {
+          const ext = x.type === 'folder' ? 'folder' : x.name.split('.').pop().toLowerCase();
+          return (tipo === 'all' || ext === tipo ||
+            (tipo === 'png' && ['png','jpg','jpeg','webp'].includes(ext)) ||
+            (tipo === 'xlsx' && ['xlsx','xls','csv'].includes(ext)) ||
+            (tipo === 'docx' && ['docx','doc','txt'].includes(ext))) && x.name.toLocaleLowerCase('es').includes(q);
+        });
+        items.sort((a,b) => orden === 'recent' ? new Date(b.modified)-new Date(a.modified) :
+          orden === 'size' ? (b.size||0)-(a.size||0) : a.name.localeCompare(b.name, 'es'));
+        const icono = x => {const e=x.type==='folder'?'folder':x.name.split('.').pop().toLowerCase();
+          const cls=['pdf','xlsx','csv','docx','png','jpg','jpeg','webp'].includes(e)?e:x.type==='folder'?'folder':'other';
+          return `<span class="fileico ${cls}">${glyph(x.type==='folder'?'folder':['png','jpg','jpeg','webp'].includes(e)?'image':'file')}</span>`;};
+        const oper = x => x.type === 'folder'
+          ? `<button type="button" class="action" data-shared-open="${x.id}">Abrir</button>`
+          : `<button type="button" class="action" data-shared-view="${x.id}">Ver</button><a class="action" href="${API}/shared/files/${x.id}/download">Descargar</a>`;
+        document.getElementById('sectionCounter').textContent=`${items.length} elementos`;
+        document.getElementById('footCounter').textContent=`${items.length} elementos · ${items.filter(x=>x.type==='file').length} archivos · SAVIA PRZ`;
+        const area=document.getElementById('filesArea');
+        if (!items.length) {area.innerHTML=`<div class="empty">${glyph('folder')}<strong>${q?'No se encontraron resultados':'No hay elementos compartidos'}</strong><p>Los archivos y carpetas que te compartan aparecerán aquí.</p></div>`;return;}
+        if (realLayout==='grid') {
+          area.innerHTML=`<div class="griditems">${items.map(x=>`<article class="tile"><div class="tiletop">${icono(x)}</div>${x.type==='folder'?`<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>`:`<strong class="filename">${esc(x.name)}</strong>`}<span class="filemeta">${x.type==='folder'?'Carpeta':'Archivo'} · Compartido por ${esc(x.owner||'Otro usuario')}</span><div class="tilefoot">${oper(x)}</div></article>`).join('')}</div>`;
+        } else {
+          area.innerHTML=`<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x=>`<tr><td></td><td><div class="namecell">${icono(x)}<div>${x.type==='folder'?`<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>`:`<strong class="filename">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner||'Otro usuario')} · Solo ver</div></div></div></td><td><span class="typepill">${x.type==='folder'?'Carpeta':esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type==='folder'?'—':size(x.size||0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+        }
+      }
+      async function sharedRealOpen(folderId=null) {
+        if (sharedRealBusy) return;
+        sharedRealBusy=true;
+        sharedRealActive=true;
+        trashRealActive=false;
+        marcarNavReal('shared');
+        document.getElementById('createButtons').style.display='none';
+        document.getElementById('realBatchBar').hidden=true;
+        document.getElementById('batchBar').hidden=true;
+        document.getElementById('sectionTitle').textContent='Compartidos conmigo';
+        document.getElementById('sectionSubtitle').textContent='Archivos y carpetas que otras personas han compartido contigo.';
+        document.getElementById('helperLine').textContent='Abre carpetas compartidas o visualiza y descarga documentos autorizados.';
+        document.getElementById('tabMine').classList.remove('selected');
+        document.getElementById('tabShared').classList.add('selected');
+        document.getElementById('goUp').disabled=folderId===null;
+        document.getElementById('filesArea').innerHTML='<div class="empty">Cargando compartidos...</div>';
+        try {
+          const u=new URL(`${API}/shared`,location.origin);
+          if (folderId!==null) u.searchParams.set('carpeta_id',folderId);
+          const data=await trashRequest(u.toString());
+          sharedRealFolder=folderId;
+          sharedRealTrail=data.trail||[];
+          sharedRealItems=data.items||[];
+          document.getElementById('currentPlace').textContent=sharedRealTrail.length?sharedRealTrail.map(x=>x.name).join(' / '):'Compartidos conmigo';
+          document.getElementById('breadcrumbs').innerHTML=`<button type="button" data-shared-root>Compartidos conmigo</button>`+sharedRealTrail.map(x=>` ${glyph('arrow')} <button type="button" data-shared-open="${x.id}">${esc(x.name)}</button>`).join('');
+          sharedRealRender();
+        } catch(e) {
+          document.getElementById('filesArea').innerHTML=`<div class="empty"><strong>No se pudieron cargar los compartidos.</strong><p>${esc(e.message)}</p></div>`;
+        } finally {sharedRealBusy=false;}
+      }
+      document.getElementById('przApp').addEventListener('click', e => {
+        if (!sharedRealActive) return;
+        const b=e.target.closest('[data-shared-open],[data-shared-root],[data-shared-view]');
+        if (!b) return;
+        e.preventDefault();e.stopImmediatePropagation();
+        if (b.hasAttribute('data-shared-root')) return sharedRealOpen(null);
+        if (b.dataset.sharedOpen) return sharedRealOpen(Number(b.dataset.sharedOpen));
+        const url=`${API}/shared/files/${Number(b.dataset.sharedView)}/preview`;
+        modal('Vista previa',`<div class="previewbox"><iframe src="${url}" title="Vista previa del documento"></iframe></div><p class="hint">Si es un archivo Office, utiliza Descargar.</p>`, `<a class="btn primary" href="${API}/shared/files/${Number(b.dataset.sharedView)}/download">Descargar</a>`);
+      },true);
+      ['searchInput','typeFilter','sortBy'].forEach(id=>{
+        const el=document.getElementById(id);
+        el.addEventListener(id==='searchInput'?'input':'change',()=>{if(sharedRealActive) sharedRealRender();},true);
+      });
+      document.getElementById('goUp').addEventListener('click',e=>{
+        if (!sharedRealActive) return;
+        e.preventDefault();e.stopImmediatePropagation();
+        const parent=sharedRealTrail.length>1?sharedRealTrail[sharedRealTrail.length-2].id:null;
+        sharedRealOpen(parent);
+      },true);
       // Drive PRZ: trabajar exclusivamente con documentos reales.
       // No ejecutar draw(), porque carga los datos del prototipo.
 
@@ -5436,8 +5523,14 @@ document.getElementById('przApp')
         const seccion = boton.dataset.nav;
 
         if (seccion === 'trash') {
+            sharedRealActive = false;
             abrirPapeleraReal();
+        } else if (seccion === 'shared') {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = 'all';
+            sharedRealOpen(null);
         } else if (seccion === 'home' || seccion === 'files') {
+            sharedRealActive = false;
             trashRealActive = false;
             marcarNavReal('files');
             document.getElementById('createButtons').style.display = 'flex';
@@ -5469,15 +5562,18 @@ document.getElementById('przApp')
         evento.stopImmediatePropagation();
 
         if (id === 'tabMine') {
-
+            sharedRealActive = false;
+            trashRealActive = false;
+            document.getElementById('createButtons').style.display = 'flex';
+            document.getElementById('tabMine').classList.add('selected');
+            document.getElementById('tabShared').classList.remove('selected');
+            marcarNavReal('files');
             mostrarArchivosReales(null);
 
         } else {
 
-            toast(
-                'La sección Compartidos requiere ' +
-                'su listado real desde Laravel.'
-            );
+            document.getElementById('searchInput').value = '';
+            sharedRealOpen(null);
         }
 
     }, true);
