@@ -2899,7 +2899,7 @@
             <strong id="realSelectedCount">0 seleccionados</strong>
             <span class="batchspacer"></span>
             <button id="realBulkMove" type="button">📁 Mover seleccionados</button>
-            <button id="realBulkTrash" type="button" disabled title="Pendiente: papelera recuperable en Laravel">🗑 Mover a papelera</button>
+            <button id="realBulkTrash" type="button">🗑 Mover a papelera</button>
             <button id="realClearSelection" type="button">Quitar selección</button>
           </div>
           <div class="toolbar"><label class="searchwrap"><svg>
@@ -3369,6 +3369,7 @@
         bar.hidden = n === 0;
         document.getElementById('realSelectedCount').textContent = `${n} seleccionado${n === 1 ? '' : 's'}`;
         document.getElementById('realBulkMove').disabled = !n;
+        document.getElementById('realBulkTrash').disabled = !n;
         document.querySelectorAll('#filesArea [data-real-check]').forEach(ch => {
           ch.checked = realSelection.has(ch.dataset.realCheck);
           ch.closest('tr, .tile')?.classList.toggle('selected-row', ch.checked);
@@ -3559,6 +3560,9 @@
             data-real-share="${x.id}"
             data-share-kind="${carpeta ? 'folders' : 'files'}"
             data-share-name="${esc(x.name)}">Compartir</button>
+        <button type="button" class="dots" title="Opciones" aria-label="Opciones de ${esc(x.name)}"
+            data-real-options="${x.id}" data-real-kind="${carpeta ? 'folders' : 'files'}"
+            data-real-name="${esc(x.name)}">${glyph('dots')}</button>
     </div>
 </td>
                                 </tr>
@@ -3805,6 +3809,64 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         e.stopImmediatePropagation();
         abrirMoverLaravel(Number(btn.dataset.realMove), btn.dataset.moveKind, btn.dataset.moveName);
       }, true);
+
+      // PAPELERA REAL: no utiliza IndexedDB ni los elementos de demostración.
+      function opcionesElementoLaravel(id, tipo, nombre) {
+        const carpeta = tipo === 'folders';
+        modal('Opciones',
+          `<div class="namecell"><span class="fileico ${carpeta ? 'folder' : 'other'}">${glyph(carpeta ? 'folder' : 'file')}</span><strong>${esc(nombre)}</strong></div>
+           <div class="optiongrid">
+             ${carpeta ? `<button type="button" class="btn" data-option-real-open="${id}">Abrir carpeta</button>` : `<button type="button" class="btn" data-option-real-preview="${id}">Ver archivo</button>`}
+             <button type="button" class="btn" data-option-real-share="${id}">Administrar permisos</button>
+             <button type="button" class="btn" data-option-real-rename="${id}" disabled title="Disponible próximamente">Cambiar nombre</button>
+             <button type="button" class="btn" data-option-real-move="${id}">Mover a otra carpeta</button>
+             <button type="button" class="btn" data-option-real-trash="${id}">Mover a papelera</button>
+             <button type="button" class="btn" disabled title="Disponible próximamente">☆ Destacar</button>
+           </div>
+           <p class="hint">Elemento de SAVIA PRZ · La papelera conserva los archivos físicos.</p>`);
+        const root = document.getElementById('modalMount');
+        const on = (selector, fn) => root.querySelector(selector)?.addEventListener('click', fn, {once:true});
+        on('[data-option-real-trash]', () => confirmarPapeleraLaravel([{id,type:carpeta?'folder':'file',name:nombre}]));
+        on('[data-option-real-open]', async () => {close(); await mostrarArchivosReales(id)});
+        on('[data-option-real-share]', () => abrirCompartirLaravel(id, tipo, nombre));
+        on('[data-option-real-move]', () => abrirMoverLaravel(id,tipo,nombre));
+        on('[data-option-real-preview]', () => {close(); verArchivoLaravel(id,nombre,realVisible.find(x=>x.id===id && x.type==='file')?.size||0)});
+      }
+
+      function confirmarPapeleraLaravel(elementos) {
+        if (!elementos.length) return;
+        const descripcion = elementos.length === 1 ? esc(elementos[0].name) : `${elementos.length} elementos`;
+        modal('Mover a papelera',
+          `<p>¿Mover <strong>${descripcion}</strong> a la papelera?</p>
+           <p class="hint">Los archivos físicos se conservarán. Si es una carpeta, su contenido también quedará oculto.</p>
+           <p id="przTrashError" style="color:#b42318" role="alert"></p>`,
+          `<button type="button" class="btn primary" id="przTrashConfirm">Mover a papelera</button>`);
+        document.getElementById('przTrashConfirm').addEventListener('click',async e=>{
+          const btn=e.currentTarget;btn.disabled=true;btn.textContent='Moviendo...';
+          const error=document.getElementById('przTrashError');
+          try {
+            const cookie=document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='));
+            if(!cookie)throw new Error('Sesión no disponible. Recarga la página.');
+            const token=decodeURIComponent(cookie.slice('XSRF-TOKEN='.length));
+            for(const item of elementos){
+              const tipo=item.type==='folder'?'folders':'files';
+              const respuesta=await fetch(`${API}/${tipo}/${encodeURIComponent(item.id)}`,{
+                method:'DELETE',credentials:'same-origin',headers:{Accept:'application/json','X-XSRF-TOKEN':token}
+              });
+              const data=await respuesta.json().catch(()=>({}));
+              if(!respuesta.ok)throw new Error(data.errors?Object.values(data.errors).flat().join(' '):(data.message||`Error HTTP ${respuesta.status}`));
+            }
+            close();await mostrarArchivosReales(carpetaRealActual);
+            toast(elementos.length===1?'Elemento movido a papelera.':`${elementos.length} elementos movidos a papelera.`);
+          }catch(ex){error.textContent=ex.message;btn.disabled=false;btn.textContent='Mover a papelera';await mostrarArchivosReales(carpetaRealActual).catch(()=>{});}
+        });
+      }
+      document.getElementById('filesArea').addEventListener('click', e=>{
+        const btn=e.target.closest('[data-real-options]');if(!btn)return;
+        e.preventDefault();e.stopImmediatePropagation();
+        opcionesElementoLaravel(Number(btn.dataset.realOptions),btn.dataset.realKind,btn.dataset.realName);
+      },true);
+      document.getElementById('realBulkTrash').addEventListener('click',()=>confirmarPapeleraLaravel([...realSelection.values()]));
 
       // VISTA PREVIA REAL: diseño original, archivos almacenados en Laravel.
       // No se ejecuta HTML, SVG, PHP ni código suministrado por usuarios.
