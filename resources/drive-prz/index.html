@@ -2726,6 +2726,14 @@
 .prz-notif-status{padding:18px 14px;color:#647991;font-size:12px;text-align:center}
 @media(max-width:760px){.prz-notif-menu{right:-43px}.prz-notif-button{height:34px;width:34px}}
 
+    /* FIX: la cabecera debe estar por encima del contenido al mostrar sus menús.
+       El z-index del hijo no funciona si su ancestro queda debajo de .shell. */
+    .topbar { position: relative; z-index: 1000; overflow: visible; }
+    .topright { position: relative; }
+    .prz-account-wrap { z-index: 1002; }
+    .prz-notif-wrap { z-index: 1001; }
+    .prz-account-menu { z-index: 1003; }
+
     /* Base funcional del desplegable: anclado al avatar, nunca en el flujo del sidebar */
     .prz-account-wrap { position: relative; flex: 0 0 auto; isolation: isolate; }
     .prz-account-toggle { display: grid; place-items: center; border: 0; cursor: pointer; padding: 0; font: inherit; }
