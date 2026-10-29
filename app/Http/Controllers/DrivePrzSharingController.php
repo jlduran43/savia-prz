@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\DrivePrzAvisos;
 
 class DrivePrzSharingController extends Controller
 {
@@ -511,16 +512,52 @@ class DrivePrzSharingController extends Controller
             'El propietario ya tiene acceso completo.'
         );
 
-        $this->guardarPermiso(
+        // El permiso y el aviso deben confirmarse juntos en MySQL.
+        // Si el acceso ya existía, solo actualizamos sus permisos;
+        // no enviamos una segunda notificación de "nuevo compartido".
+        $notificacionCreada = DB::transaction(function () use (
             $kind,
             $id,
-            (int) $recipient->id,
+            $item,
+            $recipient,
             $permisos
-        );
+        ): bool {
+            $existia = $this->obtenerRegistro(
+                $kind,
+                $id,
+                (int) $recipient->id
+            ) !== null;
+
+            $this->guardarPermiso(
+                $kind,
+                $id,
+                (int) $recipient->id,
+                $permisos
+            );
+
+            if ($existia) {
+                return false;
+            }
+
+            $nombre = $kind === 'files'
+                ? (string) ($item->nombre_original ?: $item->nombre ?: 'Documento')
+                : (string) ($item->nombre ?: 'Carpeta');
+
+            DrivePrzAvisos::documentoCompartido(
+                (int) $recipient->id,
+                (int) $this->actor()->id,
+                $kind,
+                $id,
+                $nombre
+            );
+
+            return true;
+        });
 
         return response()->json([
             'ok' => true,
             'permisos' => $permisos,
+            'notificacion_creada' => $notificacionCreada,
         ]);
     }
 

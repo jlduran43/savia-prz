@@ -2706,6 +2706,25 @@
 .prz-flag input{accent-color:#1664bd}
 .prz-saved-flags{width:100%;font-size:11px;color:#55718b}
 @media(max-width:560px){.prz-flag-grid{grid-template-columns:1fr}}
+
+/* DRIVE PRZ — Notificaciones internas */
+.prz-notif-wrap{position:relative;flex-shrink:0}
+.prz-notif-button{position:relative;width:38px;height:38px;display:grid;place-items:center;border:1px solid #ffffff33;border-radius:9px;background:#ffffff12;color:#fff;cursor:pointer}
+.prz-notif-button:hover,.prz-notif-button[aria-expanded="true"]{background:#ffffff28}
+.prz-notif-button svg{width:20px;height:20px}
+.prz-notif-count{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:20px;background:#e44954;color:#fff;font-weight:800;font-size:10px;border:2px solid #14263d}
+.prz-notif-count[hidden],.prz-notif-menu[hidden]{display:none!important}
+.prz-notif-menu{position:absolute;right:0;top:calc(100% + 10px);z-index:120;width:min(380px,calc(100vw - 22px));max-height:min(480px,70vh);overflow:auto;border:1px solid #dfe7f1;border-radius:12px;background:#fff;color:#263b52;box-shadow:0 18px 45px #071b3440}
+.prz-notif-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e8edf3;font-size:13px}
+.prz-notif-body{padding:4px}
+.prz-notif-item{width:100%;display:block;text-align:left;border:0;background:white;padding:12px;border-radius:8px;color:#263b52;cursor:pointer}
+.prz-notif-item:hover{background:#f0f6fc}
+.prz-notif-item.unread{background:#edf5ff}
+.prz-notif-item strong,.prz-notif-item small,.prz-notif-item span{display:block}
+.prz-notif-item small{font-size:11px;color:#667f98;margin-top:3px}
+.prz-notif-item span{font-size:12px;margin-top:4px;overflow-wrap:anywhere}
+.prz-notif-status{padding:18px 14px;color:#647991;font-size:12px;text-align:center}
+@media(max-width:760px){.prz-notif-menu{right:-43px}.prz-notif-button{height:34px;width:34px}}
 </style>
 </head>
 
@@ -2794,6 +2813,16 @@
       <div class="brand"><span class="brandicon">PRZ</span> DRIVE PRZ</div>
       <div class="toplabel">Gestión documental</div>
       <div class="topright">
+    <div class="prz-notif-wrap" id="przNotifWrap">
+      <button type="button" class="prz-notif-button" id="przNotifButton" aria-label="Ver notificaciones" aria-expanded="false" aria-controls="przNotifMenu" title="Notificaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+        <span id="przNotifCount" class="prz-notif-count" hidden>0</span>
+      </button>
+      <div class="prz-notif-menu" id="przNotifMenu" hidden>
+        <div class="prz-notif-header"><strong>Notificaciones</strong><span id="przNotifLabel">Sin leer: 0</span></div>
+        <div class="prz-notif-body" id="przNotifBody"><div class="prz-notif-status">Consultando avisos...</div></div>
+      </div>
+    </div>
     <div class="actorlabel">
         <span>Sesión iniciada como</span>
         <strong id="usuarioNombreReal">Cargando...</strong>
@@ -5257,6 +5286,89 @@ async function cargarUsuarioActualLaravel() {
 
     return usuario;
 }
+
+
+// NOTIFICACIONES REALES: el servidor identifica al destinatario por la sesión.
+(function iniciarNotificacionesDrivePRZ() {
+  const boton = document.getElementById('przNotifButton');
+  const menu = document.getElementById('przNotifMenu');
+  const contador = document.getElementById('przNotifCount');
+  const etiqueta = document.getElementById('przNotifLabel');
+  const cuerpo = document.getElementById('przNotifBody');
+  const wrap = document.getElementById('przNotifWrap');
+  if (!boton || !menu || !contador || !cuerpo) return;
+  const endpoint = '/drive-prz-v5/notificaciones';
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let avisos = [];
+  let consultando = false;
+  async function actualizarNotificaciones() {
+    if (consultando) return;
+    consultando = true;
+    try {
+      const res = await fetch(endpoint, {credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      avisos = Array.isArray(data.notificaciones) ? data.notificaciones : [];
+      const total = Number(data.sin_leer || 0);
+      contador.hidden = total === 0;
+      contador.textContent = total > 99 ? '99+' : String(total);
+      etiqueta.textContent = 'Sin leer: ' + total;
+      if (!avisos.length) {
+        cuerpo.innerHTML = '<div class="prz-notif-status">No tienes notificaciones.</div>';
+      } else {
+        cuerpo.innerHTML = avisos.map(n => {
+          const remitente = [n.remitente_nombre,n.remitente_apellido].filter(Boolean).join(' ').trim() || 'Un usuario';
+          const titulo = n.elemento_tipo === 'folders' ? 'Carpeta compartida' : 'Archivo compartido';
+          return `<button type="button" class="prz-notif-item ${n.leida_at ? '' : 'unread'}" data-prz-aviso="${Number(n.id)}"><strong>${escapeHtml(titulo)}${n.leida_at ? '' : ' · Nuevo'}</strong><small>${escapeHtml(remitente)}</small><span>${escapeHtml(n.mensaje || n.elemento_nombre || '')}</span></button>`;
+        }).join('');
+      }
+    } catch(error) {
+      console.error('Drive PRZ: no se pudieron cargar notificaciones', error);
+      if (!menu.hidden) cuerpo.innerHTML = '<div class="prz-notif-status">No fue posible cargar las notificaciones.</div>';
+    } finally { consultando = false; }
+  }
+  boton.addEventListener('click', async e => {
+    e.preventDefault();e.stopPropagation();
+    menu.hidden = !menu.hidden;
+    boton.setAttribute('aria-expanded',String(!menu.hidden));
+    if (!menu.hidden) await actualizarNotificaciones();
+  });
+  document.addEventListener('click', e => {
+    if (!wrap.contains(e.target)) { menu.hidden=true; boton.setAttribute('aria-expanded','false'); }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key==='Escape') { menu.hidden=true; boton.setAttribute('aria-expanded','false'); }
+  });
+  cuerpo.addEventListener('click', async e => {
+    const item = e.target.closest('[data-prz-aviso]');
+    if (!item) return;
+    const aviso = avisos.find(n=>Number(n.id)===Number(item.dataset.przAviso));
+    if (!aviso) return;
+    item.disabled=true;
+    try {
+      const cookie = document.cookie.split('; ').find(c=>c.startsWith('XSRF-TOKEN='));
+      if (!cookie) throw new Error('No se encontró el token de sesión. Recarga la página.');
+      const res=await fetch(`${endpoint}/${Number(aviso.id)}/leer`, {
+        method:'POST',credentials:'same-origin',
+        headers:{Accept:'application/json','X-XSRF-TOKEN':decodeURIComponent(cookie.slice('XSRF-TOKEN='.length))}
+      });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      await actualizarNotificaciones();
+      menu.hidden=true;boton.setAttribute('aria-expanded','false');
+      // La navegación a "Compartidos" se conectará al listado real en una etapa posterior.
+      // No utilizar enlaces inventados ni intentar abrir archivos sin validar permisos.
+      if (typeof toast === 'function') toast('Notificación marcada como leída.');
+    } catch(error) {
+      item.disabled=false;
+      console.error('Drive PRZ: error al marcar notificación',error);
+      alert('No se pudo marcar como leída: '+error.message);
+    }
+  });
+  actualizarNotificaciones();
+  window.addEventListener('focus', actualizarNotificaciones);
+  document.addEventListener('visibilitychange',()=>{if (!document.hidden) actualizarNotificaciones();});
+  setInterval(()=>{if (!document.hidden) actualizarNotificaciones();},30000);
+})();
 
 cargarUsuarioActualLaravel().catch(error => {
     console.error('Error al cargar usuario:', error);
