@@ -5109,9 +5109,10 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         abrirImportacionCarpeta(files);
       },true);
 
-      draw();
+      // Drive PRZ: trabajar exclusivamente con documentos reales.
+      // No ejecutar draw(), porque carga los datos del prototipo.
 
-      // Mostrar archivos reales de Laravel
+      // Mostrar documentos desde Laravel y MySQL.
       mostrarArchivosReales();
 
       // Ocultar temporalmente las operaciones de demostración
