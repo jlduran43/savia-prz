@@ -3437,6 +3437,8 @@
       // Selección de elementos REALES (no usa el almacenamiento del prototipo).
       const realSelection = new Map();
       let realVisible = [];
+      let realLayout = 'list';
+      let realRenderedItems = [];
       function realKey(x) { return (x.type === 'folder' ? 'folders:' : 'files:') + x.id; }
       function updateRealSelection() {
         const bar = document.getElementById('realBatchBar');
@@ -3522,18 +3524,50 @@
                   </button>`
             ).join('');
 
-          // Carpeta vacía
-          if (!elementos.length) {
-            document.getElementById('filesArea').innerHTML = `
-                <div class="empty">
-                    ${glyph('folder')}
-                    <strong>Esta carpeta está vacía</strong>
-                    <p>No existen documentos en esta ubicación.</p>
-                </div>
-            `;
-            return;
-          }
+          dibujarArchivosReales(elementos);
 
+        } catch (error) {
+          console.error('Error al consultar MySQL:', error);
+
+          document.getElementById('filesArea').innerHTML = `
+            <div class="empty">
+                <strong>No se pudieron cargar los archivos.</strong>
+                <p>Revisa la conexión con Laravel.</p>
+            </div>
+        `;
+        }
+      }
+
+      function dibujarArchivosReales(elementos = realRenderedItems) {
+        realRenderedItems = elementos;
+        document.getElementById('listBtn').classList.toggle('on', realLayout === 'list');
+        document.getElementById('gridBtn').classList.toggle('on', realLayout === 'grid');
+        if (!elementos.length) {
+          document.getElementById('filesArea').innerHTML = `<div class="empty">${glyph('folder')}<strong>Esta carpeta está vacía</strong><p>No existen documentos en esta ubicación.</p></div>`;
+          return;
+        }
+        if (realLayout === 'grid') {
+          document.getElementById('filesArea').innerHTML = `<div class="griditems">${elementos.map(x => {
+            const carpeta = x.type === 'folder';
+            const ext = carpeta ? '' : x.name.split('.').pop().toLowerCase();
+            const categoria = carpeta ? 'folder' : ['pdf','xlsx','csv','png','jpg','jpeg','webp','docx','txt'].includes(ext) ? ext : 'other';
+            const icono = carpeta ? 'folder' : ['png','jpg','jpeg','webp'].includes(ext) ? 'image' : 'file';
+            const acciones = carpeta
+              ? `<button type="button" class="action" data-real-folder="${x.id}">Abrir</button>`
+              : `<button type="button" class="action" data-real-preview="${x.id}" data-preview-name="${esc(x.name)}" data-preview-size="${Number(x.size)||0}">Ver</button><a class="action" href="/drive-prz-v5/files/${x.id}/download">Descargar</a>`;
+            return `<article class="tile" data-real-tile="${realKey(x)}">
+              <div class="tiletop"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"> <span class="fileico ${categoria}">${glyph(icono)}</span></div>
+              ${carpeta ? `<button class="filename" data-real-folder="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button>` : `<strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong>`}
+              <span class="filemeta">${carpeta ? 'Carpeta' : esc(ext.toUpperCase())} · ${carpeta ? '—' : size(x.size)} · ${formatDate(x.modified)}</span>
+              <div class="tilefoot">${acciones}
+                <button type="button" class="action move-action" data-real-move="${x.id}" data-move-kind="${carpeta?'folders':'files'}" data-move-name="${esc(x.name)}">Mover</button>
+                <button type="button" class="action" data-real-share="${x.id}" data-share-kind="${carpeta?'folders':'files'}" data-share-name="${esc(x.name)}">Compartir</button>
+                <button type="button" class="dots" title="Opciones" aria-label="Opciones de ${esc(x.name)}" data-real-options="${x.id}" data-real-kind="${carpeta?'folders':'files'}" data-real-name="${esc(x.name)}">${glyph('dots')}</button>
+              </div></article>`;
+          }).join('')}</div>`;
+          updateRealSelection();
+          return;
+        }
           // Tabla con el mismo diseño
           document.getElementById('filesArea').innerHTML = `
             <div class="tablewrap">
@@ -3648,16 +3682,7 @@
             </div>
         `;
 
-        } catch (error) {
-          console.error('Error al consultar MySQL:', error);
-
-          document.getElementById('filesArea').innerHTML = `
-            <div class="empty">
-                <strong>No se pudieron cargar los archivos.</strong>
-                <p>Revisa la conexión con Laravel.</p>
-            </div>
-        `;
-        }
+        updateRealSelection();
       }
 
       // Mover varios elementos reales reutilizando los endpoints existentes.
@@ -5306,7 +5331,7 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         const q = document.getElementById('searchInput').value.toLocaleLowerCase('es').trim();
         const tipo = document.getElementById('typeFilter').value;
         const orden = document.getElementById('sortBy').value;
-        const layout = document.getElementById('gridBtn').classList.contains('on') ? 'grid' : 'list';
+        const layout = realLayout;
         let items = trashRealItems.filter(x => {
           const ext = x.type === 'folder' ? 'folder' : (x.name.split('.').pop() || '').toLowerCase();
           const matches = tipo === 'all' || tipo === ext ||
@@ -5378,6 +5403,14 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           if (trashRealActive) queueMicrotask(renderTrashReal);
         }, true);
         if (id === 'typeFilter' || id === 'sortBy') document.getElementById(id).addEventListener('change', () => {if (trashRealActive) renderTrashReal();}, true);
+      });
+
+      window.addEventListener('prz-real-layout', evento => {
+        realLayout = evento.detail === 'grid' ? 'grid' : 'list';
+        document.getElementById('listBtn').classList.toggle('on', realLayout === 'list');
+        document.getElementById('gridBtn').classList.toggle('on', realLayout === 'grid');
+        if (trashRealActive) renderTrashReal();
+        else dibujarArchivosReales();
       });
 
       // Drive PRZ: trabajar exclusivamente con documentos reales.
@@ -5661,6 +5694,20 @@ cargarUsuarioActualLaravel().catch(error => {
       }
     });
   })();
+  </script>
+  <script>
+    // Alternancia de vista para los documentos reales y la Papelera.
+    // Se ejecuta antes que los manejadores del antiguo prototipo.
+    document.addEventListener('click', function (event) {
+      const boton = event.target.closest('#listBtn, #gridBtn');
+      if (!boton || window.drivePrzLaravelActivo !== true) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      // El controlador principal define estas funciones en su propio ámbito.
+      window.dispatchEvent(new CustomEvent('prz-real-layout', {
+        detail: boton.id === 'gridBtn' ? 'grid' : 'list'
+      }));
+    }, true);
   </script>
 </body>
 
