@@ -3616,6 +3616,8 @@
 
           carpetaRealActual = carpetaId;
           rutaRealActual = datos.trail || [];
+          // La navegación real controla el estado de Subir un nivel.
+          document.getElementById('goUp').disabled = rutaRealActual.length === 0;
 
           const elementos = datos.items || [];
           // Una selección nunca se arrastra entre carpetas ni recargas.
@@ -5800,6 +5802,18 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         const el=document.getElementById(id);
         el.addEventListener(id==='searchInput'?'input':'change',()=>{if(sharedRealActive) sharedRealRender();},true);
       });
+      // Navegación REAL de Mis archivos (fase de captura):
+      // impide que el listener antiguo del prototipo interfiera.
+      document.getElementById('goUp').addEventListener('click', async e => {
+        if (sharedRealActive || trashRealActive) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (!rutaRealActual.length) return;
+        const padre = rutaRealActual.length > 1
+          ? Number(rutaRealActual[rutaRealActual.length - 2].id)
+          : null;
+        await mostrarArchivosReales(padre);
+      }, true);
       document.getElementById('goUp').addEventListener('click',e=>{
         if (!sharedRealActive) return;
         e.preventDefault();e.stopImmediatePropagation();
