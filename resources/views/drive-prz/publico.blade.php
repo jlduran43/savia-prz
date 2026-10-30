@@ -214,16 +214,15 @@
                 @if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
                     <img src="{{ $urlContenido }}" alt="Documento compartido" class="imagen">
                 @else
-                    <iframe src="{{ $urlContenido }}" title="Vista previa del documento" referrerpolicy="no-referrer">
-                    </iframe>
-                @endif
-            @else
-                <div class="aviso">
+                    iframe src="{{ route('drive-prz.publico.contenido'
+@endif
+@else
+<div class="aviso">
                     Este formato no admite vista previa
                     en la versión de prueba.
-                </div>
+        </div>
 
-            @endif
+        @endif
 
         </div>
 
