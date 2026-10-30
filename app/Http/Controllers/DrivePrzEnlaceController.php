@@ -14,8 +14,17 @@ class DrivePrzEnlaceController extends Controller
     {
         $documento = Documento::findOrFail($id);
 
+        \Log::info('DEBUG ENLACE EXTERNO', [
+            'documento_id' => $id,
+            'subido_por' => $documento->subido_por,
+            'auth_id' => auth()->id(),
+            'auth_check' => auth()->check(),
+            'guard_web_id' => auth()->guard('web')->id(),
+            'usuario_email' => auth()->user()?->email,
+        ]);
+
         abort_unless(
-            (int) $documento->creado_por === (int) auth()->id(),
+            (int) $documento->subido_por === (int) auth()->id(),
             403,
             'Solo el propietario puede administrar enlaces externos.'
         );
