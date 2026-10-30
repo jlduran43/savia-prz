@@ -2785,7 +2785,17 @@
     .prz-logout-copy small { font-size: 10px; color: #8797a7; }
     .prz-logout-arrow { width: 15px !important; height: 15px !important; color: #a8b4c1; }
     @media (max-width: 430px) { .prz-account-menu { right: -4px; min-width: min(330px, calc(100vw - 24px)); } }
-</style>
+
+    /* Arrastre de carpetas desde Windows al modal de creación masiva */
+    .modal.prz-modal-folder-drop {
+      outline: 3px dashed #176B45;
+      outline-offset: -6px;
+      background: #f1faf4;
+      box-shadow: 0 0 0 100vmax rgba(15, 65, 39, .08);
+    }
+    .modal.prz-modal-folder-drop .modalbody { background: #f1faf4; }
+
+  </style>
 </head>
 
 <body>
@@ -4994,6 +5004,38 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           if (!realScreen()) return;
           if (!zone.contains(e.relatedTarget)) clear();
         },true);
+
+        // La ventana "Crear varias carpetas" también acepta carpetas desde Windows.
+        // Se importa la estructura REAL a Laravel; no se llena el editor de ejemplo.
+        const modalDrop = document.getElementById('modalMount');
+        const structureModalOpen = () => !!modalDrop.querySelector('#outlineText');
+        const externalPayload = e => !dragging &&
+          Array.from(e.dataTransfer?.types || []).includes('Files');
+        modalDrop.addEventListener('dragover', e => {
+          if (!structureModalOpen() || !realScreen() || busy || !externalPayload(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'copy';
+          modalDrop.querySelector('.modal')?.classList.add('prz-modal-folder-drop');
+        }, true);
+        modalDrop.addEventListener('dragleave', e => {
+          if (!structureModalOpen()) return;
+          if (!modalDrop.querySelector('.modal')?.contains(e.relatedTarget)) {
+            modalDrop.querySelector('.modal')?.classList.remove('prz-modal-folder-drop');
+          }
+        }, true);
+        modalDrop.addEventListener('drop', e => {
+          if (!structureModalOpen() || !realScreen() || busy || !externalPayload(e)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const dt = e.dataTransfer;
+          const destination = carpetaRealActual;
+          // uploadReal empieza a leer los FileSystemEntry inmediatamente,
+          // antes de que el navegador invalide el DataTransfer del evento.
+          const operation = uploadReal(dt, destination);
+          close();
+          operation.catch(err => toast(`Error al importar: ${err.message}`));
+        }, true);
       })();
 
       const dz = $('dropzone'); let depth = 0;
