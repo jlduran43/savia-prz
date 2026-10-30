@@ -6396,26 +6396,27 @@ cargarUsuarioActualLaravel().catch(error => {
 });
     })();
 
-    // Bloquear menú contextual en imágenes y documentos del visor
-document.addEventListener('contextmenu', function (event) {
+    // Evita el menú contextual y el arrastre en los visores HTML de Drive PRZ.
+    // No afecta los menús nativos dentro de iframes PDF ni pestañas abiertas directamente.
+    const selectoresVisorPRZ = [
+      '#activePreview', '.previewbox',
+      '#przReviewPreview', '.prz-review-preview',
+      '#stageScroll', '.stage-scroll', '.stage-viewport'
+    ].join(',');
 
-    const visor = event.target.closest(
-        '#previewBox, .previewbox, iframe, .document-preview'
-    );
-
-    if (visor) {
+    document.addEventListener('contextmenu', function (event) {
+      const destino = event.target;
+      if (destino instanceof Element && destino.closest(selectoresVisorPRZ)) {
         event.preventDefault();
-    }
+      }
+    }, true);
 
-});
-
-document.addEventListener('dragstart', function (event) {
-
-    if (event.target.matches('.previewbox img')) {
-        event.preventDefault();
-    }
-
-});
+    document.addEventListener('dragstart', function (event) {
+      const destino = event.target;
+      if (destino instanceof Element && destino.matches(
+        '#activePreview img, .previewbox img, #przReviewPreview img, .prz-review-preview img, #stageScroll img, .stage-scroll img'
+      )) event.preventDefault();
+    }, true);
 
   </script>
   <script>
