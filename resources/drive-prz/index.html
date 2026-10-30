@@ -4975,10 +4975,49 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
             if (original) original.disabled = true;
           });
         }
+        // Progreso persistente: visible incluso después de cerrar el modal.
+        let progresoPanel = null;
+        function pintarProgreso(pct, mensaje, detalle = '') {
+          if (!progresoPanel) {
+            progresoPanel = document.createElement('section');
+            progresoPanel.id = 'przProgresoImportacion';
+            progresoPanel.setAttribute('role', 'status');
+            progresoPanel.setAttribute('aria-live', 'polite');
+            progresoPanel.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99999;width:min(410px,calc(100vw - 36px));background:white;color:#243950;border:1px solid #d5e4f1;border-radius:13px;padding:16px;box-shadow:0 10px 36px #102c4650;font:13px system-ui,sans-serif';
+            progresoPanel.innerHTML = '<div style="font-weight:700;margin-bottom:6px">Importación a Drive PRZ <strong id="przProgresoPorcentaje" style="float:right">0%</strong></div><progress id="przProgresoBarra" max="100" value="0" style="width:100%;height:17px;accent-color:#176B45"></progress><div id="przProgresoMensaje" style="margin-top:8px"></div><div id="przProgresoDetalle" style="color:#75869b;margin-top:3px;font-size:11px;word-break:break-word"></div>';
+            document.body.appendChild(progresoPanel);
+          }
+          progresoPanel.querySelector('#przProgresoPorcentaje').textContent = Math.max(0,Math.min(100,Math.floor(pct))) + '%';
+          progresoPanel.querySelector('#przProgresoBarra').value = Math.max(0,Math.min(100,pct));
+          progresoPanel.querySelector('#przProgresoMensaje').textContent = mensaje;
+          progresoPanel.querySelector('#przProgresoDetalle').textContent = detalle;
+        }
+        // XHR informa los bytes transmitidos. Un timeout impide quedar eternamente cargando.
+        function subirArchivoConProgreso(url, form, onBytes) {
+          return new Promise((resolve,reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST',url,true);
+            xhr.withCredentials = true;
+            xhr.timeout = 120000;
+            xhr.setRequestHeader('Accept','application/json');
+            try { xhr.setRequestHeader('X-XSRF-TOKEN', token()); } catch(e) { reject(e); return; }
+            xhr.upload.onprogress = e => { if(e.lengthComputable) onBytes(Math.min(e.loaded,e.total)); };
+            xhr.onload = () => {
+              let data={}; try { data=JSON.parse(xhr.responseText||'{}'); } catch {}
+              if(xhr.status>=200 && xhr.status<300) resolve(data);
+              else reject(Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message || `Error HTTP ${xhr.status}`));
+            };
+            xhr.onerror = () => reject(Error('No se pudo conectar con el servidor.'));
+            xhr.ontimeout = () => reject(Error('La subida excedió 120 segundos. Comprueba en Drive si se guardó antes de reintentar.'));
+            xhr.onabort = () => reject(Error('Transferencia cancelada.'));
+            xhr.send(form);
+          });
+        }
         async function uploadReal(dt, destination) {
           if (busy) return;
           busy = true;
           let uploaded = 0, created = 0, reused = 0; const errors = [];
+          pintarProgreso(0, 'Preparando importación…');
           try {
             const entries = Array.isArray(dt) ? dt : await scan(dt);
             const directories = new Set(); const files = [];
@@ -4994,6 +5033,15 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
             const ordered = [...directories].sort((a,b) => a.split('/').length-b.split('/').length || a.localeCompare(b,'es'));
             if (ordered.length + files.length > MAX_ENTRIES) throw Error(`El máximo es ${MAX_ENTRIES} elementos por importación.`);
             const folderIds = new Map(); const invalidDirs = new Set();
+            const bytesTotal = files.reduce((n,x)=>n+x.file.size,0);
+            const unidadesTotal = Math.max(1,ordered.length+files.length);
+            let bytesListos=0;
+            const porcentaje = (carpetasListas, bytesArchivo=0, archivosListos=0) => {
+              // Primera fase hasta 10%, subida efectiva de archivos hasta 100%.
+              const prep = ordered.length ? (Math.min(carpetasListas,ordered.length)/ordered.length)*10 : 10;
+              const datos = bytesTotal > 0 ? 90 * (bytesListos+bytesArchivo)/bytesTotal : 90*(archivosListos/Math.max(1,files.length));
+              return Math.min(99.9,prep+datos);
+            };
             for (const [i,path] of ordered.entries()) {
               const parts = path.split('/'); const up = parts.slice(0,-1).join('/');
               if (up && invalidDirs.has(up)) { invalidDirs.add(path); continue; }
@@ -5005,23 +5053,31 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
                 if (res.created === false) reused++; else created++;
               } catch(err) { invalidDirs.add(path); errors.push(`${path}: ${err.message}`); }
               status(`Preparando carpetas: ${i+1}/${ordered.length}`);
+              pintarProgreso(porcentaje(i+1), `Preparando carpetas ${i+1}/${ordered.length}`, path);
             }
             for (const [i,item] of files.entries()) {
               const up = item.parts.slice(0,-1).join('/');
-              if (up && !folderIds.has(up)) { errors.push(`${item.file.name}: carpeta no disponible`); continue; }
-              if (item.file.size > 20*1024*1024) { errors.push(`${item.file.name}: supera 20 MB`); continue; }
+              if (up && !folderIds.has(up)) { errors.push(`${item.file.name}: carpeta no disponible`); bytesListos+=item.file.size; continue; }
+              if (item.file.size > 20*1024*1024) { errors.push(`${item.file.name}: supera 20 MB`); bytesListos+=item.file.size; continue; }
               const form = new FormData(); form.append('archivo',item.file);
               const dest = up ? folderIds.get(up) : destination;
               if (dest !== null) form.append('carpeta_id',String(dest));
-              try { await jsonPost(`${API}/files`,form); uploaded++; }
-              catch(err) { errors.push(`${item.file.name}: ${err.message}`); }
+              try {
+                await subirArchivoConProgreso(`${API}/files`,form,bytes => {
+                  pintarProgreso(porcentaje(ordered.length,bytes,i), `Subiendo archivo ${i+1}/${files.length}`, `${item.file.name} · ${Math.round(bytes/1024)} KB de ${Math.round(item.file.size/1024)} KB enviados`);
+                });
+                uploaded++;
+              } catch(err) { errors.push(`${item.file.name}: ${err.message}`); }
+              finally { bytesListos += item.file.size; }
+              pintarProgreso(porcentaje(ordered.length,0,i+1), `Procesados ${i+1}/${files.length} archivos`, item.file.name);
               status(`Subiendo archivos: ${i+1}/${files.length} · ${uploaded} guardados`);
             }
             await mostrarArchivosReales(carpetaRealActual);
             status(`Importación terminada: ${uploaded} archivos, ${created} carpetas procesadas, ${errors.length} errores.`);
+            pintarProgreso(100, errors.length ? 'Importación terminada con errores' : 'Importación completada', `${uploaded} archivos subidos · ${created} carpetas nuevas · ${errors.length} errores`);
             toast(errors.length ? `Importación parcial: ${uploaded} archivos. ${errors.slice(0,2).join(' | ')}` :
               `Importación completada: ${uploaded} archivos y ${created} carpetas procesadas.`);
-          } catch(err) { status(`Error: ${err.message}`); toast(err.message); }
+          } catch(err) { status(`Error: ${err.message}`); pintarProgreso(0,'Error en la importación',err.message); toast(err.message); }
           finally {busy = false; clear();}
         }
         // Drag real: si hay selección y el origen forma parte de ella, mover el conjunto.
