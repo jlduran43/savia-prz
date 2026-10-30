@@ -3191,69 +3191,80 @@
       // SUBIR ARCHIVOS REALES A SAVIA PRZ
       async function subirArchivosLaravel(archivos) {
         if (!archivos.length) return { subidos: 0, errores: [] };
-
         const boton = document.getElementById('uploadButton');
-        const tokenCookie = document.cookie
-          .split('; ')
-          .find(c => c.startsWith('XSRF-TOKEN='));
-
-        if (!tokenCookie) {
-          throw new Error('No se encontró el token de seguridad. Recarga la página.');
-        }
-
-        const token = decodeURIComponent(
-          tokenCookie.substring('XSRF-TOKEN='.length)
-        );
-
+        const tokenCookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+        if (!tokenCookie) throw new Error('No se encontró el token de seguridad. Recarga la página.');
+        const token = decodeURIComponent(tokenCookie.substring('XSRF-TOKEN='.length));
         boton.disabled = true;
-
+        window.przCargandoArchivos = true;
         let subidos = 0;
         const errores = [];
-
+        const totalBytes = archivos.reduce((n, f) => n + f.size, 0);
+        let bytesProcesados = 0;
+        const mostrar = (pct, mensaje, detalle = '') => {
+          if (typeof window.przPintarProgreso === 'function') {
+            window.przPintarProgreso(pct, mensaje, detalle);
+          }
+        };
+        mostrar(0, 'Preparando subida de archivos…', `${archivos.length} archivo(s)`);
         try {
-          for (const archivo of archivos) {
+          for (let i = 0; i < archivos.length; i++) {
+            const archivo = archivos[i];
             const datos = new FormData();
-
             datos.append('archivo', archivo);
-
-            if (carpetaRealActual !== null) {
-              datos.append('carpeta_id', carpetaRealActual);
-            }
-
+            if (carpetaRealActual !== null) datos.append('carpeta_id', carpetaRealActual);
+            mostrar(Math.min(99, totalBytes ? bytesProcesados / totalBytes * 100 : i / archivos.length * 100),
+              `Subiendo archivo ${i + 1}/${archivos.length}`, archivo.name);
             try {
-              const respuesta = await fetch(ENDPOINTS.subir, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                  'Accept': 'application/json',
-                  'X-XSRF-TOKEN': token
-                },
-                body: datos
+              await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', ENDPOINTS.subir, true);
+                xhr.withCredentials = true;
+                xhr.timeout = 120000;
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.setRequestHeader('X-XSRF-TOKEN', token);
+                xhr.upload.onprogress = e => {
+                  if (!e.lengthComputable) return;
+                  const enviados = Math.min(e.loaded, archivo.size);
+                  const pct = totalBytes ? 100 * (bytesProcesados + enviados) / totalBytes : 0;
+                  mostrar(Math.min(99, pct), `Subiendo archivo ${i + 1}/${archivos.length}`,
+                    `${archivo.name} · ${Math.round(enviados / 1024)} KB de ${Math.round(archivo.size / 1024)} KB enviados`);
+                };
+                xhr.onload = () => {
+                  let resultado = {};
+                  try { resultado = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+                  if (xhr.status >= 200 && xhr.status < 300) resolve(resultado);
+                  else reject(new Error(resultado.errors
+                    ? Object.values(resultado.errors).flat().join(', ')
+                    : resultado.message || `HTTP ${xhr.status}`));
+                };
+                xhr.onerror = () => reject(new Error('No se pudo conectar con el servidor.'));
+                xhr.ontimeout = () => reject(new Error('La subida excedió 120 segundos. Verifica el listado antes de reintentar.'));
+                xhr.onabort = () => reject(new Error('Transferencia cancelada.'));
+                xhr.send(datos);
               });
-
-              const resultado = await respuesta.json();
-
-              if (!respuesta.ok) {
-                const mensaje = resultado.errors
-                  ? Object.values(resultado.errors).flat().join(', ')
-                  : resultado.message || `HTTP ${respuesta.status}`;
-
-                throw new Error(mensaje);
-              }
-
               subidos++;
-
             } catch (error) {
               errores.push(`${archivo.name}: ${error.message}`);
+            } finally {
+              bytesProcesados += archivo.size;
             }
           }
-
           await mostrarArchivosReales(carpetaRealActual);
-
+          mostrar(100, errores.length ? 'Subida terminada con errores' : 'Subida completada',
+            `${subidos} archivos subidos · ${errores.length} errores`);
           return { subidos, errores };
-
+        } catch (error) {
+          mostrar(0, 'Error al finalizar la subida', error.message);
+          throw error;
         } finally {
+          window.przCargandoArchivos = false;
           boton.disabled = false;
+          if (!errores.length && typeof window.przCerrarProgresoDespues === 'function') {
+            // Si falla una operación global se muestra el mensaje de error y se mantiene el panel.
+            const mensaje = document.getElementById('przProgresoMensaje')?.textContent || '';
+            if (mensaje === 'Subida completada') window.przCerrarProgresoDespues(5000);
+          }
         }
       }
 
@@ -5092,7 +5103,7 @@ function pintarProgreso(pct, mensaje, detalle = '') {
 
         progresoPanel.querySelector('#przCerrarProgreso')
             .addEventListener('click', () => {
-                if (!busy) cerrarPanelImportacion();
+                if (!busy && !window.przCargandoArchivos) cerrarPanelImportacion();
             });
     }
 
@@ -5109,10 +5120,14 @@ function pintarProgreso(pct, mensaje, detalle = '') {
         .textContent = detalle;
 
     const cerrar = progresoPanel.querySelector('#przCerrarProgreso');
-    cerrar.disabled = busy;
-    cerrar.style.opacity = busy ? '0.4' : '1';
-    cerrar.style.cursor = busy ? 'not-allowed' : 'pointer';
+    cerrar.disabled = busy || !!window.przCargandoArchivos;
+    cerrar.style.opacity = cerrar.disabled ? '0.4' : '1';
+    cerrar.style.cursor = cerrar.disabled ? 'not-allowed' : 'pointer';
 }
+        // Compartir el mismo panel entre arrastre de carpetas y subida manual.
+        window.przPintarProgreso = pintarProgreso;
+        window.przCerrarProgresoDespues = cerrarImportacionDespuesDe;
+
         // XHR informa los bytes transmitidos. Un timeout impide quedar eternamente cargando.
         function subirArchivoConProgreso(url, form, onBytes) {
           return new Promise((resolve,reject) => {
@@ -6381,6 +6396,26 @@ cargarUsuarioActualLaravel().catch(error => {
 });
     })();
 
+    // Bloquear menú contextual en imágenes y documentos del visor
+document.addEventListener('contextmenu', function (event) {
+
+    const visor = event.target.closest(
+        '#previewBox, .previewbox, iframe, .document-preview'
+    );
+
+    if (visor) {
+        event.preventDefault();
+    }
+
+});
+
+document.addEventListener('dragstart', function (event) {
+
+    if (event.target.matches('.previewbox img')) {
+        event.preventDefault();
+    }
+
+});
 
   </script>
   <script>
