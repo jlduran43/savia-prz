@@ -204,7 +204,9 @@
             </div>
 
             @php
-                $urlContenido = route('drive-prz.publico.contenido', ['token' => $token]);
+                $urlContenido = route('drive-prz.publico.contenido', [
+                    'token' => $token,
+                ]);
 
                 $extension = strtolower(pathinfo($documento->nombre_original, PATHINFO_EXTENSION));
             @endphp
@@ -212,17 +214,24 @@
             @if ($visualizable)
 
                 @if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                    {{-- PREVISUALIZACIÓN DE IMÁGENES --}}
                     <img src="{{ $urlContenido }}" alt="Documento compartido" class="imagen">
+                @elseif ($extension === 'pdf')
+                    {{-- PREVISUALIZACIÓN DE PDF --}}
+                    <iframe src="{{ $urlContenido }}#toolbar=0&navpanes=0" width="100%" height="700"
+                        style="border:0; border-radius:10px;" title="Vista previa del documento">
+                    </iframe>
                 @else
-                    iframe src="{{ route('drive-prz.publico.contenido'
-@endif
-@else
-<div class="aviso">
-                    Este formato no admite vista previa
-                    en la versión de prueba.
-        </div>
+                    <div class="aviso">
+                        Este formato no admite vista previa.
+                    </div>
+                @endif
+            @else
+                <div class="aviso">
+                    Este formato no admite vista previa.
+                </div>
 
-        @endif
+            @endif
 
         </div>
 
