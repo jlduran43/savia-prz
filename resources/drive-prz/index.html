@@ -3686,7 +3686,7 @@
             const acciones = carpeta
               ? `<button type="button" class="action" data-real-folder="${x.id}">Abrir</button>`
               : `<button type="button" class="action" data-real-preview="${x.id}" data-preview-name="${esc(x.name)}" data-preview-size="${Number(x.size)||0}">Ver</button><a class="action" href="/drive-prz-v5/files/${x.id}/download">Descargar</a>`;
-            return `<article class="tile" data-real-tile="${realKey(x)}">
+            return `<article class="tile" draggable="true" data-real-drag="${realKey(x)}" data-real-tile="${realKey(x)}">
               <div class="tiletop"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"> <span class="fileico ${categoria}">${glyph(icono)}</span></div>
               ${carpeta ? `<button class="filename" data-real-folder="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button>` : `<strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong>`}
               <span class="filemeta">${carpeta ? 'Carpeta' : esc(ext.toUpperCase())} · ${carpeta ? '—' : size(x.size)} · ${formatDate(x.modified)}</span>
@@ -3753,7 +3753,7 @@
                                    </a>`;
 
             return `
-                                <tr>
+                                <tr draggable="true" data-real-drag="${realKey(x)}">
                                     <td class="selcol"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"></td>
                                     <td>
                                         <div class="namecell">
@@ -4819,6 +4819,181 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
       $('searchInput').addEventListener('input', e => { selection.clear(); state.search = e.target.value.trim(); draw() }); $('typeFilter').addEventListener('change', e => { selection.clear(); state.type = e.target.value; draw() }); $('sortBy').addEventListener('change', e => { state.sort = e.target.value; draw() }); $('listBtn').addEventListener('click', () => { state.layout = 'list'; draw() }); $('gridBtn').addEventListener('click', () => { state.layout = 'grid'; draw() });
       $('modalMount').addEventListener('wheel', e => { if (stage && e.ctrlKey && e.target.closest('#stageViewport')) { const v = stageClass(stage.files[stage.index]); if (v === 'image' || v === 'text') { e.preventDefault(); stageZoom(e.deltaY < 0 ? 25 : -25) } } }, { passive: false });
       $('modalMount').addEventListener('click', e => { if (e.target.dataset.backdrop) close() }); document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); if (e.key === 'Enter' && e.target.id === 'folderName') saveFolder(); if (e.key === 'Enter' && e.target.id === 'renameInput') saveRename($('modalMount').querySelector('[data-act="saveRename"]')?.dataset.id) });
+      // DRIVE PRZ: arrastrar y soltar REAL (MySQL + Storage, no IndexedDB).
+      // Se registra en captura para no disparar los manejadores de la demo local.
+      (() => {
+        const zone = document.getElementById('dropzone');
+        const area = document.getElementById('filesArea');
+        let dragging = null, busy = false, highlighted = null;
+        const token = () => {
+          const match = document.cookie.split('; ').find(x => x.startsWith('XSRF-TOKEN='));
+          if (!match) throw Error('Sesión vencida o token CSRF ausente. Recarga la página.');
+          return decodeURIComponent(match.substring(11));
+        };
+        const realScreen = () => document.getElementById('sectionSubtitle')?.textContent?.includes('SAVIA PRZ') &&
+          !['trash', 'shared'].includes(state.section);
+        const itemFromNode = node => realVisible.find(x => realKey(x) === node?.dataset.realDrag);
+        const rowAt = e => e.target.closest('[data-real-drag]');
+        const folderAt = e => {
+          const item = itemFromNode(rowAt(e));
+          return item?.type === 'folder' ? Number(item.id) : null;
+        };
+        function mark(node) {
+          if (highlighted && highlighted !== node) highlighted.classList.remove('prz-real-drop-target');
+          highlighted = node;
+          if (node) node.classList.add('prz-real-drop-target');
+        }
+        function clear() { mark(null); document.getElementById('dropCover')?.classList.add('hidden'); }
+        async function jsonPost(path, data) {
+          const headers = {'Accept':'application/json','X-XSRF-TOKEN':token()};
+          let body;
+          if (data instanceof FormData) body = data;
+          else { headers['Content-Type'] = 'application/json'; body = JSON.stringify(data); }
+          const response = await fetch(path, {method:'POST',credentials:'same-origin',headers,body});
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw Error(result.errors ? Object.values(result.errors).flat().join(' ') :
+            (result.message || `Error HTTP ${response.status}`));
+          return result;
+        }
+        const status = (text) => {
+          let bar = document.getElementById('przRealDropStatus');
+          if (!bar) {
+            bar = document.createElement('div'); bar.id = 'przRealDropStatus';
+            bar.setAttribute('role', 'status'); zone.prepend(bar);
+          }
+          bar.textContent = text;
+        };
+        async function moveReal(selection, destination) {
+          if (busy || !selection.length) return;
+          if (selection.some(x => x.type === 'folder' && Number(x.id) === destination)) {
+            toast('No puedes mover una carpeta dentro de sí misma.'); return;
+          }
+          if (!window.confirm(`¿Mover ${selection.length} elemento(s) a ${destination === null ? 'Mis archivos' : 'la carpeta seleccionada'}?`)) return;
+          busy = true;
+          let ok = 0; const errors = [];
+          try {
+            for (const x of selection) {
+              try {
+                await jsonPost(`${API}/${x.type === 'folder' ? 'folders' : 'files'}/${Number(x.id)}/move`, {destino_id:destination});
+                ok++;
+              } catch (err) { errors.push(`${x.name}: ${err.message}`); }
+            }
+            await mostrarArchivosReales(carpetaRealActual);
+            status(`Movimiento: ${ok} de ${selection.length} elemento(s).`);
+            toast(errors.length ? `Movidos: ${ok}. No movidos: ${errors.slice(0, 2).join(' | ')}` : `${ok} elemento(s) movidos correctamente.`);
+          } catch (err) { toast(err.message); }
+          finally { busy = false; dragging = null; clear(); }
+        }
+        const MAX_ENTRIES = 1200;
+        async function scan(dt) {
+          const roots = Array.from(dt.items || []).filter(x => x.kind === 'file')
+            .map(x => x.webkitGetAsEntry?.()).filter(Boolean);
+          if (!roots.length) return Array.from(dt.files || []).map(file => ({path:file.webkitRelativePath || file.name,file}));
+          const result = [];
+          async function descend(entry, prefix = '', depth = 0) {
+            if (depth > 20 || result.length >= MAX_ENTRIES) throw Error('Se superó el límite de carpetas o elementos.');
+            const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+            if (entry.isDirectory) {
+              result.push({path,dir:true});
+              const reader = entry.createReader();
+              while (true) {
+                const children = await new Promise((resolve,reject) => reader.readEntries(resolve,reject));
+                if (!children.length) break;
+                for (const child of children) await descend(child,path,depth+1);
+              }
+            } else {
+              const file = await new Promise((resolve,reject) => entry.file(resolve,reject));
+              result.push({path,file});
+            }
+          }
+          for (const root of roots) await descend(root);
+          return result;
+        }
+        async function uploadReal(dt, destination) {
+          if (busy) return;
+          busy = true;
+          let uploaded = 0, created = 0, reused = 0; const errors = [];
+          try {
+            const entries = await scan(dt);
+            const directories = new Set(); const files = [];
+            for (const item of entries) {
+              const parts = String(item.path).replace(/\\/g,'/').split('/');
+              if (!parts.length || parts.some(x => !x || x === '.' || x === '..' || x.length > 120 || /[\\<>\x00-\x1F]/.test(x))) {
+                errors.push(`Ruta inválida: ${item.path}`); continue;
+              }
+              const limit = item.dir ? parts.length : parts.length - 1;
+              for (let k = 1; k <= limit; k++) directories.add(parts.slice(0,k).join('/'));
+              if (item.file) files.push({file:item.file,parts});
+            }
+            const ordered = [...directories].sort((a,b) => a.split('/').length-b.split('/').length || a.localeCompare(b,'es'));
+            if (ordered.length + files.length > MAX_ENTRIES) throw Error(`El máximo es ${MAX_ENTRIES} elementos por importación.`);
+            const folderIds = new Map(); const invalidDirs = new Set();
+            for (const [i,path] of ordered.entries()) {
+              const parts = path.split('/'); const up = parts.slice(0,-1).join('/');
+              if (up && invalidDirs.has(up)) { invalidDirs.add(path); continue; }
+              try {
+                const res = await jsonPost(`${API}/ensure-folder`, {
+                  nombre:parts.at(-1), carpeta_padre_id:up ? folderIds.get(up) : destination
+                });
+                folderIds.set(path,Number(res.id));
+                if (res.created === false) reused++; else created++;
+              } catch(err) { invalidDirs.add(path); errors.push(`${path}: ${err.message}`); }
+              status(`Preparando carpetas: ${i+1}/${ordered.length}`);
+            }
+            for (const [i,item] of files.entries()) {
+              const up = item.parts.slice(0,-1).join('/');
+              if (up && !folderIds.has(up)) { errors.push(`${item.file.name}: carpeta no disponible`); continue; }
+              if (item.file.size > 20*1024*1024) { errors.push(`${item.file.name}: supera 20 MB`); continue; }
+              const form = new FormData(); form.append('archivo',item.file);
+              const dest = up ? folderIds.get(up) : destination;
+              if (dest !== null) form.append('carpeta_id',String(dest));
+              try { await jsonPost(`${API}/files`,form); uploaded++; }
+              catch(err) { errors.push(`${item.file.name}: ${err.message}`); }
+              status(`Subiendo archivos: ${i+1}/${files.length} · ${uploaded} guardados`);
+            }
+            await mostrarArchivosReales(carpetaRealActual);
+            status(`Importación terminada: ${uploaded} archivos, ${created} carpetas procesadas, ${errors.length} errores.`);
+            toast(errors.length ? `Importación parcial: ${uploaded} archivos. ${errors.slice(0,2).join(' | ')}` :
+              `Importación completada: ${uploaded} archivos y ${created} carpetas procesadas.`);
+          } catch(err) { status(`Error: ${err.message}`); toast(err.message); }
+          finally {busy = false; clear();}
+        }
+        // Drag real: si hay selección y el origen forma parte de ella, mover el conjunto.
+        area.addEventListener('dragstart',e => {
+          if (!realScreen()) return;
+          const row = rowAt(e), item = itemFromNode(row);
+          if (!item || e.target.closest('button,a,input')) return;
+          dragging = realSelection.has(realKey(item)) ? [...realSelection.values()] : [item];
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('application/x-prz-real','1');
+          e.dataTransfer.setData('text/plain',item.name);
+          e.stopPropagation();
+        },true);
+        area.addEventListener('dragend', e => {dragging = null; clear();e.stopPropagation();},true);
+        zone.addEventListener('dragover',e => {
+          if (!realScreen() || busy) return;
+          e.preventDefault(); e.stopPropagation();
+          const target = folderAt(e), row = target === null ? null : rowAt(e);
+          const valid = !dragging || !dragging.some(x=>x.type==='folder' && Number(x.id) === target);
+          e.dataTransfer.dropEffect = valid ? (dragging ? 'move' : 'copy') : 'none';
+          mark(row);
+          document.getElementById('dropCover')?.classList.toggle('hidden', !!row || !!dragging);
+        },true);
+        zone.addEventListener('drop',e => {
+          if (!realScreen()) return;
+          e.preventDefault();e.stopPropagation();
+          const to = folderAt(e) ?? carpetaRealActual;
+          const internal = dragging;
+          clear();
+          if (internal) { moveReal(internal,to); return; }
+          if (e.dataTransfer.items?.length || e.dataTransfer.files?.length) uploadReal(e.dataTransfer,to);
+        },true);
+        zone.addEventListener('dragleave',e => {
+          if (!realScreen()) return;
+          if (!zone.contains(e.relatedTarget)) clear();
+        },true);
+      })();
+
       const dz = $('dropzone'); let depth = 0;
       function dropHighlight(target, on) { if (target) target.classList.toggle('drop-target', on) }
       app.addEventListener('dragstart', e => {
