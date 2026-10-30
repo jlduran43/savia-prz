@@ -3300,6 +3300,24 @@
             </div>
           </div>
           <div id="przShareGeneralCustomBox" class="prz-permission-box hidden"></div>
+          ${tipo === 'files' ? `
+          <div class="shareblock" id="przExternalSection">
+            <label class="field">3. Compartir mediante enlace externo</label>
+            <p class="hint">Permite acceder al documento sin iniciar sesión durante 7 días. Cualquier persona que tenga el enlace podrá verlo si su formato lo permite.</p>
+            <div class="shareform" style="margin-top:12px">
+              <button type="button" class="btn primary" id="przExternalGenerate" disabled>Generar enlace externo</button>
+              <button type="button" class="btn" id="przExternalRevoke" disabled>Revocar enlace</button>
+            </div>
+            <div id="przExternalResult" class="hidden" style="margin-top:12px">
+              <label for="przExternalUrl" class="field">Enlace para compartir</label>
+              <div class="shareform">
+                <input type="text" id="przExternalUrl" class="textinput" readonly aria-label="URL externa generada">
+                <button type="button" class="btn" id="przExternalCopy">Copiar enlace</button>
+              </div>
+            </div>
+            <p class="hint" id="przExternalStatus" aria-live="polite">Consultando estado del enlace...</p>
+            <p id="przExternalError" class="hint" role="alert" style="color:#b33c46"></p>
+          </div>` : ''}
           <div class="sharepeople"><label class="field">Personas con acceso</label><div id="przSharePeople">Consultando permisos...</div></div>
           <div class="notice">Los permisos heredados de carpetas superiores no pueden reducirse desde un archivo hijo.</div>
           <p id="przShareError" class="hint" role="alert" style="color:#b33c46"></p>
@@ -3459,6 +3477,74 @@
           const sel = e.target.closest('.przSharePersonRole');
           if (sel) execute(() => apiCompartir(`${base}/people/${sel.dataset.userId}`, 'PUT', rolePayload(sel.value,sel.value==='custom'?(info.people||[]).find(p=>Number(p.id)===Number(sel.dataset.userId))?.permissions || {view:true,download:true}:null)));
         });
+        // Enlaces externos: independientes de los permisos internos.
+        if (tipo === 'files') {
+          const enlaceBase = `${API}/enlaces/${encodeURIComponent(id)}`;
+          const btnGenerar = q('przExternalGenerate');
+          const btnRevocar = q('przExternalRevoke');
+          const btnCopiar = q('przExternalCopy');
+          const estado = q('przExternalStatus');
+          const errorEnlace = q('przExternalError');
+          const resultado = q('przExternalResult');
+          const urlInput = q('przExternalUrl');
+          let enlaceActivo = false;
+          let ocupadoEnlace = false;
+          const fechaEnlace = valor => valor ? new Date(valor.replace(' ', 'T')).toLocaleString('es-CL') : '';
+          const pintarEnlace = () => {
+            btnGenerar.disabled = ocupadoEnlace || !canShare();
+            btnRevocar.disabled = ocupadoEnlace || !canShare() || !enlaceActivo;
+            btnGenerar.textContent = enlaceActivo ? 'Generar nuevo enlace' : 'Generar enlace externo';
+          };
+          const consultarEnlace = async () => {
+            try {
+              const data = await apiCompartir(enlaceBase);
+              if (!q('przExternalSection')) return;
+              enlaceActivo = !!data.activo;
+              estado.textContent = enlaceActivo
+                ? `Existe un enlace activo. Vence: ${fechaEnlace(data.expira_at)}. Para obtener una nueva URL debes generar otro enlace.`
+                : 'No hay enlaces externos activos.';
+            } catch (e) {
+              estado.textContent = 'No fue posible consultar el enlace externo.';
+              errorEnlace.textContent = e.message;
+            }
+            pintarEnlace();
+          };
+          btnGenerar.addEventListener('click', async () => {
+            if (ocupadoEnlace || !canShare()) return;
+            ocupadoEnlace = true; errorEnlace.textContent = ''; pintarEnlace();
+            try {
+              const data = await apiCompartir(enlaceBase, 'POST', {});
+              if (!data.url || !data.url.startsWith('https://')) throw new Error('El servidor no devolvió una URL HTTPS válida.');
+              urlInput.value = data.url;
+              resultado.classList.remove('hidden');
+              enlaceActivo = true;
+              estado.textContent = 'Enlace creado. Cópialo ahora: por seguridad no se puede recuperar después de cerrar esta ventana. Vence en 7 días.';
+              toast('Enlace externo generado correctamente.');
+            } catch (e) { errorEnlace.textContent = e.message; }
+            finally { ocupadoEnlace = false; pintarEnlace(); }
+          });
+          btnRevocar.addEventListener('click', async () => {
+            if (ocupadoEnlace || !canShare() || !enlaceActivo) return;
+            if (!window.confirm('¿Revocar el enlace externo? Dejará de funcionar inmediatamente.')) return;
+            ocupadoEnlace = true; errorEnlace.textContent = ''; pintarEnlace();
+            try {
+              await apiCompartir(enlaceBase, 'DELETE', {});
+              enlaceActivo = false;
+              urlInput.value = '';
+              resultado.classList.add('hidden');
+              estado.textContent = 'Enlace revocado. Ya no se puede acceder con esa URL.';
+              toast('Enlace externo revocado.');
+            } catch (e) { errorEnlace.textContent = e.message; }
+            finally { ocupadoEnlace = false; pintarEnlace(); }
+          });
+          btnCopiar.addEventListener('click', async () => {
+            if (!urlInput.value) return;
+            try { await navigator.clipboard.writeText(urlInput.value); toast('Enlace copiado al portapapeles.'); }
+            catch (e) { urlInput.select(); errorEnlace.textContent = 'No se pudo copiar automáticamente. Copia el enlace seleccionado con Ctrl+C.'; }
+          });
+          // El estado se consulta al abrir; la habilitación de botones depende del propietario.
+          await consultarEnlace();
+        }
         try {
           const results = await Promise.all([apiCompartir(base), apiCompartir(`${API}/sharing/users`)]);
           info = results[0]; users = results[1].users || [];
@@ -3466,6 +3552,10 @@
           // Reiniciar el formulario para cada apertura del modal.
           limpiarSeleccionTemporal();
           renderPermissions(); updateControls(); refreshCustom();
+          if (tipo === 'files') {
+            q('przExternalGenerate').disabled = !canShare();
+            q('przExternalRevoke').disabled = !canShare() || !q('przExternalStatus').textContent.startsWith('Existe un enlace activo');
+          }
           if (canShare()) renderChoices();
         } catch(e) {
           if (frame.isConnected && errorBox.isConnected) {
