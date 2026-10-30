@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <meta name="robots" content="noindex,nofollow">
 
@@ -50,7 +49,7 @@
             background: white;
             padding: 22px;
             border-radius: 14px;
-            box-shadow: 0 4px 18px rgba(0,0,0,.07);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, .07);
         }
 
         .archivo {
@@ -95,80 +94,145 @@
             font-size: 12px;
             padding: 25px;
         }
+
+        /* Identidad visual Drive PRZ */
+
+        body {
+            margin: 0;
+            background: #f5f7fb;
+            color: #1a2c40;
+            font-family: system-ui, -apple-system,
+                BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        /* Encabezado */
+        header {
+            background: #14263d;
+            color: #ffffff;
+            padding: 24px 32px;
+            border-bottom: 1px solid #1d3652;
+        }
+
+        header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        header p {
+            color: #c1d0e0;
+            font-size: 13px;
+            margin: 5px 0 0;
+        }
+
+        /* Contenedor del documento */
+        main {
+            max-width: 1400px;
+            margin: 36px auto;
+            padding: 30px;
+            background: #ffffff;
+            border: 1px solid #e5ebf2;
+            border-radius: 14px;
+            box-shadow: 0 5px 25px rgba(25, 45, 70, 0.07);
+        }
+
+        /* Nombre del documento */
+        main h2 {
+            color: #14263d;
+            font-size: 21px;
+            font-weight: 750;
+        }
+
+        /* Texto secundario */
+        main p {
+            color: #6e7e90;
+        }
+
+        /* Botones */
+        main a.btn,
+        main button {
+            background: #1664bd;
+            border: 1px solid #1664bd;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        main a.btn:hover,
+        main button:hover {
+            background: #104f99;
+        }
+
+        /* Adaptación a teléfonos */
+        @media (max-width: 768px) {
+            header {
+                padding: 18px;
+            }
+
+            header h1 {
+                font-size: 19px;
+            }
+
+            main {
+                margin: 16px 12px;
+                padding: 18px;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-<header>
-    <h2>Parque Museo Pedro del Río Zañartu</h2>
-    <p>Documento compartido mediante Drive PRZ</p>
-</header>
+    <header>
+        <h2>Parque Museo Pedro del Río Zañartu</h2>
+        <p>Documento compartido mediante Drive PRZ</p>
+    </header>
 
-<main>
+    <main>
 
-    <div class="card">
+        <div class="card">
 
-        <div class="archivo">
-            {{ $documento->nombre_original }}
-        </div>
+            <div class="archivo">
+                {{ $documento->nombre_original }}
+            </div>
 
-        <div class="subtitulo">
-            Acceso externo de solo lectura
-        </div>
+            <div class="subtitulo">
+                Acceso externo de solo lectura
+            </div>
 
-        @php
-            $urlContenido = route(
-                'drive-prz.publico.contenido',
-                ['token' => $token]
-            );
+            @php
+                $urlContenido = route('drive-prz.publico.contenido', ['token' => $token]);
 
-            $extension = strtolower(
-                pathinfo(
-                    $documento->nombre_original,
-                    PATHINFO_EXTENSION
-                )
-            );
-        @endphp
+                $extension = strtolower(pathinfo($documento->nombre_original, PATHINFO_EXTENSION));
+            @endphp
 
-        @if ($visualizable)
+            @if ($visualizable)
 
-            @if (in_array($extension, [
-                'jpg', 'jpeg', 'png', 'gif', 'webp'
-            ]))
-
-                <img
-                    src="{{ $urlContenido }}"
-                    alt="Documento compartido"
-                    class="imagen"
-                >
-
+                @if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                    <img src="{{ $urlContenido }}" alt="Documento compartido" class="imagen">
+                @else
+                    <iframe src="{{ $urlContenido }}" title="Vista previa del documento" referrerpolicy="no-referrer">
+                    </iframe>
+                @endif
             @else
-
-                <iframe
-                    src="{{ $urlContenido }}"
-                    title="Vista previa del documento"
-                    referrerpolicy="no-referrer">
-                </iframe>
+                <div class="aviso">
+                    Este formato no admite vista previa
+                    en la versión de prueba.
+                </div>
 
             @endif
 
-        @else
+        </div>
 
-            <div class="aviso">
-                Este formato no admite vista previa
-                en la versión de prueba.
-            </div>
+    </main>
 
-        @endif
-
-    </div>
-
-</main>
-
-<footer>
-    Drive PRZ · Acceso externo a documento compartido
-</footer>
+    <footer>
+        Drive PRZ · Acceso externo a documento compartido
+    </footer>
 
 </body>
+
 </html>
