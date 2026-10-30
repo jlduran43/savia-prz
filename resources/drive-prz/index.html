@@ -6315,6 +6315,25 @@ cargarUsuarioActualLaravel().catch(error => {
         logout.disabled = false;
       }
     });
+    let importToastTimer = null;
+
+function cerrarImportacionDespuesDe(ms = 5000) {
+    clearTimeout(importToastTimer);
+
+    importToastTimer = setTimeout(() => {
+        const panel = document.getElementById('importProgress');
+
+        if (panel) {
+            panel.style.transition = 'opacity 0.3s ease';
+            panel.style.opacity = '0';
+
+            setTimeout(() => {
+                panel.style.display = 'none';
+                panel.style.opacity = '1';
+            }, 300);
+        }
+    }, ms);
+}
   })();
   </script>
   <script>
