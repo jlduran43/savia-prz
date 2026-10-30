@@ -513,10 +513,7 @@ class DrivePrzController extends Controller
 
         $this->parent($root);
 
-
-
-        $lines = array_values(array_filter(array_map('trim', preg_split('/\*\***\r\n**\*\*|\*\***\r**\*\*|\*\***\n**\*\*/', $d['estructura']))));
-
+        $lines = preg_split('/\r\n|\r|\n/', $d['estructura']);
 
 
         abort_if(count($lines) > 100, 422, 'Máximo 100 rutas por operación.');
