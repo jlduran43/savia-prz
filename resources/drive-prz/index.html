@@ -4921,12 +4921,66 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           for (const root of roots) await descend(root);
           return result;
         }
+        // Vista previa: no realiza cambios en Laravel hasta que se confirme.
+        let previewDropVersion = 0;
+        function prepararVistaPreviaDrop(dt, destination) {
+          const version = ++previewDropVersion;
+          const areaPreview = document.getElementById('przOutlinePreviewReal');
+          const contador = document.getElementById('przOutlineCountReal');
+          const campo = document.getElementById('przOutlineReal');
+          if (!areaPreview || !contador || !campo) return;
+          areaPreview.textContent = 'Leyendo la estructura de carpetas…';
+          const original = document.getElementById('przGuardarEstructuraReal');
+          if (original) original.disabled = true;
+          // scan toma los FileSystemEntry del DataTransfer antes de que Chrome los invalide.
+          Promise.resolve(scan(dt)).then(entries => {
+            if (version !== previewDropVersion || !areaPreview.isConnected) return;
+            const dirs = new Set(); let totalFiles = 0;
+            for (const item of entries) {
+              const pieces = String(item.path).replace(/\\/g, '/').split('/');
+              if (pieces.some(v => !v || v === '.' || v === '..' || v.length > 120 || /[\\<>\x00-\x1f]/.test(v))) {
+                throw Error('Hay nombres de carpetas o archivos no válidos.');
+              }
+              for (let i = 1; i <= (item.dir ? pieces.length : pieces.length - 1); i++)
+                dirs.add(pieces.slice(0, i).join('/'));
+              if (item.file) totalFiles++;
+            }
+            if (!dirs.size && !totalFiles) throw Error('No se encontraron elementos para importar.');
+            if (dirs.size + totalFiles > MAX_ENTRIES) throw Error(`Máximo ${MAX_ENTRIES} elementos por importación.`);
+            const folders = [...dirs].sort((a,b) => a.split('/').length - b.split('/').length || a.localeCompare(b,'es'));
+            // Rellena el editor con rutas; también permite inspeccionar la estructura.
+            campo.value = folders.join('\n');
+            campo.readOnly = true;
+            contador.textContent = `${folders.length} carpetas · ${totalFiles} archivos`;
+            areaPreview.innerHTML = '<ul>' + entries.map(item => {
+              const parts = item.path.replace(/\\/g,'/').split('/');
+              const level = Math.max(0, parts.length - 1);
+              return `<li style="padding-left:${Math.min(level, 15)*14}px">${item.dir ? '📁' : '📄'} ${esc(parts.at(-1))}</li>`;
+            }).join('') + '</ul>';
+            const button = document.createElement('button');
+            button.type = 'button'; button.className = 'btn primary';
+            button.textContent = `Confirmar importación (${totalFiles} archivos)`;
+            button.style.marginTop = '12px';
+            button.addEventListener('click', async () => {
+              if (busy) return;
+              button.disabled = true; button.textContent = 'Importando…';
+              close();
+              await uploadReal(entries, destination);
+            }, {once:true});
+            areaPreview.appendChild(button);
+          }).catch(error => {
+            if (version !== previewDropVersion || !areaPreview.isConnected) return;
+            areaPreview.textContent = `No se pudo leer la carpeta: ${error.message}`;
+            contador.textContent = '0 carpetas';
+            if (original) original.disabled = true;
+          });
+        }
         async function uploadReal(dt, destination) {
           if (busy) return;
           busy = true;
           let uploaded = 0, created = 0, reused = 0; const errors = [];
           try {
-            const entries = await scan(dt);
+            const entries = Array.isArray(dt) ? dt : await scan(dt);
             const directories = new Set(); const files = [];
             for (const item of entries) {
               const parts = String(item.path).replace(/\\/g,'/').split('/');
@@ -5029,10 +5083,9 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           // En el modal de creación masiva y en cualquier otra parte de Drive,
           // se usa la carpeta real que está abierta actualmente.
           const destination = folderAt(e) ?? carpetaRealActual;
-          const inStructureModal = !!document.getElementById('outlineText');
-          const operation = uploadReal(e.dataTransfer, destination);
-          if (inStructureModal) close();
-          Promise.resolve(operation).catch(err => toast(`No se pudo importar: ${err.message}`));
+          const inStructureModal = !!document.getElementById('przOutlineReal');
+          if (inStructureModal) { prepararVistaPreviaDrop(e.dataTransfer, destination); return; }
+          Promise.resolve(uploadReal(e.dataTransfer, destination)).catch(err => toast(`No se pudo importar: ${err.message}`));
         }, {capture:true, passive:false});
         window.addEventListener('dragover', e => {
           if (Array.from(e.dataTransfer?.types || []).includes('Files')) e.preventDefault();
@@ -5044,7 +5097,7 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
         // La ventana "Crear varias carpetas" también acepta carpetas desde Windows.
         // Se importa la estructura REAL a Laravel; no se llena el editor de ejemplo.
         const modalDrop = document.getElementById('modalMount');
-        const structureModalOpen = () => !!modalDrop.querySelector('#outlineText');
+        const structureModalOpen = () => !!modalDrop.querySelector('#przOutlineReal');
         const externalPayload = e => !dragging &&
           Array.from(e.dataTransfer?.types || []).includes('Files');
         modalDrop.addEventListener('dragover', e => {
@@ -5068,9 +5121,7 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           const destination = carpetaRealActual;
           // uploadReal empieza a leer los FileSystemEntry inmediatamente,
           // antes de que el navegador invalide el DataTransfer del evento.
-          const operation = uploadReal(dt, destination);
-          close();
-          operation.catch(err => toast(`Error al importar: ${err.message}`));
+          prepararVistaPreviaDrop(dt, destination);
         }, true);
       })();
 
