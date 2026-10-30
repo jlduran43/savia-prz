@@ -181,6 +181,39 @@
                 padding: 18px;
             }
         }
+
+        /* Visor protegido de documentos compartidos */
+
+        .visor-pdf {
+            background: #292929;
+            border-radius: 10px;
+            padding: 20px;
+            height: 75vh;
+            overflow-y: auto;
+            text-align: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .visor-pdf canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto 18px;
+            box-shadow: 0 3px 12px #0004;
+            pointer-events: none;
+        }
+
+        .visor-estado {
+            color: #ffffff;
+            padding: 25px;
+            font-size: 14px;
+        }
+
+        .imagen {
+            user-select: none;
+            -webkit-user-drag: none;
+        }
     </style>
 </head>
 
@@ -217,10 +250,16 @@
                     {{-- PREVISUALIZACIÓN DE IMÁGENES --}}
                     <img src="{{ $urlContenido }}" alt="Documento compartido" class="imagen">
                 @elseif ($extension === 'pdf')
-                    {{-- PREVISUALIZACIÓN DE PDF --}}
-                    <iframe src="{{ $urlContenido }}#toolbar=0&navpanes=0" width="100%" height="700"
-                        style="border:0; border-radius:10px;" title="Vista previa del documento">
-                    </iframe>
+                    {{-- VISOR PDF PERSONALIZADO --}}
+                    <div id="visorPdf" class="visor-pdf" data-url="{{ $urlContenido }}">
+
+                        <div id="visorEstado" class="visor-estado">
+                            Cargando documento...
+                        </div>
+
+                        <div id="paginasPdf"></div>
+
+                    </div>
                 @else
                     <div class="aviso">
                         Este formato no admite vista previa.
@@ -240,6 +279,105 @@
     <footer>
         Drive PRZ · Acceso externo a documento compartido
     </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+
+            const visor = document.getElementById('visorPdf');
+
+            if (!visor) return;
+
+            const paginas = document.getElementById('paginasPdf');
+            const estado = document.getElementById('visorEstado');
+
+            // Bloquear clic derecho en el visor
+            visor.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+
+            try {
+
+                pdfjsLib.GlobalWorkerOptions.workerSrc =
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+                const pdf = await pdfjsLib.getDocument({
+                    url: visor.dataset.url,
+                    withCredentials: false
+                }).promise;
+
+                estado.textContent =
+                    'Preparando ' + pdf.numPages + ' página(s)...';
+
+                for (let numero = 1; numero <= pdf.numPages; numero++) {
+
+                    const pagina = await pdf.getPage(numero);
+
+                    const anchoDisponible = Math.max(
+                        100,
+                        visor.clientWidth - 40
+                    );
+
+                    const viewportOriginal = pagina.getViewport({
+                        scale: 1
+                    });
+
+                    const escala = Math.min(
+                        1.6,
+                        anchoDisponible / viewportOriginal.width
+                    );
+
+                    const viewport = pagina.getViewport({
+                        scale: escala
+                    });
+
+                    const canvas = document.createElement('canvas');
+                    const contexto = canvas.getContext('2d');
+
+                    canvas.width = Math.ceil(viewport.width);
+                    canvas.height = Math.ceil(viewport.height);
+
+                    paginas.appendChild(canvas);
+
+                    await pagina.render({
+                        canvasContext: contexto,
+                        viewport: viewport
+                    }).promise;
+                }
+
+                estado.remove();
+
+            } catch (error) {
+
+                console.error('Error al visualizar PDF:', error);
+
+                estado.textContent =
+                    'No fue posible visualizar este documento.';
+            }
+
+        });
+    </script>
+
+    <script>
+        // Bloqueo del menú contextual dentro de los visores HTML
+        document.addEventListener('contextmenu', function(e) {
+
+            if (e.target.closest('#visorPdf, .imagen')) {
+                e.preventDefault();
+            }
+
+        }, true);
+
+        // Evitar arrastrar imágenes
+        document.addEventListener('dragstart', function(e) {
+
+            if (e.target.closest('#visorPdf, .imagen')) {
+                e.preventDefault();
+            }
+
+        });
+    </script>
 
 </body>
 
