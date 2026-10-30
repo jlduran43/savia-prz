@@ -5005,6 +5005,42 @@ toast(`1 elemento(s) movidos a ${nombreDestino}.`);
           if (!zone.contains(e.relatedTarget)) clear();
         },true);
 
+        // PROTECCIÓN GLOBAL: evita que Chrome navegue a file:/// al soltar
+        // carpetas del Explorador de Windows fuera de una zona puntual.
+        // Se procesa una sola vez, en captura, antes de los eventos antiguos.
+        const isWindowsFiles = e => !dragging &&
+          Array.from(e.dataTransfer?.types || []).includes('Files');
+        document.addEventListener('dragover', e => {
+          if (!isWindowsFiles(e)) return;
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = realScreen() && !busy ? 'copy' : 'none';
+        }, {capture:true, passive:false});
+        document.addEventListener('drop', e => {
+          if (!isWindowsFiles(e)) return;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          if (busy) { toast('Ya se está procesando otra importación.'); return; }
+          if (!realScreen()) {
+            toast('Abre Mis archivos para importar carpetas desde Windows.');
+            return;
+          }
+          // Si el usuario suelta sobre una carpeta real, importamos allí.
+          // En el modal de creación masiva y en cualquier otra parte de Drive,
+          // se usa la carpeta real que está abierta actualmente.
+          const destination = folderAt(e) ?? carpetaRealActual;
+          const inStructureModal = !!document.getElementById('outlineText');
+          const operation = uploadReal(e.dataTransfer, destination);
+          if (inStructureModal) close();
+          Promise.resolve(operation).catch(err => toast(`No se pudo importar: ${err.message}`));
+        }, {capture:true, passive:false});
+        window.addEventListener('dragover', e => {
+          if (Array.from(e.dataTransfer?.types || []).includes('Files')) e.preventDefault();
+        }, {capture:true, passive:false});
+        window.addEventListener('drop', e => {
+          if (Array.from(e.dataTransfer?.types || []).includes('Files')) e.preventDefault();
+        }, {capture:true, passive:false});
+
         // La ventana "Crear varias carpetas" también acepta carpetas desde Windows.
         // Se importa la estructura REAL a Laravel; no se llena el editor de ejemplo.
         const modalDrop = document.getElementById('modalMount');
