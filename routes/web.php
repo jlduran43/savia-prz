@@ -814,3 +814,24 @@ Route::middleware('auth')->group(function () {
     ])->name('drive-prz.enlaces.revocar');
 
 });
+
+// =======================================================
+// DRIVE PRZ - ENLACES PÚBLICOS
+// No requieren iniciar sesión
+// =======================================================
+
+// Abrir pantalla pública del documento
+Route::get('/drive-prz/publico/{token}', [
+    DrivePrzEnlaceController::class,
+    'publico'
+])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->name('drive-prz.publico');
+
+// Visualizar el contenido del documento
+Route::get('/drive-prz/publico/{token}/contenido', [
+    DrivePrzEnlaceController::class,
+    'contenido'
+])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->name('drive-prz.publico.contenido');
