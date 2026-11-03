@@ -67,6 +67,13 @@ return [
             'throw' => true,
         ],
 
+        'drive_prz_previews' => [
+            'driver' => 'local',
+            'root' => storage_path('app/drive-prz-previews'),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
     ],
 
     /*

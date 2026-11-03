@@ -214,6 +214,58 @@
             user-select: none;
             -webkit-user-drag: none;
         }
+
+        /* Visor de páginas protegidas */
+        .visor-pdf-seguro {
+            background: #292929;
+            padding: 22px;
+            border-radius: 10px;
+            max-height: 78vh;
+            overflow-y: auto;
+            text-align: center;
+        }
+
+        .pagina-protegida {
+            position: relative;
+            margin: 0 auto 18px;
+            max-width: 100%;
+            width: fit-content;
+            overflow: hidden;
+            background: white;
+        }
+
+        .pagina-protegida img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            user-select: none;
+            -webkit-user-drag: none;
+            pointer-events: none;
+        }
+
+        .marca-prz {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            color: rgba(20, 38, 61, .18);
+            font-size: clamp(15px, 3vw, 29px);
+            font-weight: 800;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .numero-pagina {
+            color: #ffffff;
+            font-size: 12px;
+            padding: 8px;
+        }
+
+        .visor-pdf-seguro,
+        .visor-pdf-seguro * {
+            -webkit-user-select: none;
+            user-select: none;
+        }
     </style>
 </head>
 
@@ -250,17 +302,30 @@
                     {{-- PREVISUALIZACIÓN DE IMÁGENES --}}
                     <img src="{{ $urlContenido }}" alt="Documento compartido" class="imagen">
                 @elseif ($extension === 'pdf')
-                    {{-- VISOR PDF PERSONALIZADO --}}
-                    <div id="visorPdf" class="visor-pdf" data-url="{{ $urlContenido }}">
+                    <div id="visorPdfSeguro" class="visor-pdf-seguro">
 
-                        <div id="visorEstado" class="visor-estado">
-                            Cargando documento...
-                        </div>
+                        @for ($pagina = 1; $pagina <= $paginasPdf; $pagina++)
+                            <div class="pagina-protegida">
 
-                        <div id="paginasPdf"></div>
+                                <img src="{{ route('drive-prz.publico.pagina', [
+                                    'token' => $token,
+                                    'pagina' => $pagina,
+                                ]) }}"
+                                    alt="Página {{ $pagina }}" loading="{{ $pagina === 1 ? 'eager' : 'lazy' }}"
+                                    draggable="false">
+
+                                <div class="marca-prz">
+                                    DRIVE PRZ · SOLO LECTURA
+                                </div>
+
+                            </div>
+
+                            <div class="numero-pagina">
+                                Página {{ $pagina }} de {{ $paginasPdf }}
+                            </div>
+                        @endfor
 
                     </div>
-                @else
                     <div class="aviso">
                         Este formato no admite vista previa.
                     </div>
@@ -376,6 +441,18 @@
                 e.preventDefault();
             }
 
+        });
+
+        document.addEventListener('contextmenu', function(event) {
+            if (event.target.closest('#visorPdfSeguro')) {
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('dragstart', function(event) {
+            if (event.target.closest('#visorPdfSeguro')) {
+                event.preventDefault();
+            }
         });
     </script>
 

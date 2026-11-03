@@ -126,7 +126,6 @@ class DrivePrzEnlaceController extends Controller
         return $documento;
     }
 
-    // Pantalla pública sin iniciar sesión
     public function publico(string $token)
     {
         $documento = $this->verificar($token);
@@ -140,21 +139,31 @@ class DrivePrzEnlaceController extends Controller
             'image/png',
             'image/gif',
             'image/webp',
-            'text/plain',
         ];
+
+        $visualizable = in_array($mime, $permitidos, true);
+
+        $preview = null;
+
+        if ($mime === 'application/pdf') {
+            $preview = $this->datosPreview($documento);
+
+            // Si todavía no hay imágenes, no entregar el PDF.
+            $visualizable = $preview !== null;
+        }
 
         return response()
             ->view('drive-prz.publico', [
                 'documento' => $documento,
                 'token' => $token,
-                'visualizable' => in_array(
-                    $mime,
-                    $permitidos,
-                    true
-                ),
+                'visualizable' => $visualizable,
+                'paginasPdf' => $preview
+                    ? count($preview['paginas'])
+                    : 0,
             ])
-            ->header('Cache-Control', 'no-store')
+            ->header('Cache-Control', 'private, no-store, max-age=0')
             ->header('Referrer-Policy', 'no-referrer')
+            ->header('X-Content-Type-Options', 'nosniff')
             ->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
@@ -167,6 +176,13 @@ class DrivePrzEnlaceController extends Controller
 
         $mime = $disco->mimeType(
             $documento->ruta_archivo
+        );
+
+        // Los enlaces externos no pueden obtener el PDF original.
+        abort_if(
+            $mime === 'application/pdf',
+            403,
+            'El PDF original no está disponible en enlaces externos.'
         );
 
         $permitidos = [
@@ -194,6 +210,101 @@ class DrivePrzEnlaceController extends Controller
                 'Cache-Control' => 'no-store',
                 'Content-Security-Policy' => "default-src 'none'; sandbox",
                 'Referrer-Policy' => 'no-referrer',
+            ],
+            'inline'
+        );
+    }
+
+    private function datosPreview(Documento $documento): ?array
+    {
+        $origen = Storage::disk('documentos_privados');
+        $destino = Storage::disk('drive_prz_previews');
+
+        $revision = hash(
+            'sha256',
+            $documento->ruta_archivo . '|' .
+                $origen->size($documento->ruta_archivo) . '|' .
+                $origen->lastModified($documento->ruta_archivo)
+        );
+
+        $directorio = $documento->id . '/' . $revision;
+        $manifest = $directorio . '/manifest.json';
+
+        if (! $destino->exists($manifest)) {
+            return null;
+        }
+
+        $datos = json_decode($destino->get($manifest), true);
+
+        if (
+            ! is_array($datos)
+            || ($datos['revision'] ?? null) !== $revision
+            || (int) ($datos['documento_id'] ?? 0) !== (int) $documento->id
+            || ! isset($datos['paginas'])
+            || ! is_array($datos['paginas'])
+            || count($datos['paginas']) < 1
+            || count($datos['paginas']) > 20
+        ) {
+            return null;
+        }
+
+        foreach ($datos['paginas'] as $nombre) {
+            if (
+                ! is_string($nombre)
+                || ! preg_match('/^pagina-[0-9]{3}\.jpg$/', $nombre)
+                || ! $destino->exists($directorio . '/' . $nombre)
+            ) {
+                return null;
+            }
+        }
+
+        return [
+            'directorio' => $directorio,
+            'paginas' => $datos['paginas'],
+        ];
+    }
+
+    public function pagina(string $token, int $pagina)
+    {
+        // Siempre volver a validar el enlace.
+        $documento = $this->verificar($token);
+
+        $origen = Storage::disk('documentos_privados');
+
+        abort_unless(
+            $origen->mimeType($documento->ruta_archivo)
+                === 'application/pdf',
+            404
+        );
+
+        $preview = $this->datosPreview($documento);
+
+        abort_unless($preview !== null, 404);
+
+        abort_unless(
+            $pagina >= 1 &&
+                $pagina <= count($preview['paginas']),
+            404
+        );
+
+        $archivo = $preview['directorio'] . '/' .
+            $preview['paginas'][$pagina - 1];
+
+        $disco = Storage::disk('drive_prz_previews');
+
+        abort_unless($disco->exists($archivo), 404);
+
+        return $disco->response(
+            $archivo,
+            'pagina-' . $pagina . '.jpg',
+            [
+                'Content-Type' => 'image/jpeg',
+                'Content-Disposition' => 'inline',
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'Pragma' => 'no-cache',
+                'X-Content-Type-Options' => 'nosniff',
+                'Referrer-Policy' => 'no-referrer',
+                'X-Robots-Tag' => 'noindex, nofollow',
             ],
             'inline'
         );

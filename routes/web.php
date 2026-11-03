@@ -820,18 +820,30 @@ Route::middleware('auth')->group(function () {
 // No requieren iniciar sesión
 // =======================================================
 
-// Abrir pantalla pública del documento
+// Abrir pantalla pública
 Route::get('/drive-prz/publico/{token}', [
     DrivePrzEnlaceController::class,
     'publico'
 ])
     ->where('token', '[A-Za-z0-9]{64}')
+    ->middleware('throttle:60,1')
     ->name('drive-prz.publico');
 
-// Visualizar el contenido del documento
+// Obtener contenido autorizado
 Route::get('/drive-prz/publico/{token}/contenido', [
     DrivePrzEnlaceController::class,
     'contenido'
 ])
     ->where('token', '[A-Za-z0-9]{64}')
+    ->middleware('throttle:120,1')
     ->name('drive-prz.publico.contenido');
+
+// DRIVE PRZ - Páginas de PDF compartido
+Route::get('/drive-prz/publico/{token}/pagina/{pagina}', [
+    DrivePrzEnlaceController::class,
+    'pagina'
+])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->whereNumber('pagina')
+    ->middleware('throttle:120,1')
+    ->name('drive-prz.publico.pagina');
