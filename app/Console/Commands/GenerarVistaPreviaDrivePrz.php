@@ -87,7 +87,7 @@ class GenerarVistaPreviaDrivePrz extends Command
                 $imagen = new Imagick();
 
                 try {
-                    $imagen->setResolution(110, 110);
+                    $imagen->setResolution(72, 72);
                     $imagen->readImage($ruta . '[' . $pagina . ']');
 
                     $imagen->setImageBackgroundColor('white');
