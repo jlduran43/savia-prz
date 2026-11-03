@@ -13,7 +13,7 @@ class GenerarVistaPreviaDrivePrz extends Command
     protected $signature = 'drive-prz:generar-preview {documento}';
 
     protected $description =
-        'Genera imágenes privadas de un PDF confiable para enlaces externos';
+    'Genera imágenes privadas de un PDF confiable para enlaces externos';
 
     public function handle(): int
     {
@@ -29,8 +29,10 @@ class GenerarVistaPreviaDrivePrz extends Command
             return self::FAILURE;
         }
 
-        if ($origen->mimeType($documento->ruta_archivo)
-            !== 'application/pdf') {
+        if (
+            $origen->mimeType($documento->ruta_archivo)
+            !== 'application/pdf'
+        ) {
             $this->error('Solo se admiten PDF.');
             return self::FAILURE;
         }
@@ -51,10 +53,11 @@ class GenerarVistaPreviaDrivePrz extends Command
         }
 
         // Evita reutilizar vistas previas de versiones anteriores
-        $revision = hash('sha256',
+        $revision = hash(
+            'sha256',
             $documento->ruta_archivo . '|' .
-            $tamano . '|' .
-            $origen->lastModified($documento->ruta_archivo)
+                $tamano . '|' .
+                $origen->lastModified($documento->ruta_archivo)
         );
 
         $directorio = $documento->id . '/' . $revision;
@@ -62,10 +65,25 @@ class GenerarVistaPreviaDrivePrz extends Command
         // Imagick ejecuta herramientas de procesamiento PDF.
         // No utilizar con documentos no confiables hasta
         // actualizar y aislar el renderizador.
-        Imagick::setResourceLimit(Imagick::RESOURCETYPE_MEMORY, 128);
-        Imagick::setResourceLimit(Imagick::RESOURCETYPE_MAP, 256);
-        Imagick::setResourceLimit(Imagick::RESOURCETYPE_DISK, 512);
-        Imagick::setResourceLimit(Imagick::RESOURCETYPE_THREAD, 1);
+        Imagick::setResourceLimit(
+            Imagick::RESOURCETYPE_MEMORY,
+            128 * 1024 * 1024
+        );
+
+        Imagick::setResourceLimit(
+            Imagick::RESOURCETYPE_MAP,
+            256 * 1024 * 1024
+        );
+
+        Imagick::setResourceLimit(
+            Imagick::RESOURCETYPE_DISK,
+            1024 * 1024 * 1024
+        );
+
+        Imagick::setResourceLimit(
+            Imagick::RESOURCETYPE_THREAD,
+            1
+        );
 
         try {
             $inspector = new Imagick();
@@ -111,7 +129,6 @@ class GenerarVistaPreviaDrivePrz extends Command
                     $this->info(
                         'Página ' . ($pagina + 1) . '/' . $total
                     );
-
                 } finally {
                     $imagen->clear();
                     $imagen->destroy();
@@ -133,14 +150,17 @@ class GenerarVistaPreviaDrivePrz extends Command
             $this->info('Vista previa generada correctamente.');
 
             return self::SUCCESS;
-
         } catch (\Throwable $e) {
 
             report($e);
 
-            $destino->deleteDirectory($directorio);
+            $this->error('ERROR AL GENERAR VISTA PREVIA');
+            $this->error('Tipo: ' . get_class($e));
+            $this->error('Mensaje: ' . $e->getMessage());
+            $this->error('Archivo: ' . $e->getFile());
+            $this->error('Línea: ' . $e->getLine());
 
-            $this->error('No fue posible generar la vista previa.');
+            $destino->deleteDirectory($directorio);
 
             return self::FAILURE;
         }
