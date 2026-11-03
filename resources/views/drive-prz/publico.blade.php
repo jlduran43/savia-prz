@@ -266,6 +266,12 @@
             -webkit-user-select: none;
             user-select: none;
         }
+        /* Estado de PDF pendiente o sin vista previa */
+        .aviso-pendiente { padding: 32px 20px; }
+        .aviso-pendiente .aviso-icono { font-size: 30px; margin-bottom: 12px; }
+        .aviso-pendiente strong { display: block; color: #14263d; font-size: 17px; }
+        .aviso-pendiente p { max-width: 520px; margin: 12px auto; line-height: 1.5; }
+        .aviso-pendiente .revisar-preview { cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 
@@ -321,15 +327,23 @@
                         @endfor
 
                     </div>
-                    <div class="aviso">
+                @endif
+            @else
+                @if (($estadoPreview ?? 'no_compatible') === 'no_disponible')
+                    <div class="aviso aviso-pendiente" role="status">
+                        <div class="aviso-icono" aria-hidden="true">&#9203;</div>
+                        <strong>Vista previa protegida todavía no disponible</strong>
+                        <p>Este PDF aún no tiene sus imágenes preparadas. Puede estar pendiente de procesamiento o requerir revisión.</p>
+                        <p>El archivo original no se entrega mediante este enlace.</p>
+                        <button type="button" class="revisar-preview" onclick="window.location.reload()">
+                            Comprobar nuevamente
+                        </button>
+                    </div>
+                @else
+                    <div class="aviso" role="status">
                         Este formato no admite vista previa.
                     </div>
                 @endif
-            @else
-                <div class="aviso">
-                    Este formato no admite vista previa.
-                </div>
-
             @endif
 
         </div>
@@ -340,90 +354,11 @@
         Drive PRZ · Acceso externo a documento compartido
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-
-            const visor = document.getElementById('visorPdf');
-
-            if (!visor) return;
-
-            const paginas = document.getElementById('paginasPdf');
-            const estado = document.getElementById('visorEstado');
-
-            // Bloquear clic derecho en el visor
-            visor.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-            });
-
-            try {
-
-                pdfjsLib.GlobalWorkerOptions.workerSrc =
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-                const pdf = await pdfjsLib.getDocument({
-                    url: visor.dataset.url,
-                    withCredentials: false
-                }).promise;
-
-                estado.textContent =
-                    'Preparando ' + pdf.numPages + ' página(s)...';
-
-                for (let numero = 1; numero <= pdf.numPages; numero++) {
-
-                    const pagina = await pdf.getPage(numero);
-
-                    const anchoDisponible = Math.max(
-                        100,
-                        visor.clientWidth - 40
-                    );
-
-                    const viewportOriginal = pagina.getViewport({
-                        scale: 1
-                    });
-
-                    const escala = Math.min(
-                        1.6,
-                        anchoDisponible / viewportOriginal.width
-                    );
-
-                    const viewport = pagina.getViewport({
-                        scale: escala
-                    });
-
-                    const canvas = document.createElement('canvas');
-                    const contexto = canvas.getContext('2d');
-
-                    canvas.width = Math.ceil(viewport.width);
-                    canvas.height = Math.ceil(viewport.height);
-
-                    paginas.appendChild(canvas);
-
-                    await pagina.render({
-                        canvasContext: contexto,
-                        viewport: viewport
-                    }).promise;
-                }
-
-                estado.remove();
-
-            } catch (error) {
-
-                console.error('Error al visualizar PDF:', error);
-
-                estado.textContent =
-                    'No fue posible visualizar este documento.';
-            }
-
-        });
-    </script>
-
     <script>
         // Bloqueo del menú contextual dentro de los visores HTML
         document.addEventListener('contextmenu', function(e) {
 
-            if (e.target.closest('#visorPdf, .imagen')) {
+            if (e.target.closest('#visorPdfSeguro, .imagen')) {
                 e.preventDefault();
             }
 
@@ -432,7 +367,7 @@
         // Evitar arrastrar imágenes
         document.addEventListener('dragstart', function(e) {
 
-            if (e.target.closest('#visorPdf, .imagen')) {
+            if (e.target.closest('#visorPdfSeguro, .imagen')) {
                 e.preventDefault();
             }
 
