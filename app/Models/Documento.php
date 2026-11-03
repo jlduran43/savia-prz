@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Jobs\GenerarPreviewDrivePrz;
 
 class Documento extends Model
 {
@@ -57,5 +58,30 @@ class Documento extends Model
             'documento_id',
             'user_id'
         )->withTimestamps();
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (Documento $documento) {
+
+            if (!config('drive-prz.preview_enabled', false)) {
+                return;
+            }
+
+            if (
+                strtolower(
+                    pathinfo(
+                        $documento->nombre_original ?? '',
+                        PATHINFO_EXTENSION
+                    )
+                ) !== 'pdf'
+            ) {
+                return;
+            }
+
+            GenerarPreviewDrivePrz::dispatch($documento->id)
+                ->delay(now()->addMinutes(2))
+                ->afterCommit();
+        });
     }
 }

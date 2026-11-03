@@ -1,665 +1,99 @@
 <?php
 
-
-
-
-
-
-
 namespace App\Http\Controllers;
 
-
-
-
-
-
-
 use App\Models\Documento;
-
-
-
 use App\Models\DocumentoCarpeta;
-
-
-
 use Illuminate\Http\Request;
-
-
-
 use Illuminate\Support\Facades\DB;
-
-
-
 use Illuminate\Support\Facades\Storage;
-
-
-
 use Illuminate\Validation\ValidationException;
 
-
-
-
-
 class DrivePrzController extends Controller
-
-
-
-
-
-
-
 {
 
-
-
-
-
-
-
     private function folder(int $id): DocumentoCarpeta
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
 
         return DocumentoCarpeta::query()->where('creado_por', auth()->id())->whereNull('deleted_at')->findOrFail($id);
 
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     private function file(int $id): Documento
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         return Documento::query()->where('subido_por', auth()->id())->whereNull('deleted_at')->findOrFail($id);
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     private function parent(?int $id): void
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         if ($id !== null) $this->folder($id);
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     private function uniqueFolder(string $name, ?int $parent, ?int $except = null): bool
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         return DocumentoCarpeta::query()->where('creado_por', auth()->id())
-
-
-
-
-
-
-
-            ->where('carpeta_padre_id', $parent)
-
-
-
-
-
-
-
-            ->when($except, fn($q) => $q->whereKeyNot($except))
-
-
-
-
-
-
-
-            ->get(['id', 'nombre'])->contains(fn($c) => mb_strtolower(trim($c->nombre)) === mb_strtolower(trim($name)));
-
-
-
-
-
-
-
+                                        ->where('carpeta_padre_id', $parent)
+                                        ->when($except, fn($q) => $q->whereKeyNot($except))
+                                        ->get(['id', 'nombre'])->contains(fn($c) => mb_strtolower(trim($c->nombre)) === mb_strtolower(trim($name)));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     private function createFolder(string $name, ?int $parent): DocumentoCarpeta
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         $c = new DocumentoCarpeta();
-
-
-
-
-
-
-
         $c->nombre = $name;
-
-
-
-
-
-
-
         $c->carpeta_padre_id = $parent;
-
-
-
-
-
-
-
         $c->creado_por = auth()->id();
-
-
-
-
-
-
-
         $c->save();
-
-
-
-
-
-
-
+    
         return $c;
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     public function screen()
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         $ruta = resource_path('drive-prz/index.html');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         abort_unless(
-
-
-
-
-
-
-
             is_file($ruta),
-
-
-
-
-
-
-
             404,
-
-
-
-
-
-
-
             'No se encontró el archivo HTML de Drive PRZ.'
-
-
-
-
-
-
-
         );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
         return response(
-
-
-
-
-
-
-
             file_get_contents($ruta),
-
-
-
-
-
-
-
             200,
-
-
-
-
-
-
-
             [
-
-
-
-
-
-
-
                 'Content-Type' => 'text/html; charset=UTF-8',
-
-
-
-
-
-
-
                 'Content-Disposition' => 'inline',
-
-
-
-
-
-
-
                 'X-Content-Type-Options' => 'nosniff',
-
-
-
-
-
-
-
             ]
-
-
-
-
-
-
-
         );
-
-
-
-
-
-
-
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public function listing(Request $request)
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         $d = $request->validate(['carpeta_id' => ['nullable', 'integer']]);
-
-
-
-
-
-
-
         $id = isset($d['carpeta_id']) ? (int)$d['carpeta_id'] : null;
-
-
-
-
-
-
 
         $this->parent($id);
 
-
-
-
-
-
-
         $folders = DocumentoCarpeta::query()->where('creado_por', auth()->id())
+                                            ->where('carpeta_padre_id', $id)->whereNull('deleted_at')->orderBy('nombre')->get()
+                                            ->map(fn($c) => ['id' => $c->id, 'type' => 'folder', 'name' => $c->nombre, 'modified' => $c->updated_at?->toISOString(), 'parent' => $c->carpeta_padre_id]);
 
-
-
-
-
-
-
-            ->where('carpeta_padre_id', $id)->whereNull('deleted_at')->orderBy('nombre')->get()
-
-
-
-
-
-
-
-            ->map(fn($c) => ['id' => $c->id, 'type' => 'folder', 'name' => $c->nombre, 'modified' => $c->updated_at?->toISOString(), 'parent' => $c->carpeta_padre_id]);
-
-
-
-
-
-
-
-        $files = Documento::query()->where('subido_por', auth()->id())->where('carpeta_id', $id)->whereNull('deleted_at')
-
-
-
-
-
-
-
-            ->orderBy('nombre_original')->get()
-
-
-
-
-
-
-
-            ->map(fn($f) => ['id' => $f->id, 'type' => 'file', 'name' => $f->nombre_original, 'modified' => $f->updated_at?->toISOString(), 'parent' => $f->carpeta_id, 'size' => (Storage::disk('documentos_privados')->exists($f->ruta_archivo) ? Storage::disk('documentos_privados')->size($f->ruta_archivo) : 0)]);
-
-
-
-
-
-
-
+        $files = Documento::query() ->where('subido_por', auth()->id())->where('carpeta_id', $id)->whereNull('deleted_at')
+                                    ->orderBy('nombre_original')->get()
+                                    ->map(fn($f) => ['id' => $f->id, 'type' => 'file', 'name' => $f->nombre_original, 'modified' => $f->updated_at?->toISOString(), 'parent' => $f->carpeta_id, 'size' => (Storage::disk('documentos_privados')->exists($f->ruta_archivo) ? Storage::disk('documentos_privados')->size($f->ruta_archivo) : 0)]);
         $trail = [];
-
-
-
-
-
-
-
         $seen = [];
 
-
-
-
-
-
-
         while ($id !== null && !isset($seen[$id])) {
-
-
-
-
-
-
-
             $seen[$id] = true;
-
-
-
-
-
-
-
             $c = $this->folder($id);
-
-
-
-
-
-
-
             array_unshift($trail, ['id' => $c->id, 'name' => $c->nombre]);
-
-
-
-
-
-
-
             $id = $c->carpeta_padre_id === null ? null : (int)$c->carpeta_padre_id;
-
-
-
-
-
-
-
         }
 
-
-
-
-
-
-
         return response()->json(['items' => $folders->concat($files)->values(), 'trail' => $trail]);
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3415,6 +2849,8 @@ public function move(Request $request, string $kind, int $id)
 
 
     }
+
+    
 
 
 

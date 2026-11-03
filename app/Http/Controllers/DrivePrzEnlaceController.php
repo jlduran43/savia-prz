@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\DrivePrzAuditoria;
 
 class DrivePrzEnlaceController extends Controller
 {
@@ -91,6 +92,12 @@ class DrivePrzEnlaceController extends Controller
                 'updated_at' => now(),
             ]);
 
+        DrivePrzAuditoria::registrar(
+            request(),
+            'REVOCACION',
+            $id
+        );
+
         return response()->json([
             'success' => true,
             'mensaje' => 'Enlace externo revocado.'
@@ -129,6 +136,17 @@ class DrivePrzEnlaceController extends Controller
     public function publico(string $token)
     {
         $documento = $this->verificar($token);
+
+        $enlace = DB::table('drive_prz_enlaces')
+            ->where('token_hash', hash('sha256', $token))
+            ->first();
+
+        DrivePrzAuditoria::registrar(
+            request(),
+            'APERTURA_PUBLICA',
+            $documento->id,
+            $enlace?->id
+        );
 
         $mime = Storage::disk('documentos_privados')
             ->mimeType($documento->ruta_archivo);
@@ -268,6 +286,18 @@ class DrivePrzEnlaceController extends Controller
     {
         // Siempre volver a validar el enlace.
         $documento = $this->verificar($token);
+
+        $enlace = DB::table('drive_prz_enlaces')
+            ->where('token_hash', hash('sha256', $token))
+            ->first();
+
+        DrivePrzAuditoria::registrar(
+            request(),
+            'PAGINA_PDF',
+            $documento->id,
+            $enlace?->id,
+            $pagina
+        );
 
         $origen = Storage::disk('documentos_privados');
 

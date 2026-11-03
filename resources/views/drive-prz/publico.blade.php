@@ -313,11 +313,6 @@
                                 ]) }}"
                                     alt="Página {{ $pagina }}" loading="{{ $pagina === 1 ? 'eager' : 'lazy' }}"
                                     draggable="false">
-
-                                <div class="marca-prz">
-                                    DRIVE PRZ · SOLO LECTURA
-                                </div>
-
                             </div>
 
                             <div class="numero-pagina">

@@ -7,6 +7,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Imagick;
 use ImagickException;
+use ImagickDraw;
+use ImagickPixel;
 
 class GenerarVistaPreviaDrivePrz extends Command
 {
@@ -113,6 +115,31 @@ class GenerarVistaPreviaDrivePrz extends Command
                         Imagick::LAYERMETHOD_FLATTEN
                     );
 
+                    // Marca de agua incrustada en los píxeles
+                    $marca = new ImagickDraw();
+
+                    $marca->setFillColor(
+                        new ImagickPixel('rgba(20,38,61,0.22)')
+                    );
+
+                    $marca->setFontSize(
+                        max(14, min(34, (int) ($imagen->getImageWidth() / 24)))
+                    );
+
+                    $marca->setGravity(Imagick::GRAVITY_CENTER);
+
+                    // Incrustar identificación de Drive PRZ
+                    $imagen->annotateImage(
+                        $marca,
+                        0,
+                        0,
+                        -25,
+                        'DRIVE PRZ - SOLO LECTURA'
+                    );
+
+                    $marca->clear();
+
+                    // Preparar el archivo final
                     $imagen->setImageFormat('jpeg');
                     $imagen->setImageCompressionQuality(78);
                     $imagen->stripImage();
