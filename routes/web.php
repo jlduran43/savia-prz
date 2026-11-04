@@ -15,6 +15,7 @@ use App\Http\Controllers\DrivePrzSharingController;
 use App\Http\Controllers\DrivePrzNotificacionController;
 use App\Http\Controllers\DrivePrzSharedController;
 use App\Http\Controllers\DrivePrzEnlaceController;
+use App\Http\Controllers\DrivePrzConfiguracionController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
 
@@ -849,8 +850,8 @@ Route::get('/drive-prz/publico/{token}/pagina/{pagina}', [
     ->name('drive-prz.publico.pagina');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/drive-prz-v5/configuracion', [\App\Http\Controllers\DrivePrzConfiguracionController::class, 'mostrar'])
+    Route::get('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'mostrar'])
         ->name('drive-prz-v5.configuracion.mostrar');
-    Route::put('/drive-prz-v5/configuracion', [\App\Http\Controllers\DrivePrzConfiguracionController::class, 'guardar'])
+    Route::put('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'guardar'])
         ->name('drive-prz-v5.configuracion.guardar');
 });
