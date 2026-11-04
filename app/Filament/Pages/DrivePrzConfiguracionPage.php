@@ -15,11 +15,11 @@ class DrivePrzConfiguracionPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'Configuración Drive PRZ';
     protected static ?string $title = 'Configuración Drive PRZ';
     protected static string|\UnitEnum|null $navigationGroup = 'Drive PRZ';
-    protected static string $view = 'filament.pages.drive-prz-configuracion-page';
+    protected string $view = 'filament.pages.drive-prz-configuracion-page';
 
     public ?array $data = [];
 
