@@ -549,7 +549,7 @@ class DrivePrzEnlaceController extends Controller
 
                 ! is_string($nombre)
 
-                || ! preg_match('/^pagina-[0-9]{3}**\\.**&#x6A;pg$/', $nombre)
+                || ! preg_match('/^pagina-[0-9]{3}\.jpg$/', $nombre)
 
                 || ! $destino->exists($directorio . '/' . $nombre)
 
