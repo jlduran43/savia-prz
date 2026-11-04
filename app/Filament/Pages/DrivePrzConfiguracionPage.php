@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Components\Textarea;
 
 class DrivePrzConfiguracionPage extends Page implements HasForms
 {
@@ -90,6 +91,20 @@ class DrivePrzConfiguracionPage extends Page implements HasForms
                             ->minValue(10)
                             ->maxValue(120)
                             ->visible(fn(callable $get) => (bool) $get('usar_tamano_manual')),
+
+                        Textarea::make('watermark_secondary_text')
+                            ->label('Texto secundario de la marca de agua')
+                            ->placeholder(
+                                "Documento de uso interno\nProhibida su distribución"
+                            )
+                            ->helperText(
+                                'Este texto aparecerá debajo de la marca de agua principal. ' .
+                                    'Puedes escribir varias líneas. Déjalo vacío para desactivarlo.'
+                            )
+                            ->rows(3)
+                            ->maxLength(500)
+                            ->nullable()
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
             ])

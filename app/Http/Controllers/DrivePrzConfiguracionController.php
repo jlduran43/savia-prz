@@ -13,6 +13,7 @@ class DrivePrzConfiguracionController extends Controller
     {
         return DrivePrzConfiguracion::query()->firstOrCreate([], [
             'marca_agua_texto' => 'DRIVE PRZ - SOLO LECTURA',
+            'marca_agua_texto_secundario' => '',
             'marca_agua_color' => '#14263D',
             'marca_agua_opacidad' => 22,
             'marca_agua_angulo' => -25,
@@ -24,8 +25,13 @@ class DrivePrzConfiguracionController extends Controller
     public function mostrar(): JsonResponse
     {
         return response()->json($this->configuracion()->only([
-            'marca_agua_texto', 'marca_agua_color', 'marca_agua_opacidad',
-            'marca_agua_angulo', 'usar_tamano_manual', 'marca_agua_tamano',
+            'marca_agua_texto',
+            'marca_agua_texto_secundario',
+            'marca_agua_color',
+            'marca_agua_opacidad',
+            'marca_agua_angulo',
+            'usar_tamano_manual',
+            'marca_agua_tamano',
         ]));
     }
 
@@ -33,22 +39,59 @@ class DrivePrzConfiguracionController extends Controller
     {
         $datos = $request->validate([
             'marca_agua_texto' => ['required', 'string', 'max:255'],
-            'marca_agua_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'marca_agua_opacidad' => ['required', 'integer', 'between:1,100'],
-            'marca_agua_angulo' => ['required', 'integer', 'between:-360,360'],
-            'usar_tamano_manual' => ['required', 'boolean'],
-            'marca_agua_tamano' => ['nullable', 'required_if:usar_tamano_manual,true', 'integer', 'between:10,120'],
+
+            'marca_agua_texto_secundario' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+
+            'marca_agua_color' => [
+                'required',
+                'regex:/^#[0-9a-fA-F]{6}$/',
+            ],
+
+            'marca_agua_opacidad' => [
+                'required',
+                'integer',
+                'between:1,100',
+            ],
+
+            'marca_agua_angulo' => [
+                'required',
+                'integer',
+                'between:-360,360',
+            ],
+
+            'usar_tamano_manual' => [
+                'required',
+                'boolean',
+            ],
+
+            'marca_agua_tamano' => [
+                'nullable',
+                'required_if:usar_tamano_manual,true',
+                'integer',
+                'between:10,120',
+            ],
         ]);
 
         if (! $datos['usar_tamano_manual']) {
             $datos['marca_agua_tamano'] = null;
         }
 
+        $datos['marca_agua_texto_secundario'] =
+            $datos['marca_agua_texto_secundario'] ?? '';
+
         $configuracion = $this->configuracion();
+
         $configuracion->fill($datos);
         $configuracion->save();
+
         DrivePrzAjustes::limpiarCache();
 
-        return response()->json(['message' => 'Configuración guardada correctamente.']);
+        return response()->json([
+            'message' => 'Configuración guardada correctamente.',
+        ]);
     }
 }

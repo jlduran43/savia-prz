@@ -10,6 +10,7 @@ class DrivePrzConfiguracion extends Model
 
     protected $fillable = [
         'marca_agua_texto',
+        'marca_agua_texto_secundario',
         'marca_agua_color',
         'marca_agua_opacidad',
         'marca_agua_angulo',

@@ -17,6 +17,7 @@ class DrivePrzAjustes
                 if (!$config) {
                     $config = DrivePrzConfiguracion::query()->create([
                         'marca_agua_texto' => 'DRIVE PRZ - SOLO LECTURA',
+                        'marca_agua_texto_secundario' => '',
                         'marca_agua_color' => '#14263D',
                         'marca_agua_opacidad' => 22,
                         'marca_agua_angulo' => -25,
@@ -27,6 +28,8 @@ class DrivePrzAjustes
 
                 return [
                     'texto' => $config->marca_agua_texto,
+                    'texto_secundario' =>
+                        $config->marca_agua_texto_secundario ?? '',
                     'color' => $config->marca_agua_color,
                     'opacidad' => $config->marca_agua_opacidad,
                     'angulo' => $config->marca_agua_angulo,
