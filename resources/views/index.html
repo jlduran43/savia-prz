@@ -3842,6 +3842,14 @@
                                 <div class="drive-config-wide"><label class="field" for="dpMarcaTexto">Texto de la marca
                                         de agua</label><input required maxlength="255" class="textinput"
                                         id="dpMarcaTexto" name="marca_agua_texto"></div>
+                                <div class="drive-config-wide">
+                                    <label class="field" for="dpMarcaTextoSecundario">Texto secundario de la marca de agua</label>
+                                    <textarea class="textinput" id="dpMarcaTextoSecundario"
+                                        name="marca_agua_texto_secundario" rows="3" maxlength="500"
+                                        placeholder="Documento de uso interno&#10;Prohibida su distribución"
+                                        style="resize:vertical;min-height:100px;font-family:inherit;line-height:1.6"></textarea>
+                                    <p class="hint">Aparecerá debajo del texto principal. Puedes usar varias líneas o dejarlo vacío.</p>
+                                </div>
                                 <div><label class="field" for="dpMarcaColor">Color</label><input required
                                         class="textinput" style="height:45px;padding:5px" type="color" id="dpMarcaColor"
                                         name="marca_agua_color"></div>
@@ -7341,7 +7349,7 @@
                     const r = await fetch(api, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
                     const d = await r.json().catch(() => ({}));
                     if (!r.ok) throw new Error(d.message || `Error HTTP ${r.status}`);
-                    for (const [id, key] of [['dpMarcaTexto', 'marca_agua_texto'], ['dpMarcaColor', 'marca_agua_color'], ['dpMarcaOpacidad', 'marca_agua_opacidad'], ['dpMarcaAngulo', 'marca_agua_angulo'], ['dpMarcaTamano', 'marca_agua_tamano']]) {
+                    for (const [id, key] of [['dpMarcaTexto', 'marca_agua_texto'], ['dpMarcaTextoSecundario', 'marca_agua_texto_secundario'], ['dpMarcaColor', 'marca_agua_color'], ['dpMarcaOpacidad', 'marca_agua_opacidad'], ['dpMarcaAngulo', 'marca_agua_angulo'], ['dpMarcaTamano', 'marca_agua_tamano']]) {
                         $(id).value = d[key] ?? '';
                     }
                     $('dpManual').checked = !!d.usar_tamano_manual;
@@ -7375,6 +7383,7 @@
                 const btn = $('dpGuardar'); btn.disabled = true; state.textContent = 'Guardando…';
                 const payload = {
                     marca_agua_texto: $('dpMarcaTexto').value.trim(),
+                    marca_agua_texto_secundario: $('dpMarcaTextoSecundario').value.trim(),
                     marca_agua_color: $('dpMarcaColor').value,
                     marca_agua_opacidad: Number($('dpMarcaOpacidad').value),
                     marca_agua_angulo: Number($('dpMarcaAngulo').value),
