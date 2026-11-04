@@ -2796,6 +2796,15 @@
     .modal.prz-modal-folder-drop .modalbody { background: #f1faf4; }
 
   </style>
+
+  <style>
+    #przApp.drive-config-mode .main > :not(#drivePrzConfigPanel){display:none!important}
+    #przApp.drive-config-mode #drivePrzConfigPanel{display:block!important}
+    #drivePrzConfigPanel[hidden]{display:none!important}
+    .drive-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}
+    .drive-config-wide{grid-column:1/-1}
+    @media(max-width:650px){.drive-config-grid{grid-template-columns:1fr}}
+  </style>
 </head>
 
 <body>
@@ -2946,6 +2955,10 @@
           </svg> Papelera</button><button class="navitem" data-nav="activity"><svg>
             <use href="#i-refresh" />
           </svg> Actividad</button>
+        <button class="navitem" type="button" data-nav="configuracion">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.82 1.82-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.52V20H9v-.17a1.65 1.65 0 0 0-1-1.52 1.65 1.65 0 0 0-1.82.33l-.06.06-1.82-1.82.06-.06A1.65 1.65 0 0 0 4.69 15a1.65 1.65 0 0 0-1.52-1H3v-3h.17a1.65 1.65 0 0 0 1.52-1 1.65 1.65 0 0 0-.33-1.82L4.3 8.12 6.12 6.3l.06.06A1.65 1.65 0 0 0 8 6.69a1.65 1.65 0 0 0 1-1.52V5h6v.17a1.65 1.65 0 0 0 1 1.52 1.65 1.65 0 0 0 1.82-.33l.06-.06 1.82 1.82-.06.06A1.65 1.65 0 0 0 19.31 10a1.65 1.65 0 0 0 1.52 1H21v3h-.17a1.65 1.65 0 0 0-1.43 1Z"/></svg>
+          Configuración
+        </button>
         <div class="sidefoot"><strong style="font-size:12px;color:#53697f">Archivos de este navegador</strong>
           <p id="storageInfo" style="line-height:1.7;margin:8px 0">Los archivos nuevos se guardan en este equipo.</p>
         </div>
@@ -3025,6 +3038,27 @@
           <div class="countline" id="footCounter"></div>
           <div id="dropCover" class="dropcover hidden">Suelta archivos o una carpeta completa para importar su
             estructura</div>
+        </section>
+        <section id="drivePrzConfigPanel" hidden aria-labelledby="drivePrzConfigTitle">
+          <div class="eyebrow">PREFERENCIAS DE DRIVE PRZ</div>
+          <div class="heading"><div><h1 id="drivePrzConfigTitle">Configuración</h1>
+            <p>Personaliza la marca de agua de las previsualizaciones PDF.</p></div></div>
+          <div class="panel" style="padding:26px;max-width:920px">
+            <h2 style="font-size:18px;margin:0 0 5px">Marca de agua</h2>
+            <p class="hint" style="margin:0 0 22px">Los cambios se guardan en SAVIA PRZ y se aplican según la integración de previsualización configurada en el servidor.</p>
+            <form id="drivePrzConfigForm">
+              <div class="drive-config-grid">
+                <div class="drive-config-wide"><label class="field" for="dpMarcaTexto">Texto de la marca de agua</label><input required maxlength="255" class="textinput" id="dpMarcaTexto" name="marca_agua_texto"></div>
+                <div><label class="field" for="dpMarcaColor">Color</label><input required class="textinput" style="height:45px;padding:5px" type="color" id="dpMarcaColor" name="marca_agua_color"></div>
+                <div><label class="field" for="dpMarcaOpacidad">Opacidad (%)</label><input required class="textinput" type="number" min="1" max="100" id="dpMarcaOpacidad" name="marca_agua_opacidad"></div>
+                <div><label class="field" for="dpMarcaAngulo">Ángulo (grados)</label><input required class="textinput" type="number" min="-360" max="360" id="dpMarcaAngulo" name="marca_agua_angulo"></div>
+                <div><label class="field" for="dpMarcaTamano">Tamaño manual</label><input class="textinput" type="number" min="10" max="120" id="dpMarcaTamano" name="marca_agua_tamano" disabled></div>
+                <div class="drive-config-wide"><label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="dpManual" name="usar_tamano_manual"> Usar tamaño manual para el texto</label></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px"><button class="btn" type="button" id="dpVolver">Volver a documentos</button><button class="btn primary" type="submit" id="dpGuardar">Guardar cambios</button></div>
+              <p id="dpEstado" role="status" aria-live="polite" class="hint"></p>
+            </form>
+          </div>
         </section>
       </main>
     </div>
@@ -6472,6 +6506,83 @@ cargarUsuarioActualLaravel().catch(error => {
         detail: boton.id === 'gridBtn' ? 'grid' : 'list'
       }));
     }, true);
+  </script>
+
+  <script>
+  (() => {
+    'use strict';
+    const app = document.getElementById('przApp');
+    const panel = document.getElementById('drivePrzConfigPanel');
+    const form = document.getElementById('drivePrzConfigForm');
+    const $ = id => document.getElementById(id);
+    const api = '/drive-prz-v5/configuracion';
+    const state = $('dpEstado');
+    const token = () => {
+      const c = document.cookie.split('; ').find(x => x.startsWith('XSRF-TOKEN='));
+      return c ? decodeURIComponent(c.slice('XSRF-TOKEN='.length)) : '';
+    };
+    function manualChanged() { $('dpMarcaTamano').disabled = !$('dpManual').checked; if (!$('dpManual').checked) $('dpMarcaTamano').value = ''; }
+    $('dpManual').addEventListener('change', manualChanged);
+    async function load() {
+      state.textContent = 'Cargando configuración…';
+      try {
+        const r = await fetch(api, {credentials:'same-origin', headers:{Accept:'application/json'}});
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.message || `Error HTTP ${r.status}`);
+        for (const [id,key] of [['dpMarcaTexto','marca_agua_texto'],['dpMarcaColor','marca_agua_color'],['dpMarcaOpacidad','marca_agua_opacidad'],['dpMarcaAngulo','marca_agua_angulo'],['dpMarcaTamano','marca_agua_tamano']]) {
+          $(id).value = d[key] ?? '';
+        }
+        $('dpManual').checked = !!d.usar_tamano_manual;
+        manualChanged();
+        state.textContent = '';
+      } catch(e) { state.textContent = 'No se pudo cargar: ' + e.message; }
+    }
+    function close() {
+      app.classList.remove('drive-config-mode'); panel.hidden = true;
+      const docs = app.querySelector('[data-nav="files"]');
+      if (docs) docs.click();
+    }
+    function open() {
+      app.classList.add('drive-config-mode'); panel.hidden = false;
+      app.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === 'configuracion'));
+      load();
+    }
+    // Capturamos la navegación antes del controlador legado del explorador.
+    document.addEventListener('click', e => {
+      const b = e.target.closest('#przApp [data-nav]');
+      if (!b) return;
+      if (b.dataset.nav === 'configuracion') {
+        e.preventDefault(); e.stopImmediatePropagation(); open();
+      } else if (app.classList.contains('drive-config-mode')) {
+        app.classList.remove('drive-config-mode'); panel.hidden = true;
+      }
+    }, true);
+    $('dpVolver').addEventListener('click', close);
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = $('dpGuardar'); btn.disabled = true; state.textContent = 'Guardando…';
+      const payload = {
+        marca_agua_texto: $('dpMarcaTexto').value.trim(),
+        marca_agua_color: $('dpMarcaColor').value,
+        marca_agua_opacidad: Number($('dpMarcaOpacidad').value),
+        marca_agua_angulo: Number($('dpMarcaAngulo').value),
+        usar_tamano_manual: $('dpManual').checked,
+        marca_agua_tamano: $('dpManual').checked ? Number($('dpMarcaTamano').value) : null
+      };
+      try {
+        const r = await fetch(api, {method:'PUT', credentials:'same-origin', headers:{
+          Accept:'application/json', 'Content-Type':'application/json', 'X-XSRF-TOKEN':token()
+        }, body:JSON.stringify(payload)});
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const msg = d.errors ? Object.values(d.errors).flat().join(' ') : (d.message || `Error HTTP ${r.status}`);
+          throw new Error(msg);
+        }
+        state.textContent = 'Configuración guardada correctamente.';
+      } catch(error) { state.textContent = 'No se pudo guardar: ' + error.message; }
+      finally {btn.disabled = false;}
+    });
+  })();
   </script>
 </body>
 

@@ -847,3 +847,10 @@ Route::get('/drive-prz/publico/{token}/pagina/{pagina}', [
     ->whereNumber('pagina')
     ->middleware('throttle:120,1')
     ->name('drive-prz.publico.pagina');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/drive-prz-v5/configuracion', [\App\Http\Controllers\DrivePrzConfiguracionController::class, 'mostrar'])
+        ->name('drive-prz-v5.configuracion.mostrar');
+    Route::put('/drive-prz-v5/configuracion', [\App\Http\Controllers\DrivePrzConfiguracionController::class, 'guardar'])
+        ->name('drive-prz-v5.configuracion.guardar');
+});
