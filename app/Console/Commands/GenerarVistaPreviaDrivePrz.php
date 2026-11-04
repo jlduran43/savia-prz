@@ -121,44 +121,65 @@ class GenerarVistaPreviaDrivePrz extends Command
                     $textoPrincipal = trim((string) ($ajustesMarca['texto'] ?? ''));
                     $textoSecundario = trim((string) ($ajustesMarca['texto_secundario'] ?? ''));
 
-                    $textoCompleto = $textoPrincipal;
-
-                    if ($textoSecundario !== '') {
-                        $textoCompleto .= "\n" . $textoSecundario;
-                    }
-
-                    // Marca de agua incrustada en los píxeles
-                    $marca = new ImagickDraw();
-
-                    $marca->setFillColor(
-                        new ImagickPixel(
-                            $this->hexAColorRgba(
-                                $ajustesMarca['color'],
-                                $ajustesMarca['opacidad']
-                            )
-                        )
-                    );
-
                     $fontSize = $ajustesMarca['usar_tamano_manual']
                         && !empty($ajustesMarca['tamano'])
                         ? (int) $ajustesMarca['tamano']
                         : max(14, min(34, (int) ($imagen->getImageWidth() / 24)));
 
-                    $marca->setFontSize($fontSize);
-                    $marca->setTextAlignment(\Imagick::ALIGN_CENTER);
-                    $marca->setGravity(Imagick::GRAVITY_CENTER);
-
-                    $imagen->annotateImage(
-                        $marca,
-                        0,
-                        0,
-                        (float) $ajustesMarca['angulo'],
-                        $textoCompleto
+                    $colorMarca = new ImagickPixel(
+                        $this->hexAColorRgba(
+                            $ajustesMarca['color'],
+                            $ajustesMarca['opacidad']
+                        )
                     );
 
-                    $marca->clear();
+                    $angulo = (float) $ajustesMarca['angulo'];
 
-                    $marca->clear();
+                    // -------------------------------
+                    // Marca principal centrada
+                    // -------------------------------
+                    if ($textoPrincipal !== '') {
+                        $marcaPrincipal = new ImagickDraw();
+                        $marcaPrincipal->setFillColor($colorMarca);
+                        $marcaPrincipal->setFontSize($fontSize);
+                        $marcaPrincipal->setTextAlignment(Imagick::ALIGN_CENTER);
+                        $marcaPrincipal->setGravity(Imagick::GRAVITY_CENTER);
+
+                        $imagen->annotateImage(
+                            $marcaPrincipal,
+                            0,
+                            -12,
+                            $angulo,
+                            $textoPrincipal
+                        );
+
+                        $marcaPrincipal->clear();
+                    }
+
+                    // -------------------------------
+                    // Marca secundaria debajo
+                    // -------------------------------
+                    if ($textoSecundario !== '') {
+                        $marcaSecundaria = new ImagickDraw();
+                        $marcaSecundaria->setFillColor($colorMarca);
+
+                        // un poco más pequeña para que se vea mejor
+                        $tamanoSecundario = max(12, (int) round($fontSize * 0.72));
+
+                        $marcaSecundaria->setFontSize($tamanoSecundario);
+                        $marcaSecundaria->setTextAlignment(Imagick::ALIGN_CENTER);
+                        $marcaSecundaria->setGravity(Imagick::GRAVITY_CENTER);
+
+                        $imagen->annotateImage(
+                            $marcaSecundaria,
+                            0,
+                            18,
+                            $angulo,
+                            $textoSecundario
+                        );
+
+                        $marcaSecundaria->clear();
+                    }
 
                     // Preparar el archivo final
                     $imagen->setImageFormat('jpeg');
