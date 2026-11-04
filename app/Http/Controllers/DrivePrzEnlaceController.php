@@ -45,7 +45,6 @@ class DrivePrzEnlaceController extends Controller
 
 
         return $documento;
-
     }
 
 
@@ -101,7 +100,6 @@ class DrivePrzEnlaceController extends Controller
                 'updated_at' => now(),
 
             ]);
-
         });
 
 
@@ -119,7 +117,6 @@ class DrivePrzEnlaceController extends Controller
             'mensaje' => 'Enlace generado por 7 días.'
 
         ]);
-
     }
 
 
@@ -155,7 +152,6 @@ class DrivePrzEnlaceController extends Controller
             'expira_at' => $enlace?->expira_at,
 
         ]);
-
     }
 
 
@@ -205,7 +201,6 @@ class DrivePrzEnlaceController extends Controller
             'mensaje' => 'Enlace externo revocado.'
 
         ]);
-
     }
 
 
@@ -263,7 +258,6 @@ class DrivePrzEnlaceController extends Controller
 
 
         return $documento;
-
     }
 
 
@@ -323,29 +317,31 @@ class DrivePrzEnlaceController extends Controller
         $visualizable = in_array($mime, $permitidos, true);
 
 
-
         $preview = null;
-
-        // Diferenciar un PDF sin vista previa de un formato no admitido.
-        // Sin un estado persistente del Job no se puede afirmar si está
-        // pendiente, en procesamiento o falló: se informa como no disponible.
-        $estadoPreview = $mime === 'application/pdf'
-            ? 'no_disponible'
-            : ($visualizable ? 'listo' : 'no_compatible');
-
-
+        $estadoPreview = null;
 
         if ($mime === 'application/pdf') {
 
             $preview = $this->datosPreview($documento);
 
+            // La existencia de imágenes verificadas tiene prioridad,
+            // incluso para documentos anteriores al sistema de estados.
+            if ($preview !== null) {
+                $estadoPreview = 'LISTO';
+                $visualizable = true;
+            } else {
+                $estadoGuardado = strtoupper(
+                    (string) ($documento->preview_estado ?? '')
+                );
 
+                $estadoPreview = in_array(
+                    $estadoGuardado,
+                    ['PENDIENTE', 'PROCESANDO', 'ERROR'],
+                    true
+                ) ? $estadoGuardado : 'NO_DISPONIBLE';
 
-            // Si todavía no hay imágenes, no entregar el PDF.
-
-            $visualizable = $preview !== null;
-            $estadoPreview = $visualizable ? 'listo' : 'no_disponible';
-
+                $visualizable = false;
+            }
         }
 
 
@@ -353,14 +349,10 @@ class DrivePrzEnlaceController extends Controller
         return response()
 
             ->view('drive-prz.publico', [
-
                 'documento' => $documento,
-
                 'token' => $token,
-
                 'visualizable' => $visualizable,
                 'estadoPreview' => $estadoPreview,
-
                 'paginasPdf' => $preview
 
                     ? count($preview['paginas'])
@@ -376,7 +368,6 @@ class DrivePrzEnlaceController extends Controller
             ->header('X-Content-Type-Options', 'nosniff')
 
             ->header('X-Robots-Tag', 'noindex, nofollow');
-
     }
 
 
@@ -472,7 +463,6 @@ class DrivePrzEnlaceController extends Controller
             'inline'
 
         );
-
     }
 
 
@@ -510,7 +500,6 @@ class DrivePrzEnlaceController extends Controller
         if (! $destino->exists($manifest)) {
 
             return null;
-
         }
 
 
@@ -538,7 +527,6 @@ class DrivePrzEnlaceController extends Controller
         ) {
 
             return null;
-
         }
 
 
@@ -556,9 +544,7 @@ class DrivePrzEnlaceController extends Controller
             ) {
 
                 return null;
-
             }
-
         }
 
 
@@ -570,7 +556,6 @@ class DrivePrzEnlaceController extends Controller
             'paginas' => $datos['paginas'],
 
         ];
-
     }
 
 
@@ -686,7 +671,5 @@ class DrivePrzEnlaceController extends Controller
             'inline'
 
         );
-
     }
-
 }

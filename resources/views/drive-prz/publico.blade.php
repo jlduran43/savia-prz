@@ -266,12 +266,33 @@
             -webkit-user-select: none;
             user-select: none;
         }
+
         /* Estado de PDF pendiente o sin vista previa */
-        .aviso-pendiente { padding: 32px 20px; }
-        .aviso-pendiente .aviso-icono { font-size: 30px; margin-bottom: 12px; }
-        .aviso-pendiente strong { display: block; color: #14263d; font-size: 17px; }
-        .aviso-pendiente p { max-width: 520px; margin: 12px auto; line-height: 1.5; }
-        .aviso-pendiente .revisar-preview { cursor: pointer; margin-top: 10px; }
+        .aviso-pendiente {
+            padding: 32px 20px;
+        }
+
+        .aviso-pendiente .aviso-icono {
+            font-size: 30px;
+            margin-bottom: 12px;
+        }
+
+        .aviso-pendiente strong {
+            display: block;
+            color: #14263d;
+            font-size: 17px;
+        }
+
+        .aviso-pendiente p {
+            max-width: 520px;
+            margin: 12px auto;
+            line-height: 1.5;
+        }
+
+        .aviso-pendiente .revisar-preview {
+            cursor: pointer;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -302,17 +323,19 @@
                 $extension = strtolower(pathinfo($documento->nombre_original, PATHINFO_EXTENSION));
             @endphp
 
+
             @if ($visualizable)
 
                 @if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+
                     {{-- PREVISUALIZACIÓN DE IMÁGENES --}}
                     <img src="{{ $urlContenido }}" alt="Documento compartido" class="imagen">
                 @elseif ($extension === 'pdf')
+                    {{-- VISOR PDF PROTEGIDO --}}
                     <div id="visorPdfSeguro" class="visor-pdf-seguro">
 
                         @for ($pagina = 1; $pagina <= $paginasPdf; $pagina++)
                             <div class="pagina-protegida">
-
                                 <img src="{{ route('drive-prz.publico.pagina', [
                                     'token' => $token,
                                     'pagina' => $pagina,
@@ -327,23 +350,63 @@
                         @endfor
 
                     </div>
+
                 @endif
             @else
-                @if (($estadoPreview ?? 'no_compatible') === 'no_disponible')
-                    <div class="aviso aviso-pendiente" role="status">
-                        <div class="aviso-icono" aria-hidden="true">&#9203;</div>
-                        <strong>Vista previa protegida todavía no disponible</strong>
-                        <p>Este PDF aún no tiene sus imágenes preparadas. Puede estar pendiente de procesamiento o requerir revisión.</p>
-                        <p>El archivo original no se entrega mediante este enlace.</p>
-                        <button type="button" class="revisar-preview" onclick="window.location.reload()">
-                            Comprobar nuevamente
-                        </button>
-                    </div>
+                @if ($extension === 'pdf')
+
+                    @if ($estadoPreview === 'PENDIENTE')
+                        <div class="aviso">
+                            <h3>Vista previa pendiente</h3>
+                            <p>
+                                El documento está esperando su turno
+                                para generar las imágenes protegidas.
+                            </p>
+
+                            <button type="button" onclick="window.location.reload()">
+                                Comprobar nuevamente
+                            </button>
+                        </div>
+                    @elseif ($estadoPreview === 'PROCESANDO')
+                        <div class="aviso">
+                            <h3>Preparando documento</h3>
+                            <p>
+                                Estamos generando las imágenes
+                                con marca de agua.
+                            </p>
+
+                            <button type="button" onclick="window.location.reload()">
+                                Comprobar nuevamente
+                            </button>
+                        </div>
+                    @elseif ($estadoPreview === 'ERROR')
+                        <div class="aviso">
+                            <h3>Vista previa no disponible</h3>
+                            <p>
+                                No fue posible preparar este documento.
+                                Solicita al propietario que revise el archivo.
+                            </p>
+                        </div>
+                    @else
+                        <div class="aviso">
+                            <h3>Vista previa protegida no disponible</h3>
+                            <p>
+                                Este PDF todavía no tiene imágenes
+                                disponibles para visualizar.
+                            </p>
+
+                            <button type="button" onclick="window.location.reload()">
+                                Comprobar nuevamente
+                            </button>
+                        </div>
+                    @endif
                 @else
-                    <div class="aviso" role="status">
+                    <div class="aviso">
                         Este formato no admite vista previa.
                     </div>
+
                 @endif
+
             @endif
 
         </div>
