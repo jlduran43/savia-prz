@@ -118,6 +118,15 @@ class GenerarVistaPreviaDrivePrz extends Command
 
                     $ajustesMarca = DrivePrzAjustes::marcaAgua();
 
+                    $textoPrincipal = trim((string) ($ajustesMarca['texto'] ?? ''));
+                    $textoSecundario = trim((string) ($ajustesMarca['texto_secundario'] ?? ''));
+
+                    $textoCompleto = $textoPrincipal;
+
+                    if ($textoSecundario !== '') {
+                        $textoCompleto .= "\n" . $textoSecundario;
+                    }
+
                     // Marca de agua incrustada en los píxeles
                     $marca = new ImagickDraw();
 
@@ -136,7 +145,7 @@ class GenerarVistaPreviaDrivePrz extends Command
                         : max(14, min(34, (int) ($imagen->getImageWidth() / 24)));
 
                     $marca->setFontSize($fontSize);
-
+                    $marca->setTextAlignment(\Imagick::ALIGN_CENTER);
                     $marca->setGravity(Imagick::GRAVITY_CENTER);
 
                     $imagen->annotateImage(
@@ -144,8 +153,10 @@ class GenerarVistaPreviaDrivePrz extends Command
                         0,
                         0,
                         (float) $ajustesMarca['angulo'],
-                        (string) $ajustesMarca['texto']
+                        $textoCompleto
                     );
+
+                    $marca->clear();
 
                     $marca->clear();
 
