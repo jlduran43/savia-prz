@@ -9,6 +9,7 @@ use Imagick;
 use ImagickException;
 use ImagickDraw;
 use ImagickPixel;
+use App\Support\DrivePrzAjustes;
 
 class GenerarVistaPreviaDrivePrz extends Command
 {
@@ -115,26 +116,35 @@ class GenerarVistaPreviaDrivePrz extends Command
                         Imagick::LAYERMETHOD_FLATTEN
                     );
 
+                    $ajustesMarca = DrivePrzAjustes::marcaAgua();
+
                     // Marca de agua incrustada en los píxeles
                     $marca = new ImagickDraw();
 
                     $marca->setFillColor(
-                        new ImagickPixel('rgba(20,38,61,0.22)')
+                        new ImagickPixel(
+                            $this->hexAColorRgba(
+                                $ajustesMarca['color'],
+                                $ajustesMarca['opacidad']
+                            )
+                        )
                     );
 
-                    $marca->setFontSize(
-                        max(14, min(34, (int) ($imagen->getImageWidth() / 24)))
-                    );
+                    $fontSize = $ajustesMarca['usar_tamano_manual']
+                        && !empty($ajustesMarca['tamano'])
+                        ? (int) $ajustesMarca['tamano']
+                        : max(14, min(34, (int) ($imagen->getImageWidth() / 24)));
+
+                    $marca->setFontSize($fontSize);
 
                     $marca->setGravity(Imagick::GRAVITY_CENTER);
 
-                    // Incrustar identificación de Drive PRZ
                     $imagen->annotateImage(
                         $marca,
                         0,
                         0,
-                        -25,
-                        'DRIVE PRZ - SOLO LECTURA'
+                        (float) $ajustesMarca['angulo'],
+                        (string) $ajustesMarca['texto']
                     );
 
                     $marca->clear();
@@ -191,5 +201,26 @@ class GenerarVistaPreviaDrivePrz extends Command
 
             return self::FAILURE;
         }
+    }
+
+    private function hexAColorRgba(string $hex, int $opacidad): string
+    {
+        $hex = ltrim(trim($hex), '#');
+
+        if (strlen($hex) === 3) {
+            $hex = preg_replace('/(.)/', '$1$1', $hex);
+        }
+
+        if (!preg_match('/^[A-Fa-f0-9]{6}$/', $hex)) {
+            $hex = '14263D';
+        }
+
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        $alpha = max(0, min(100, $opacidad)) / 100;
+
+        return "rgba({$r},{$g},{$b},{$alpha})";
     }
 }
