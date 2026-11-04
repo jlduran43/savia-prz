@@ -95,193 +95,36 @@ class DrivePrzController extends Controller
         return response()->json(['items' => $folders->concat($files)->values(), 'trail' => $trail]);
     }
 
-
-
-
     public function makeFolder(Request $request)
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         $d = $request->validate(['nombre' => ['required', 'string', 'max:120'], 'carpeta_padre_id' => ['nullable', 'integer']]);
-
-
-
-
-
-
-
         $parent = isset($d['carpeta_padre_id']) ? (int)$d['carpeta_padre_id'] : null;
 
-
-
-
-
-
-
         $this->parent($parent);
-
-
-
-
-
-
 
         $name = trim($d['nombre']);
 
-
-
-
-
-
-
         if ($this->uniqueFolder($name, $parent)) throw ValidationException::withMessages(['nombre' => 'Ya existe una carpeta con ese nombre.']);
 
-
-
-
-
-
-
         return response()->json(['id' => $this->createFolder($name, $parent)->id], 201);
-
-
-
-
-
-
-
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public function months(Request $request)
-
-
-
-
-
-
-
     {
-
-
-
-
-
-
-
         $d = $request->validate(['carpeta_padre_id' => ['nullable', 'integer'], 'meses' => ['required', 'array', 'min:1', 'max:12'], 'meses.\\\\\\\*' => ['required', 'integer', 'between:1,12', 'distinct']]);
-
-
-
-
-
-
-
         $parent = isset($d['carpeta_padre_id']) ? (int)$d['carpeta_padre_id'] : null;
-
-
-
-
-
-
 
         $this->parent($parent);
 
-
-
-
-
-
-
         $names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-
-
-
-
-
-
         $created = DB::transaction(function () use ($d, $parent, $names) {
-
-
-
-
-
-
-
             $count = 0;
 
-
-
-
-
-
-
             foreach ($d['meses'] as $m) {
-
-
-
-
-
-
-
                 $name = sprintf('%02d. %s', $m, $names[$m - 1]);
-
-
-
-
-
-
-
                 if (!$this->uniqueFolder($name, $parent)) {
-
-
-
-
-
-
-
                     $this->createFolder($name, $parent);
-
-
-
-
-
-
-
                     $count++;
-
-
-
-
-
-
-
                 }
 
 
