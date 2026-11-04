@@ -33,8 +33,7 @@ class GenerarPreviewDrivePrz implements ShouldQueue
 
     public function handle(): void
     {
-        // La cola no debe convertir documentos mientras
-        // el renderizador no esté habilitado expresamente.
+        // No convertir mientras la función esté desactivada.
         if (!config('drive-prz.preview_enabled', false)) {
             return;
         }
@@ -47,15 +46,40 @@ class GenerarPreviewDrivePrz implements ShouldQueue
 
         $disco = Storage::disk('documentos_privados');
 
-        // El archivo puede no haberse terminado de guardar.
-        if (!$documento->ruta_archivo ||
-            !$disco->exists($documento->ruta_archivo)) {
-            throw new RuntimeException('Archivo todavía no disponible.');
+        if (
+            !$documento->ruta_archivo ||
+            !$disco->exists($documento->ruta_archivo)
+        ) {
+            throw new RuntimeException(
+                'Archivo no disponible para generar vista previa.'
+            );
         }
 
-        if ($disco->mimeType($documento->ruta_archivo)
-            !== 'application/pdf') {
+        // Procesar exclusivamente archivos PDF.
+        if (
+            strtolower(pathinfo(
+                $documento->nombre_original ?? '',
+                PATHINFO_EXTENSION
+            )) !== 'pdf'
+        ) {
             return;
+        }
+
+        if (
+            $disco->mimeType($documento->ruta_archivo)
+            !== 'application/pdf'
+        ) {
+            return;
+        }
+
+        // Máximo 15 MB para la conversión.
+        if (
+            $disco->size($documento->ruta_archivo)
+            > 15 * 1024 * 1024
+        ) {
+            throw new RuntimeException(
+                'PDF supera los 15 MB permitidos para vista previa.'
+            );
         }
 
         $resultado = Artisan::call(
@@ -65,7 +89,8 @@ class GenerarPreviewDrivePrz implements ShouldQueue
 
         if ($resultado !== 0) {
             throw new RuntimeException(
-                'Falló la vista previa del documento ' . $documento->id
+                'Error al generar vista previa del documento ' .
+                    $documento->id
             );
         }
     }
