@@ -57,6 +57,7 @@ class GenerarPreviewDrivePrz implements ShouldQueue
         Documento::whereKey($documento->id)->update([
             'preview_estado' => 'PROCESANDO',
             'preview_error' => null,
+            'preview_iniciado_at' => now(),
             'preview_procesado_at' => null,
         ]);
 
@@ -107,6 +108,7 @@ class GenerarPreviewDrivePrz implements ShouldQueue
             'preview_estado' => 'LISTO',
             'preview_error' => null,
             'preview_procesado_at' => now(),
+            'preview_iniciado_at' => null,
         ]);
     }
 
@@ -120,6 +122,7 @@ class GenerarPreviewDrivePrz implements ShouldQueue
                 ? mb_substr($exception->getMessage(), 0, 1000)
                 : 'No fue posible generar la vista previa.',
             'preview_procesado_at' => null,
+            'preview_iniciado_at' => null,
         ]);
     }
 }
