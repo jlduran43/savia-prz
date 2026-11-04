@@ -87,7 +87,6 @@ class Documento extends Model
             ])->saveQuietly();
 
             GenerarPreviewDrivePrz::dispatch($documento->id)
-                ->delay(now()->addMinutes(2))
                 ->afterCommit();
         });
     }
