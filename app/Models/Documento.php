@@ -60,6 +60,7 @@ class Documento extends Model
         )->withTimestamps();
     }
 
+
     protected static function booted(): void
     {
         static::created(function (Documento $documento) {
@@ -68,16 +69,22 @@ class Documento extends Model
                 return;
             }
 
-            if (
-                strtolower(
-                    pathinfo(
-                        $documento->nombre_original ?? '',
-                        PATHINFO_EXTENSION
-                    )
-                ) !== 'pdf'
-            ) {
+            $extension = strtolower(pathinfo(
+                $documento->nombre_original ?? '',
+                PATHINFO_EXTENSION
+            ));
+
+            if ($extension !== 'pdf') {
                 return;
             }
+
+            // Registrar el estado inicial sin disparar
+            // nuevamente eventos del modelo.
+            $documento->forceFill([
+                'preview_estado' => 'PENDIENTE',
+                'preview_error' => null,
+                'preview_procesado_at' => null,
+            ])->saveQuietly();
 
             GenerarPreviewDrivePrz::dispatch($documento->id)
                 ->delay(now()->addMinutes(2))

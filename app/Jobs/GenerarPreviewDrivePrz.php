@@ -11,6 +11,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Throwable;
 
 class GenerarPreviewDrivePrz implements ShouldQueue
 {
@@ -33,7 +34,6 @@ class GenerarPreviewDrivePrz implements ShouldQueue
 
     public function handle(): void
     {
-        // No convertir mientras la función esté desactivada.
         if (!config('drive-prz.preview_enabled', false)) {
             return;
         }
@@ -44,6 +44,22 @@ class GenerarPreviewDrivePrz implements ShouldQueue
             return;
         }
 
+        $extension = strtolower(pathinfo(
+            $documento->nombre_original ?? '',
+            PATHINFO_EXTENSION
+        ));
+
+        if ($extension !== 'pdf') {
+            return;
+        }
+
+        // Registrar que comenzó el procesamiento.
+        Documento::whereKey($documento->id)->update([
+            'preview_estado' => 'PROCESANDO',
+            'preview_error' => null,
+            'preview_procesado_at' => null,
+        ]);
+
         $disco = Storage::disk('documentos_privados');
 
         if (
@@ -51,37 +67,30 @@ class GenerarPreviewDrivePrz implements ShouldQueue
             !$disco->exists($documento->ruta_archivo)
         ) {
             throw new RuntimeException(
-                'Archivo no disponible para generar vista previa.'
+                'El archivo PDF no está disponible.'
             );
-        }
-
-        // Procesar exclusivamente archivos PDF.
-        if (
-            strtolower(pathinfo(
-                $documento->nombre_original ?? '',
-                PATHINFO_EXTENSION
-            )) !== 'pdf'
-        ) {
-            return;
         }
 
         if (
             $disco->mimeType($documento->ruta_archivo)
             !== 'application/pdf'
         ) {
-            return;
+            throw new RuntimeException(
+                'El archivo no corresponde a un PDF válido.'
+            );
         }
 
-        // Máximo 15 MB para la conversión.
         if (
             $disco->size($documento->ruta_archivo)
             > 15 * 1024 * 1024
         ) {
             throw new RuntimeException(
-                'PDF supera los 15 MB permitidos para vista previa.'
+                'El PDF supera el límite de 15 MB.'
             );
         }
 
+        // Conservar el generador existente con
+        // la marca de agua permanente.
         $resultado = Artisan::call(
             'drive-prz:generar-preview',
             ['documento' => $documento->id]
@@ -89,9 +98,28 @@ class GenerarPreviewDrivePrz implements ShouldQueue
 
         if ($resultado !== 0) {
             throw new RuntimeException(
-                'Error al generar vista previa del documento ' .
-                    $documento->id
+                'No fue posible generar la vista previa del PDF.'
             );
         }
+
+        // El comando finalizó correctamente.
+        Documento::whereKey($documento->id)->update([
+            'preview_estado' => 'LISTO',
+            'preview_error' => null,
+            'preview_procesado_at' => now(),
+        ]);
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        // Laravel llama este método cuando el Job
+        // falla definitivamente.
+        Documento::whereKey($this->documentoId)->update([
+            'preview_estado' => 'ERROR',
+            'preview_error' => $exception
+                ? mb_substr($exception->getMessage(), 0, 1000)
+                : 'No fue posible generar la vista previa.',
+            'preview_procesado_at' => null,
+        ]);
     }
 }
