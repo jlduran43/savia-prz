@@ -6734,21 +6734,32 @@
                 document.getElementById('przFolderBackdrop')?.remove();
                 importacionCarpeta = null;
             }
-            function abrirImportacionCarpeta(files) {
-                if (!files.length) return;
-                const nombreRaiz = (files[0].webkitRelativePath || '').split('/')[0];
+            function abrirImportacionCarpeta(files, opciones = {}) {
+                const carpetasDetectadas = opciones.folders || [];
+                if (!files.length && !carpetasDetectadas.length) return;
+                const nombreRaiz = opciones.rootName || (files[0]?.webkitRelativePath || '').split('/')[0];
                 if (!nombreRaiz) { alert('Selecciona una carpeta completa desde el explorador de archivos.'); return; }
-                const entries = files.map(file => ({ file, path: file.webkitRelativePath || `${nombreRaiz}/${file.name}` }));
+                const entries = opciones.entries || files.map(file => ({ file, path: file.webkitRelativePath || `${nombreRaiz}/${file.name}` }));
                 const problemas = entries.filter(e => e.file.size > SEGURIDAD_CARPETA);
-                const folders = new Set([nombreRaiz]);
+                const folders = new Set([nombreRaiz, ...carpetasDetectadas]);
+                const rutaValida = path => {
+                    const partes = path.split('/');
+                    return partes.length <= 13 && !partes.some(x => !x || x === '.' || x === '..' || x.length > 120 || /[\\<>\x00-\x1f]/.test(x));
+                };
+                for (const path of folders) {
+                    if (!rutaValida(path) || (path !== nombreRaiz && !path.startsWith(nombreRaiz + '/'))) {
+                        alert('La carpeta contiene una ruta no válida: ' + path);
+                        return;
+                    }
+                }
                 for (const e of entries) {
                     const parts = e.path.split('/');
-                    if (parts.some(x => !x || x === '.' || x === '..' || x.length > 120 || /[\\<>\x00-\x1f]/.test(x)) || parts.length > 13) {
+                    if (!rutaValida(e.path) || !e.path.startsWith(nombreRaiz + '/')) {
                         alert('La carpeta contiene nombres o niveles no válidos: ' + e.path); return;
                     }
                     for (let i = 1; i < parts.length; i++) folders.add(parts.slice(0, i).join('/'));
                 }
-                if (folders.size > 500 || files.length > 1000) { alert('Máximo 500 carpetas y 1000 archivos por importación. Divide la carpeta en partes.'); return; }
+                if (folders.size > 500 || entries.length > 1000) { alert('Máximo 500 carpetas y 1000 archivos por importación. Divide la carpeta en partes.'); return; }
                 const destino = carpetaRealActual;
                 const ruta = rutaRealActual.length ? 'Mis archivos / ' + rutaRealActual.map(x => x.name).join(' / ') : 'Mis archivos';
                 importacionCarpeta = { entries, folders: [...folders].sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b)), destination: destino, path: ruta, busy: false };
@@ -6757,17 +6768,17 @@
                 backdrop.innerHTML = `<div class="modal prz-folder-modal" role="dialog" aria-modal="true" aria-labelledby="przFolderTitle">
           <div class="modalheader"><h2 id="przFolderTitle">Revisar carpeta antes de subir</h2><button type="button" class="close" data-folder-close aria-label="Cerrar">✕</button></div>
           <div class="modalbody">
-            <p class="notice">Destino: <strong id="przFolderDest"></strong>. Se conservarán las subcarpetas y archivos. Nada se guardará antes de confirmar.</p>
+            <p class="notice">Destino: <strong id="przFolderDest"></strong>. Se conservarán todas las subcarpetas, incluso las vacías, y los archivos. Nada se guardará antes de confirmar.</p>
             <p id="przFolderSummary" class="outlinehelp"></p>
             <div class="prz-folder-tree" id="przFolderTree"></div>
             <div class="prz-folder-progress" id="przFolderProgress" hidden><span id="przFolderProgressText"></span><progress id="przFolderProgressBar" max="100" value="0"></progress></div>
             <div class="prz-folder-errors" id="przFolderErrors" role="status" aria-live="polite"></div>
           </div>
-          <div class="modalfoot"><button type="button" class="btn" data-folder-close>Cerrar</button><button type="button" class="btn primary" id="przFolderConfirm">Confirmar subida (${files.length})</button></div>
+          <div class="modalfoot"><button type="button" class="btn" data-folder-close>Cerrar</button><button type="button" class="btn primary" id="przFolderConfirm">Confirmar importación</button></div>
         </div>`;
                 document.body.append(backdrop);
                 backdrop.querySelector('#przFolderDest').textContent = ruta;
-                backdrop.querySelector('#przFolderSummary').textContent = `${importacionCarpeta.folders.length} carpeta(s) y ${files.length} archivo(s). Tamaño total: ${size(files.reduce((n, f) => n + f.size, 0))}. Límite de 20 MB por archivo.`;
+                backdrop.querySelector('#przFolderSummary').textContent = `${importacionCarpeta.folders.length} carpeta(s) y ${entries.length} archivo(s). Tamaño total: ${size(entries.reduce((n, e) => n + e.file.size, 0))}. Límite de 20 MB por archivo.`;
                 const tree = backdrop.querySelector('#przFolderTree');
                 const rows = [...importacionCarpeta.folders.map(path => ({ path, folder: true })), ...entries.map(x => ({ path: x.path, folder: false }))];
                 rows.sort((a, b) => a.path.localeCompare(b.path, 'es'));
@@ -6842,8 +6853,8 @@
                     }
                     importacionCarpeta.busy = false;
                     cerrarImportacionCarpeta();
-                    showImportNotice(`${subidos} archivo(s) guardado(s) en la carpeta «${info.folders[0]}» con su estructura de subcarpetas.`, null);
-                    toast(`${subidos} archivo(s) y estructura de carpetas guardados correctamente.`);
+                    showImportNotice(`${info.folders.length} carpeta(s) y ${subidos} archivo(s) guardados en «${info.folders[0]}».`, null);
+                    toast(`${info.folders.length} carpeta(s) y ${subidos} archivo(s) guardados correctamente.`);
                 } catch (e) {
                     info.busy = false;
                     errors.textContent = 'No se pudo completar la importación: ' + e.message + '. Las carpetas ya creadas permanecerán; puedes revisar el destino antes de reintentar.';
@@ -6851,29 +6862,72 @@
                     backdrop.querySelectorAll('[data-folder-close]').forEach(b => b.disabled = false);
                 }
             }
-            // Selector único de carpeta completa (Laravel + Storage).
-            // Evita la implementación antigua basada en IndexedDB.
+            // Selector de directorio con soporte de carpetas vacías.
+            // Chrome/Edge: File System Access API; otros navegadores: webkitdirectory.
+            async function seleccionarCarpetaConEstructura() {
+                if (typeof window.showDirectoryPicker !== 'function') return false;
+                let raiz;
+                try {
+                    // Se invoca directamente desde el clic, antes de cualquier await.
+                    raiz = await window.showDirectoryPicker({ mode: 'read' });
+                } catch (error) {
+                    if (error.name === 'AbortError') return true; // El usuario canceló.
+                    // Si el navegador no permite esta API, usamos el selector clásico.
+                    if (['SecurityError', 'NotAllowedError', 'TypeError'].includes(error.name)) return false;
+                    throw error;
+                }
+                const entries = [];
+                const folders = [];
+                async function recorrer(directorio, ruta, profundidad) {
+                    if (profundidad > 13) throw new Error('La estructura excede 13 niveles de carpetas.');
+                    folders.push(ruta);
+                    if (folders.length > 500) throw new Error('Máximo 500 carpetas por importación.');
+                    for await (const item of directorio.values()) {
+                        const rutaItem = ruta + '/' + item.name;
+                        if (item.kind === 'directory') {
+                            await recorrer(item, rutaItem, profundidad + 1);
+                        } else if (item.kind === 'file') {
+                            const archivo = await item.getFile();
+                            entries.push({ file: archivo, path: rutaItem });
+                            if (entries.length > 1000) throw new Error('Máximo 1000 archivos por importación.');
+                        }
+                    }
+                }
+                await recorrer(raiz, raiz.name, 1);
+                abrirImportacionCarpeta(entries.map(e => e.file), {
+                    rootName: raiz.name, entries, folders
+                });
+                return true;
+            }
             const botonSubirCarpeta = document.getElementById('uploadFolderButton');
             const selectorCarpeta = document.getElementById('folderInput');
+            async function iniciarSeleccionCarpeta(evento) {
+                evento.preventDefault();
+                evento.stopImmediatePropagation();
+                if (importacionCarpeta?.busy) return;
+                try {
+                    const manejado = await seleccionarCarpetaConEstructura();
+                    if (!manejado) {
+                        selectorCarpeta.value = '';
+                        selectorCarpeta.click();
+                    }
+                } catch (error) {
+                    console.error('Drive PRZ: error al leer la carpeta', error);
+                    toast('No se pudo leer la carpeta: ' + error.message);
+                }
+            }
             if (botonSubirCarpeta && selectorCarpeta) {
-                botonSubirCarpeta.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    selectorCarpeta.value = '';
-                    selectorCarpeta.click();
-                }, true);
-
+                botonSubirCarpeta.addEventListener('click', iniciarSeleccionCarpeta, true);
                 selectorCarpeta.addEventListener('change', function (e) {
                     e.stopImmediatePropagation();
                     const archivos = Array.from(e.target.files || []);
                     selectorCarpeta.value = '';
                     if (!archivos.length) {
-                        toast('No se encontraron archivos en la carpeta seleccionada.');
+                        toast('Este navegador no detecta carpetas vacías con su selector clásico. Prueba Chrome o Edge actualizado.');
                         return;
                     }
-                    try {
-                        abrirImportacionCarpeta(archivos);
-                    } catch (error) {
+                    try { abrirImportacionCarpeta(archivos); }
+                    catch (error) {
                         console.error('Error al preparar carpeta:', error);
                         toast('No se pudo preparar la carpeta: ' + error.message);
                     }
@@ -6881,6 +6935,14 @@
             } else {
                 console.error('Drive PRZ: falta el botón o el input de subir carpetas.');
             }
+            // También se usa desde el botón contextual «Subir carpeta».
+            document.addEventListener('click', function (e) {
+                const boton = e.target.closest('button[data-act="folderhere"]');
+                if (!boton || !selectorCarpeta) return;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                iniciarSeleccionCarpeta(e);
+            }, true);
 
 
             // Papelera real de SAVIA PRZ: no usa los datos de demostración.
