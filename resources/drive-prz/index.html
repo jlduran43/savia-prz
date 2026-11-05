@@ -7315,13 +7315,13 @@
                 const area = document.getElementById('filesArea');
                 if (!items.length) { area.innerHTML = `<div class="empty">${glyph('folder')}<strong>${q ? 'No se encontraron resultados' : 'No hay elementos compartidos'}</strong><p>Los archivos y carpetas que te compartan aparecerán aquí.</p></div>`; return; }
                 if (realLayout === 'grid') {
-                    area.innerHTML = `<div class="griditems">${items.map(x => `<article class="tile"><div class="tiletop">${icono(x)}</div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<span class="filemeta">${x.type === 'folder' ? 'Carpeta' : 'Archivo'} · Compartido por ${esc(x.owner || 'Otro usuario')}</span><div class="tilefoot">${oper(x)}</div></article>`).join('')}</div>`;
+                    area.innerHTML = `<div class="griditems">${items.map(x => `<article class="tile" data-shared-item="${x.type}:${x.id}"><div class="tiletop">${icono(x)}</div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<span class="filemeta">${x.type === 'folder' ? 'Carpeta' : 'Archivo'} · Compartido por ${esc(x.owner || 'Otro usuario')}</span><div class="tilefoot">${oper(x)}</div></article>`).join('')}</div>`;
                 } else {
-                    area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr><td></td><td><div class="namecell">${icono(x)}<div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner || 'Otro usuario')} · Solo ver</div></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size || 0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+                    area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr data-shared-item="${x.type}:${x.id}"><td></td><td><div class="namecell">${icono(x)}<div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner || 'Otro usuario')} · Solo ver</div></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size || 0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
                 }
             }
             async function sharedRealOpen(folderId = null) {
-                if (sharedRealBusy) return;
+                if (sharedRealBusy) return false;
                 sharedRealBusy = true;
                 sharedRealActive = true;
                 trashRealActive = false;
@@ -7346,9 +7346,81 @@
                     document.getElementById('currentPlace').textContent = sharedRealTrail.length ? sharedRealTrail.map(x => x.name).join(' / ') : 'Compartidos conmigo';
                     document.getElementById('breadcrumbs').innerHTML = `<button type="button" data-shared-root>Compartidos conmigo</button>` + sharedRealTrail.map(x => ` ${glyph('arrow')} <button type="button" data-shared-open="${x.id}">${esc(x.name)}</button>`).join('');
                     sharedRealRender();
+                    return true;
                 } catch (e) {
                     document.getElementById('filesArea').innerHTML = `<div class="empty"><strong>No se pudieron cargar los compartidos.</strong><p>${esc(e.message)}</p></div>`;
+                    return false;
                 } finally { sharedRealBusy = false; }
+            }
+            // Desde una notificación, buscar únicamente en carpetas que el servidor
+            // autoriza a consultar. Nunca abrir URLs ni IDs sin comprobar el listado.
+            async function abrirCompartidoDesdeAviso(aviso) {
+                const tipo = aviso.elemento_tipo;
+                const id = Number(aviso.elemento_id);
+                if (!['files', 'folders'].includes(tipo) || !Number.isSafeInteger(id) || id <= 0) {
+                    toast('La notificación no contiene un documento válido.');
+                    return;
+                }
+                document.getElementById('searchInput').value = '';
+                document.getElementById('typeFilter').value = 'all';
+                const cargado = await sharedRealOpen(null);
+                if (!cargado) {
+                    toast('No fue posible abrir Compartidos conmigo.');
+                    return;
+                }
+                const buscado = tipo === 'files' ? 'file' : 'folder';
+                let ubicacion = null;
+                const revisados = new Set();
+                const pendientes = [{ carpeta: null, elementos: sharedRealItems, nivel: 0 }];
+                // Límite para evitar recorrer árboles excesivamente grandes.
+                while (pendientes.length && revisados.size < 120) {
+                    const actual = pendientes.shift();
+                    const encontrado = actual.elementos.find(x => x.type === buscado && Number(x.id) === id);
+                    if (encontrado) {
+                        ubicacion = actual;
+                        break;
+                    }
+                    if (actual.nivel >= 12) continue;
+                    for (const carpeta of actual.elementos.filter(x => x.type === 'folder')) {
+                        const folderId = Number(carpeta.id);
+                        if (!Number.isSafeInteger(folderId) || revisados.has(folderId) || revisados.size >= 120) continue;
+                        revisados.add(folderId);
+                        try {
+                            const u = new URL(`${API}/shared`, location.origin);
+                            u.searchParams.set('carpeta_id', String(folderId));
+                            const data = await trashRequest(u.toString());
+                            pendientes.push({ carpeta: folderId, elementos: data.items || [], nivel: actual.nivel + 1 });
+                        } catch (error) {
+                            // Carpeta no accesible: se omite; nunca se intenta abrir por fuerza.
+                            console.warn('Carpeta compartida no accesible', folderId, error);
+                        }
+                    }
+                }
+                if (!ubicacion) {
+                    toast('El elemento ya no está disponible en Compartidos conmigo o no tienes acceso.');
+                    return;
+                }
+                if (ubicacion.carpeta !== null) {
+                    if (!await sharedRealOpen(ubicacion.carpeta)) {
+                        toast('No se pudo abrir la carpeta compartida.');
+                        return;
+                    }
+                }
+                const fila = Array.from(document.querySelectorAll('[data-shared-item]'))
+                    .find(el => el.dataset.sharedItem === `${buscado}:${id}`);
+                if (fila) {
+                    fila.style.outline = '3px solid #176B45';
+                    fila.style.outlineOffset = '-3px';
+                    fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (tipo === 'folders') {
+                    await sharedRealOpen(id);
+                } else {
+                    const abrir = Array.from(document.querySelectorAll('[data-shared-view]'))
+                        .find(el => Number(el.dataset.sharedView) === id);
+                    if (abrir) abrir.click();
+                    else toast('El archivo está compartido, pero no se pudo abrir la vista previa.');
+                }
             }
             document.getElementById('przApp').addEventListener('click', e => {
                 if (!sharedRealActive) return;
@@ -7614,13 +7686,12 @@
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         await actualizarNotificaciones();
                         menu.hidden = true; boton.setAttribute('aria-expanded', 'false');
-                        // La navegación a "Compartidos" se conectará al listado real en una etapa posterior.
-                        // No utilizar enlaces inventados ni intentar abrir archivos sin validar permisos.
-                        if (typeof toast === 'function') toast('Notificación marcada como leída.');
+                        // Navegar al elemento validándolo contra el listado real del servidor.
+                        await abrirCompartidoDesdeAviso(aviso);
                     } catch (error) {
                         item.disabled = false;
                         console.error('Drive PRZ: error al marcar notificación', error);
-                        alert('No se pudo marcar como leída: ' + error.message);
+                        alert('No se pudo completar la acción de la notificación: ' + error.message);
                     }
                 });
                 actualizarNotificaciones();
