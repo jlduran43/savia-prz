@@ -5755,7 +5755,7 @@
                 modal('Mover seleccionados a la papelera', `¿Mover <strong>${all.length} elementos</strong> a la papelera? También se ocultará el contenido de las carpetas seleccionadas.`, `<button class="btn primary" data-act="confirmBulkDelete">Mover a papelera</button>`);
             });
             $('clearSelection').addEventListener('click', clearSelection);
-            $('newFolder').addEventListener('click', newFolder); $('bulkFolders').addEventListener('click', createStructure); $('createMonths').addEventListener('click', createMonths); $('uploadFolderButton').addEventListener('click', () => $('folderInput').click()); $('folderInput').addEventListener('change', async e => { const files = [...e.target.files]; e.target.value = ''; if (!files.length) return; await importDirectory(files.map(file => ({ file, path: file.webkitRelativePath || file.name, dir: false }))); }); $('modalMount').addEventListener('change', e => { if (e.target.id === 'replaceFile' && e.target.files?.length) { const id = e.target.dataset.replaceId; reviewUpload([...e.target.files], file(id)?.folderId, id) } }); $('modalMount').addEventListener('input', e => { if (e.target.id === 'outlineText') refreshOutline(); if (e.target.classList.contains('monthcheck')) { monthSelectedPreset = 'custom'; refreshMonths() } }); $('uploadButton').addEventListener('click', () => $('fileInput').click()); $('fileInput').addEventListener('change', e => { const chosen = [...e.target.files]; e.target.value = ''; reviewUpload(chosen, stage?.destination || state.folder) });
+            $('newFolder').addEventListener('click', newFolder); $('bulkFolders').addEventListener('click', createStructure); $('createMonths').addEventListener('click', createMonths); $('modalMount').addEventListener('change', e => { if (e.target.id === 'replaceFile' && e.target.files?.length) { const id = e.target.dataset.replaceId; reviewUpload([...e.target.files], file(id)?.folderId, id) } }); $('modalMount').addEventListener('input', e => { if (e.target.id === 'outlineText') refreshOutline(); if (e.target.classList.contains('monthcheck')) { monthSelectedPreset = 'custom'; refreshMonths() } }); $('uploadButton').addEventListener('click', () => $('fileInput').click()); $('fileInput').addEventListener('change', e => { const chosen = [...e.target.files]; e.target.value = ''; reviewUpload(chosen, stage?.destination || state.folder) });
             $('tabMine').addEventListener('click', openOwnedRoot); $('tabShared').addEventListener('click', openSharedRoot);
             $('searchInput').addEventListener('input', e => { selection.clear(); state.search = e.target.value.trim(); draw() }); $('typeFilter').addEventListener('change', e => { selection.clear(); state.type = e.target.value; draw() }); $('sortBy').addEventListener('change', e => { state.sort = e.target.value; draw() }); $('listBtn').addEventListener('click', () => { state.layout = 'list'; draw() }); $('gridBtn').addEventListener('click', () => { state.layout = 'grid'; draw() });
             $('modalMount').addEventListener('wheel', e => { if (stage && e.ctrlKey && e.target.closest('#stageViewport')) { const v = stageClass(stage.files[stage.index]); if (v === 'image' || v === 'text') { e.preventDefault(); stageZoom(e.deltaY < 0 ? 25 : -25) } } }, { passive: false });
@@ -6851,15 +6851,36 @@
                     backdrop.querySelectorAll('[data-folder-close]').forEach(b => b.disabled = false);
                 }
             }
-            document.getElementById('uploadFolderButton').addEventListener('click', function (e) {
-                e.preventDefault(); e.stopImmediatePropagation();
-                document.getElementById('folderInput').click();
-            }, true);
-            document.getElementById('folderInput').addEventListener('change', function (e) {
-                e.stopImmediatePropagation();
-                const files = Array.from(e.target.files || []); e.target.value = '';
-                abrirImportacionCarpeta(files);
-            }, true);
+            // Selector único de carpeta completa (Laravel + Storage).
+            // Evita la implementación antigua basada en IndexedDB.
+            const botonSubirCarpeta = document.getElementById('uploadFolderButton');
+            const selectorCarpeta = document.getElementById('folderInput');
+            if (botonSubirCarpeta && selectorCarpeta) {
+                botonSubirCarpeta.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    selectorCarpeta.value = '';
+                    selectorCarpeta.click();
+                }, true);
+
+                selectorCarpeta.addEventListener('change', function (e) {
+                    e.stopImmediatePropagation();
+                    const archivos = Array.from(e.target.files || []);
+                    selectorCarpeta.value = '';
+                    if (!archivos.length) {
+                        toast('No se encontraron archivos en la carpeta seleccionada.');
+                        return;
+                    }
+                    try {
+                        abrirImportacionCarpeta(archivos);
+                    } catch (error) {
+                        console.error('Error al preparar carpeta:', error);
+                        toast('No se pudo preparar la carpeta: ' + error.message);
+                    }
+                }, true);
+            } else {
+                console.error('Drive PRZ: falta el botón o el input de subir carpetas.');
+            }
 
 
             // Papelera real de SAVIA PRZ: no usa los datos de demostración.
