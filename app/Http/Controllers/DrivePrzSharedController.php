@@ -13,27 +13,60 @@ class DrivePrzSharedController extends Controller
 {
     private const PERMISOS = 'drive_prz_permisos';
 
+
     private function config(): array
     {
-        abort_unless(Schema::hasTable(self::PERMISOS), 503, 'La tabla de permisos no existe.');
+        abort_unless(
+            Schema::hasTable(self::PERMISOS),
+            503,
+            'La tabla de permisos no existe.'
+        );
+
         $cols = Schema::getColumnListing(self::PERMISOS);
+
         $pick = static function (array $names) use ($cols): ?string {
-            foreach ($names as $name) if (in_array($name, $cols, true)) return $name;
+            foreach ($names as $name) {
+                if (in_array($name, $cols, true)) {
+                    return $name;
+                }
+            }
+
             return null;
         };
-        $tipo = $pick(['elemento_tipo', 'tipo_elemento', 'recurso_tipo']);
-        $id = $pick(['elemento_id', 'recurso_id']);
-        $destinatario = $pick(['usuario_id', 'destinatario_id', 'usuario_destino_id', 'compartido_con_id']);
-        abort_unless($tipo && $id && $destinatario, 503,
-            'No se pudo interpretar drive_prz_permisos. Revisa los nombres de columnas con SHOW COLUMNS FROM drive_prz_permisos.');
+
+        $tipo = $pick([
+            'tipo',
+            'elemento_tipo',
+            'tipo_elemento',
+            'recurso_tipo'
+        ]);
+
+        $id = $pick([
+            'elemento_id',
+            'recurso_id'
+        ]);
+
+        $destinatario = $pick([
+            'usuario_id',
+            'destinatario_id',
+            'usuario_destino_id',
+            'compartido_con_id'
+        ]);
+
+        abort_unless(
+            $tipo && $id && $destinatario,
+            503,
+            'No se pudo interpretar la estructura de drive_prz_permisos.'
+        );
+
         return compact('tipo', 'id', 'destinatario');
     }
 
     private function permisos(string $kind, int $id): bool
     {
         $cfg = $this->config();
-        $types = $kind === 'folders' ? ['folders','folder','carpeta','documento_carpeta','App\\Models\\DocumentoCarpeta']
-          : ['files','file','archivo','documento','App\\Models\\Documento'];
+        $types = $kind === 'folders' ? ['folders', 'folder', 'carpeta', 'documento_carpeta', 'App\\Models\\DocumentoCarpeta']
+            : ['files', 'file', 'archivo', 'documento', 'App\\Models\\Documento'];
         return DB::table(self::PERMISOS)
             ->where($cfg['destinatario'], auth()->id())
             ->whereIn($cfg['tipo'], $types)
@@ -63,18 +96,30 @@ class DrivePrzSharedController extends Controller
 
     private function folderData(object $f): array
     {
-        return ['id' => $f->id, 'type' => 'folder', 'name' => $f->nombre,
-            'modified' => $f->updated_at, 'parent' => $f->carpeta_padre_id,
-            'owner_id' => $f->creado_por, 'owner' => $this->ownerName((int)$f->creado_por)];
+        return [
+            'id' => $f->id,
+            'type' => 'folder',
+            'name' => $f->nombre,
+            'modified' => $f->updated_at,
+            'parent' => $f->carpeta_padre_id,
+            'owner_id' => $f->creado_por,
+            'owner' => $this->ownerName((int)$f->creado_por)
+        ];
     }
 
     private function fileData(object $f): array
     {
         $disk = Storage::disk('documentos_privados');
-        return ['id' => $f->id, 'type' => 'file', 'name' => $f->nombre_original,
-            'modified' => $f->updated_at, 'parent' => $f->carpeta_id,
-            'owner_id' => $f->subido_por, 'owner' => $this->ownerName((int)$f->subido_por),
-            'size' => $disk->exists($f->ruta_archivo) ? $disk->size($f->ruta_archivo) : 0];
+        return [
+            'id' => $f->id,
+            'type' => 'file',
+            'name' => $f->nombre_original,
+            'modified' => $f->updated_at,
+            'parent' => $f->carpeta_id,
+            'owner_id' => $f->subido_por,
+            'owner' => $this->ownerName((int)$f->subido_por),
+            'size' => $disk->exists($f->ruta_archivo) ? $disk->size($f->ruta_archivo) : 0
+        ];
     }
 
     private function ownerName(int $uid): string
@@ -86,14 +131,15 @@ class DrivePrzSharedController extends Controller
     public function listing(Request $request)
     {
         $cfg = $this->config();
-        $data = $request->validate(['carpeta_id' => ['nullable','integer','min:1']]);
+        $data = $request->validate(['carpeta_id' => ['nullable', 'integer', 'min:1']]);
         $parent = isset($data['carpeta_id']) ? (int)$data['carpeta_id'] : null;
         $uid = (int) auth()->id();
         $items = [];
         $trail = [];
         if ($parent !== null) {
             abort_unless($this->canFolder($parent), 403, 'No tienes acceso a esta carpeta.');
-            $cursor = $parent; $seen = [];
+            $cursor = $parent;
+            $seen = [];
             while ($cursor && !isset($seen[$cursor])) {
                 $seen[$cursor] = true;
                 $f = DB::table('documento_carpetas')->where('id', $cursor)->whereNull('deleted_at')->first();
@@ -112,12 +158,18 @@ class DrivePrzSharedController extends Controller
             foreach ($grants as $g) {
                 $type = strtolower((string)$g->{$cfg['tipo']});
                 $id = (int)$g->{$cfg['id']};
-                if (in_array($type, ['folders','folder','carpeta','documento_carpeta','app\\models\\documentocarpeta'], true)) {
-                    $f = DB::table('documento_carpetas')->where('id',$id)->whereNull('deleted_at')->first();
-                    if ($f && (int)$f->creado_por !== $uid && !isset($found['folder:'.$id])) { $items[] = $this->folderData($f); $found['folder:'.$id] = true; }
-                } elseif (in_array($type, ['files','file','archivo','documento','app\\models\\documento'], true)) {
-                    $f = DB::table('documentos')->where('id',$id)->whereNull('deleted_at')->first();
-                    if ($f && (int)$f->subido_por !== $uid && !isset($found['file:'.$id])) { $items[] = $this->fileData($f); $found['file:'.$id] = true; }
+                if (in_array($type, ['folders', 'folder', 'carpeta', 'documento_carpeta', 'app\\models\\documentocarpeta'], true)) {
+                    $f = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
+                    if ($f && (int)$f->creado_por !== $uid && !isset($found['folder:' . $id])) {
+                        $items[] = $this->folderData($f);
+                        $found['folder:' . $id] = true;
+                    }
+                } elseif (in_array($type, ['files', 'file', 'archivo', 'documento', 'app\\models\\documento'], true)) {
+                    $f = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->first();
+                    if ($f && (int)$f->subido_por !== $uid && !isset($found['file:' . $id])) {
+                        $items[] = $this->fileData($f);
+                        $found['file:' . $id] = true;
+                    }
                 }
             }
         }
@@ -126,10 +178,11 @@ class DrivePrzSharedController extends Controller
 
     private function accessibleFile(int $id): object
     {
-        $f = DB::table('documentos')->where('id',$id)->whereNull('deleted_at')->firstOrFail();
+        $f = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->firstOrFail();
         abort_unless((int)$f->subido_por !== (int)auth()->id() && $this->canFile($f), 403, 'No tienes acceso al documento.');
         // Si un ancestro fue eliminado, no exponer el documento.
-        $cursor = $f->carpeta_id; $seen = [];
+        $cursor = $f->carpeta_id;
+        $seen = [];
         while ($cursor !== null) {
             abort_unless(!isset($seen[$cursor]), 403);
             $seen[$cursor] = true;
@@ -154,9 +207,10 @@ class DrivePrzSharedController extends Controller
         $disk = Storage::disk('documentos_privados');
         abort_unless($disk->exists($f->ruta_archivo), 404);
         $mime = $disk->mimeType($f->ruta_archivo);
-        abort_unless(in_array($mime, ['application/pdf','image/png','image/jpeg'], true), 415, 'Formato sin vista previa; descárgalo.');
+        abort_unless(in_array($mime, ['application/pdf', 'image/png', 'image/jpeg'], true), 415, 'Formato sin vista previa; descárgalo.');
         return response()->file($disk->path($f->ruta_archivo), [
-            'Content-Type' => $mime, 'Content-Disposition' => 'inline',
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline',
             'X-Content-Type-Options' => 'nosniff'
         ]);
     }
