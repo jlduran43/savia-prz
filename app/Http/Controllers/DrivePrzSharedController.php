@@ -14,6 +14,7 @@ class DrivePrzSharedController extends Controller
     private const PERMISOS = 'drive_prz_permisos';
 
 
+
     private function config(): array
     {
         abort_unless(
@@ -34,27 +35,32 @@ class DrivePrzSharedController extends Controller
             return null;
         };
 
+        // Identificar la columna del tipo de elemento.
         $tipo = $pick([
             'tipo',
             'elemento_tipo',
             'tipo_elemento',
-            'recurso_tipo'
+            'recurso_tipo',
         ]);
 
+        // Identificar el ID del archivo o carpeta.
         $id = $pick([
             'elemento_id',
-            'recurso_id'
+            'recurso_id',
         ]);
 
+        // Identificar al usuario destinatario.
         $destinatario = $pick([
             'usuario_id',
             'destinatario_id',
             'usuario_destino_id',
-            'compartido_con_id'
+            'compartido_con_id',
         ]);
 
         abort_unless(
-            $tipo && $id && $destinatario,
+            $tipo !== null &&
+                $id !== null &&
+                $destinatario !== null,
             503,
             'No se pudo interpretar la estructura de drive_prz_permisos.'
         );

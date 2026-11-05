@@ -834,6 +834,26 @@
             font-size: 12px
         }
 
+
+        /* Vista de ejemplo Office: aislada, responsive y sin contenido de archivos. */
+        .prz-office-example {width:100%; color:#263b52; text-align:left;}
+        .prz-office-heading {display:flex; align-items:center; gap:10px; margin:0 0 14px; flex-wrap:wrap;}
+        .prz-office-heading strong {font-size:13px;}
+        .prz-office-tag {background:#e5f4eb; color:#176B45; border-radius:6px; font-size:11px; font-weight:800; padding:5px 9px;}
+        .prz-office-sheet {overflow-x:auto; background:#fff; border:1px solid #dee8e2; border-radius:8px;}
+        .prz-office-sheet table {border-collapse:collapse; min-width:360px; width:100%; font-size:12px;}
+        .prz-office-sheet th,.prz-office-sheet td {padding:11px 9px; border:1px solid #e5ebe7; text-align:left;}
+        .prz-office-sheet th {background:#e9f4ed; color:#176B45;}
+        .prz-office-paper {max-width:350px; min-height:220px; margin:auto; background:white; padding:30px; border:1px solid #dce5f0; box-shadow:0 4px 16px #14263d10;}
+        .prz-office-paper-title {font-size:18px; font-weight:750; margin-bottom:25px;}
+        .prz-office-line {background:#e4eaf1; border-radius:4px; height:9px; margin:12px 0;}
+        .prz-office-line.short {width:52%;} .prz-office-line.medium {width:76%;} .prz-office-gap {height:14px;}
+        .prz-office-slide {aspect-ratio:16/9; max-width:420px; margin:auto; border-radius:8px; padding:26px; background:linear-gradient(135deg,#e4efff,#f0f5fd); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;}
+        .prz-office-slide span {font-size:clamp(16px,3vw,24px);font-weight:800;color:#174d7d;}
+        .prz-office-slide-rule {width:65px;height:4px;background:#176B45;border-radius:5px;margin:17px auto;}
+        .prz-office-slide small {color:#58718a;}
+        .prz-office-disclaimer {font-size:11.5px; line-height:1.55; color:#62788e; background:#fff; border:1px solid #e1e9f1; border-radius:7px; padding:11px; margin:14px 0 0; overflow-wrap:anywhere;}
+
         .detailrow {
             display: flex;
             justify-content: space-between;
@@ -5164,6 +5184,28 @@
             }, true);
             document.getElementById('realBulkTrash').addEventListener('click', () => confirmarPapeleraLaravel([...realSelection.values()]));
 
+            // Vista ilustrativa de Office: nunca simula mostrar contenido real del archivo.
+            function prvOfficeEjemplo(nombre) {
+                const ext = (nombre.split('.').pop() || '').toLowerCase();
+                const excel = ['xlsx', 'xls', 'xlsm', 'ods', 'csv'].includes(ext);
+                const word = ['doc', 'docx', 'odt', 'rtf'].includes(ext);
+                const slides = ['ppt', 'pptx', 'odp'].includes(ext);
+                if (!(excel || word || slides)) return null;
+                let ejemplo = '';
+                let titulo = '';
+                if (excel) {
+                    titulo = 'Ejemplo de hoja de cálculo';
+                    ejemplo = `<div class="prz-office-sheet"><table aria-label="Tabla de muestra ficticia"><thead><tr><th>Descripción</th><th>Cantidad</th><th>Estado</th></tr></thead><tbody><tr><td>Registro de ejemplo 01</td><td>12</td><td>Activo</td></tr><tr><td>Registro de ejemplo 02</td><td>8</td><td>Pendiente</td></tr><tr><td>Registro de ejemplo 03</td><td>5</td><td>Activo</td></tr></tbody></table></div>`;
+                } else if (word) {
+                    titulo = 'Ejemplo de documento de texto';
+                    ejemplo = `<div class="prz-office-paper"><div class="prz-office-paper-title">Título del documento</div><div class="prz-office-line"></div><div class="prz-office-line"></div><div class="prz-office-line short"></div><div class="prz-office-gap"></div><div class="prz-office-line"></div><div class="prz-office-line medium"></div></div>`;
+                } else {
+                    titulo = 'Ejemplo de presentación';
+                    ejemplo = `<div class="prz-office-slide"><span>Presentación de ejemplo</span><div class="prz-office-slide-rule"></div><small>Diapositiva ilustrativa</small></div>`;
+                }
+                return `<div class="prz-office-example"><div class="prz-office-heading"><span class="prz-office-tag">${esc(ext.toUpperCase())}</span><strong>${titulo}</strong></div>${ejemplo}<p class="prz-office-disclaimer">Esta es una muestra ilustrativa. No corresponde al contenido de <strong>${esc(nombre)}</strong>. Para ver el archivo original utiliza Descargar.</p></div>`;
+            }
+
             // VISTA PREVIA REAL: diseño original, archivos almacenados en Laravel.
             // No se ejecuta HTML, SVG, PHP ni código suministrado por usuarios.
             function verArchivoLaravel(id, nombre, bytes) {
@@ -5182,9 +5224,9 @@
                             onerror="this.style.display='none';this.parentElement.querySelector('.preview-error').hidden=false">
                        <p class="preview-error" hidden>No fue posible visualizar la imagen. Puedes descargar el archivo.</p>`;
                 } else {
-                    contenido = `<span class="fileico other" style="width:80px;height:80px;margin:0 auto 15px">${glyph('file')}</span>
+                    contenido = prvOfficeEjemplo(nombre) || `<span class="fileico other" style="width:80px;height:80px;margin:0 auto 15px">${glyph('file')}</span>
                        <strong style="display:block;color:#6e849c;font-size:16px">${esc(nombre)}</strong>
-                       <p>Descarga el archivo para verlo con una aplicación compatible.</p>`;
+                       <p>Este formato no dispone de vista previa. Descarga el archivo para abrirlo.</p>`;
                 }
 
                 modal('Vista previa de archivo',
@@ -7429,8 +7471,26 @@
                 e.preventDefault(); e.stopImmediatePropagation();
                 if (b.hasAttribute('data-shared-root')) return sharedRealOpen(null);
                 if (b.dataset.sharedOpen) return sharedRealOpen(Number(b.dataset.sharedOpen));
-                const url = `${API}/shared/files/${Number(b.dataset.sharedView)}/preview`;
-                modal('Vista previa', `<div class="previewbox"><iframe src="${url}" title="Vista previa del documento"></iframe></div><p class="hint">Si es un archivo Office, utiliza Descargar.</p>`, `<a class="btn primary" href="${API}/shared/files/${Number(b.dataset.sharedView)}/download">Descargar</a>`);
+                const id = Number(b.dataset.sharedView);
+                // Solo se abren elementos presentes en el listado autorizado por el servidor.
+                const documento = sharedRealItems.find(x => x.type === 'file' && Number(x.id) === id);
+                if (!documento || !Number.isSafeInteger(id) || id <= 0) {
+                    toast('Este archivo no está disponible entre tus documentos compartidos.');
+                    return;
+                }
+                const nombre = String(documento.name || 'Documento');
+                const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+                const url = `${API}/shared/files/${encodeURIComponent(id)}/preview`;
+                const descarga = `${API}/shared/files/${encodeURIComponent(id)}/download`;
+                let contenido;
+                if (extension === 'pdf') {
+                    contenido = `<iframe src="${url}" title="Vista previa PDF de ${esc(nombre)}" loading="lazy"></iframe>`;
+                } else if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension)) {
+                    contenido = `<img src="${url}" alt="Vista previa de ${esc(nombre)}" onerror="this.style.display='none';this.parentElement.querySelector('.preview-error').hidden=false"><p class="preview-error" hidden>No se pudo mostrar la imagen. Puedes descargar el archivo.</p>`;
+                } else {
+                    contenido = prvOfficeEjemplo(nombre) || `<span class="fileico other" style="width:80px;height:80px;margin:0 auto 15px">${glyph('file')}</span><strong>${esc(nombre)}</strong><p>Este formato no dispone de vista previa integrada. Descarga el archivo para abrirlo.</p>`;
+                }
+                modal('Vista previa', `<div class="previewbox" id="activePreview">${contenido}</div><p class="hint">${esc(nombre)} · ${size(Number(documento.size) || 0)}</p>`, `<a class="btn primary" href="${descarga}">Descargar</a>`, true);
             }, true);
             ['searchInput', 'typeFilter', 'sortBy'].forEach(id => {
                 const el = document.getElementById(id);
