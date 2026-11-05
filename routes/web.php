@@ -678,7 +678,7 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 
         'rol' => $usuario->rol,
 
-        'iniciales' => collect(preg_split('/**\s**+/u', $nombre))
+        'iniciales' => collect(preg_split('/\s+/u', $nombre))
 
             ->filter()
 
@@ -778,7 +778,7 @@ Route::get('/drive-prz/publico/{token}/pagina/{pagina}', [
 
     ->name('drive-prz.publico.pagina');
 
-Route::middleware('auth')->group(function () {
+    Route::middleware('auth')->group(function () {
 
     Route::get('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'mostrar'])
 
