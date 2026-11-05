@@ -1,131 +1,286 @@
 <?php
 
+
+
 namespace App\Http\Controllers;
 
+
+
 use App\Models\Documento;
+
 use App\Models\DocumentoCarpeta;
+
 use Illuminate\Http\Request;
+
 use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Validation\ValidationException;
 
+
+
 class DrivePrzController extends Controller
+
 {
 
+
+
     private function folder(int $id): DocumentoCarpeta
+
     {
+
+
 
         return DocumentoCarpeta::query()->where('creado_por', auth()->id())->whereNull('deleted_at')->findOrFail($id);
 
+
+
     }
+
+
 
     private function file(int $id): Documento
+
     {
+
         return Documento::query()->where('subido_por', auth()->id())->whereNull('deleted_at')->findOrFail($id);
+
     }
+
+
 
     private function parent(?int $id): void
+
     {
+
         if ($id !== null) $this->folder($id);
+
     }
+
+
 
     private function uniqueFolder(string $name, ?int $parent, ?int $except = null): bool
+
     {
+
         return DocumentoCarpeta::query()->where('creado_por', auth()->id())
+
                                         ->where('carpeta_padre_id', $parent)
+
                                         ->when($except, fn($q) => $q->whereKeyNot($except))
+
                                         ->get(['id', 'nombre'])->contains(fn($c) => mb_strtolower(trim($c->nombre)) === mb_strtolower(trim($name)));
+
     }
+
+
 
     private function createFolder(string $name, ?int $parent): DocumentoCarpeta
+
     {
+
         $c = new DocumentoCarpeta();
+
         $c->nombre = $name;
+
         $c->carpeta_padre_id = $parent;
+
         $c->creado_por = auth()->id();
+
         $c->save();
-    
+
+
+
         return $c;
+
     }
 
-    public function screen()
+
+
+        public function updateFolderColor(Request $request, int $id)
     {
-        $ruta = resource_path('drive-prz/index.html');
-        abort_unless(
-            is_file($ruta),
-            404,
-            'No se encontró el archivo HTML de Drive PRZ.'
-        );
-    
-        return response(
-            file_get_contents($ruta),
-            200,
-            [
-                'Content-Type' => 'text/html; charset=UTF-8',
-                'Content-Disposition' => 'inline',
-                'X-Content-Type-Options' => 'nosniff',
-            ]
-        );
+        $allowedColors = [
+            '#F59E0B', '#EF4444', '#3B82F6', '#22C55E',
+            '#A855F7', '#EC4899', '#06B6D4', '#64748B',
+            '#14B8A6', '#F97316', '#6366F1', '#84CC16',
+        ];
+
+        $data = $request->validate([
+            'color' => ['required', 'string', \Illuminate\Validation\Rule::in($allowedColors)],
+        ]);
+
+        // La función folder() comprueba propiedad y que no esté en papelera.
+        $folder = $this->folder($id);
+        $folder->color = $data['color'];
+        $folder->save();
+
+        return response()->json(['ok' => true, 'color' => $folder->color]);
     }
+
+public function screen()
+
+    {
+
+        $ruta = resource_path('drive-prz/index.html');
+
+        abort_unless(
+
+            is_file($ruta),
+
+            404,
+
+            'No se encontró el archivo HTML de Drive PRZ.'
+
+        );
+
+
+
+        return response(
+
+            file_get_contents($ruta),
+
+            200,
+
+            [
+
+                'Content-Type' => 'text/html; charset=UTF-8',
+
+                'Content-Disposition' => 'inline',
+
+                'X-Content-Type-Options' => 'nosniff',
+
+            ]
+
+        );
+
+    }
+
+
 
     public function listing(Request $request)
+
     {
+
         $d = $request->validate(['carpeta_id' => ['nullable', 'integer']]);
+
         $id = isset($d['carpeta_id']) ? (int)$d['carpeta_id'] : null;
+
+
 
         $this->parent($id);
 
+
+
         $folders = DocumentoCarpeta::query()->where('creado_por', auth()->id())
+
                                             ->where('carpeta_padre_id', $id)->whereNull('deleted_at')->orderBy('nombre')->get()
-                                            ->map(fn($c) => ['id' => $c->id, 'type' => 'folder', 'name' => $c->nombre, 'modified' => $c->updated_at?->toISOString(), 'parent' => $c->carpeta_padre_id]);
+
+                                            ->map(fn($c) => ['id' => $c->id, 'type' => 'folder', 'name' => $c->nombre, 'color' => $c->color ?: '#F59E0B', 'modified' => $c->updated_at?->toISOString(), 'parent' => $c->carpeta_padre_id]);
+
+
 
         $files = Documento::query() ->where('subido_por', auth()->id())->where('carpeta_id', $id)->whereNull('deleted_at')
+
                                     ->orderBy('nombre_original')->get()
+
                                     ->map(fn($f) => ['id' => $f->id, 'type' => 'file', 'name' => $f->nombre_original, 'modified' => $f->updated_at?->toISOString(), 'parent' => $f->carpeta_id, 'size' => (Storage::disk('documentos_privados')->exists($f->ruta_archivo) ? Storage::disk('documentos_privados')->size($f->ruta_archivo) : 0)]);
+
         $trail = [];
+
         $seen = [];
 
+
+
         while ($id !== null && !isset($seen[$id])) {
+
             $seen[$id] = true;
+
             $c = $this->folder($id);
+
             array_unshift($trail, ['id' => $c->id, 'name' => $c->nombre]);
+
             $id = $c->carpeta_padre_id === null ? null : (int)$c->carpeta_padre_id;
+
         }
 
+
+
         return response()->json(['items' => $folders->concat($files)->values(), 'trail' => $trail]);
+
     }
 
+
+
     public function makeFolder(Request $request)
+
     {
+
         $d = $request->validate(['nombre' => ['required', 'string', 'max:120'], 'carpeta_padre_id' => ['nullable', 'integer']]);
+
         $parent = isset($d['carpeta_padre_id']) ? (int)$d['carpeta_padre_id'] : null;
 
+
+
         $this->parent($parent);
+
+
 
         $name = trim($d['nombre']);
 
+
+
         if ($this->uniqueFolder($name, $parent)) throw ValidationException::withMessages(['nombre' => 'Ya existe una carpeta con ese nombre.']);
 
+
+
         return response()->json(['id' => $this->createFolder($name, $parent)->id], 201);
+
     }
 
+
+
     public function months(Request $request)
+
     {
-        $d = $request->validate(['carpeta_padre_id' => ['nullable', 'integer'], 'meses' => ['required', 'array', 'min:1', 'max:12'], 'meses.\\\\\\\*' => ['required', 'integer', 'between:1,12', 'distinct']]);
+
+        $d = $request->validate(['carpeta_padre_id' => ['nullable', 'integer'], 'meses' => ['required', 'array', 'min:1', 'max:12'], 'meses.\\\\\\\\\\\\\\\*' => ['required', 'integer', 'between:1,12', 'distinct']]);
+
         $parent = isset($d['carpeta_padre_id']) ? (int)$d['carpeta_padre_id'] : null;
+
+
 
         $this->parent($parent);
 
+
+
         $names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
         $created = DB::transaction(function () use ($d, $parent, $names) {
+
             $count = 0;
 
+
+
             foreach ($d['meses'] as $m) {
+
                 $name = sprintf('%02d. %s', $m, $names[$m - 1]);
+
                 if (!$this->uniqueFolder($name, $parent)) {
+
                     $this->createFolder($name, $parent);
+
                     $count++;
+
                 }
+
+
+
+
+
+
+
+
 
 
 
@@ -141,7 +296,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             return $count;
+
+
+
+
+
+
+
+
 
 
 
@@ -157,6 +328,14 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         return response()->json(['created' => $created, 'skipped' => count($d['meses']) - $created]);
 
 
@@ -165,7 +344,31 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -189,7 +392,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     {
+
+
+
+
+
+
+
+
 
 
 
@@ -205,7 +424,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         $parent = isset($d['carpeta_padre_id']) ? (int)$d['carpeta_padre_id'] : null;
+
+
+
+
+
+
+
+
 
 
 
@@ -221,7 +456,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         $name = trim($d['nombre']);
+
+
+
+
+
+
+
+
 
 
 
@@ -237,7 +488,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             ->whereNull('deleted_at')->get()->first(fn($c) => mb_strtolower($c->nombre) === mb_strtolower($name));
+
+
+
+
+
+
+
+
 
 
 
@@ -253,7 +520,31 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -277,7 +568,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     {
+
+
+
+
+
+
+
+
 
 
 
@@ -293,7 +600,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         $root = isset($d['carpeta_padre_id']) ? (int)$d['carpeta_padre_id'] : null;
+
+
+
+
+
+
+
+
 
 
 
@@ -305,13 +628,31 @@ class DrivePrzController extends Controller
 
 
 
-        $lines = preg_split('/\r\n|\r|\n/', $d['estructura']);
+
+
+
+
+        $lines = preg_split('/**\r\n**|**\r**|**\n**/', $d['estructura']);
+
+
+
+
+
+
 
 
 
 
 
         abort_if(count($lines) > 100, 422, 'Máximo 100 rutas por operación.');
+
+
+
+
+
+
+
+
 
 
 
@@ -327,7 +668,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             $n = 0;
+
+
+
+
+
+
+
+
 
 
 
@@ -343,7 +700,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                 $parent = $root;
+
+
+
+
+
+
+
+
 
 
 
@@ -359,7 +732,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                 abort_if(count($parts) > 12, 422, 'Profundidad máxima: 12 carpetas.');
+
+
+
+
+
+
+
+
 
 
 
@@ -375,6 +764,14 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                     $name = trim($raw);
 
 
@@ -383,7 +780,23 @@ class DrivePrzController extends Controller
 
 
 
-                    abort_if($name === '' || mb_strlen($name) > 120 || preg_match('/[\\\\\\\\\\\\\\\\<>\x00-\x1F]/', $name), 422, 'Nombre de carpeta inválido.');
+
+
+
+
+
+
+
+
+                    abort_if($name === '' || mb_strlen($name) > 120 || preg_match('/[\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\<>\x00-\x1F]/', $name), 422, 'Nombre de carpeta inválido.');
+
+
+
+
+
+
+
+
 
 
 
@@ -399,7 +812,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                         ->first(fn($c) => mb_strtolower($c->nombre) === mb_strtolower($name));
+
+
+
+
+
+
+
+
 
 
 
@@ -415,7 +844,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                     else {
+
+
+
+
+
+
+
+
 
 
 
@@ -431,7 +876,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                         $n++;
+
+
+
+
+
+
+
+
 
 
 
@@ -447,7 +908,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                 }
+
+
+
+
+
+
+
+
 
 
 
@@ -463,7 +940,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             return $n;
+
+
+
+
+
+
+
+
 
 
 
@@ -479,6 +972,14 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         return response()->json(['created' => $created]);
 
 
@@ -487,7 +988,39 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -512,67 +1045,130 @@ class DrivePrzController extends Controller
 
 
     public function upload(Request $request)
+
     {
+
         $d = $request->validate([
+
             'carpeta_id' => ['nullable', 'integer'],
+
             'archivo' => [
+
                 'required',
+
                 'file',
+
                 'max:20480',
+
             ],
+
+
 
         ], [
 
+
+
             'archivo.required' => 'Debes seleccionar un archivo.',
+
             'archivo.max' => 'El archivo supera el máximo de 20 MB.',
+
         ]);
 
+
+
         $carpetaId = isset($d['carpeta_id'])
+
             ? (int) $d['carpeta_id']
+
             : null;
 
+
+
         $this->parent($carpetaId);
+
         $archivo = $request->file('archivo');
+
         $ruta = $archivo->store(
+
             'archivos',
+
             'documentos_privados'
+
         );
 
+
+
         if (!$ruta) {
+
             return response()->json([
+
                 'message' => 'No fue posible almacenar el archivo.',
+
             ], 500);
+
         }
+
+
 
         try {
 
+
+
             $doc = new Documento();
+
             $doc->carpeta_id = $carpetaId;
+
             $doc->nombre_original = $archivo->getClientOriginalName();
+
             $doc->nombre_almacenado = basename($ruta);
+
             $doc->ruta_archivo = $ruta;
+
             $doc->subido_por = auth()->id();
+
             $doc->save();
+
         } catch (\Throwable $e) {
 
+
+
             Storage::disk('documentos_privados')->delete($ruta);
+
             report($e);
+
             return response()->json([
+
                 'message' => 'No fue posible registrar el archivo.',
+
             ], 500);
+
         }
 
+
+
         return response()->json([
+
             'ok' => true,
+
             'message' => 'Archivo subido correctamente.',
+
             'documento' => [
+
                 'id' => $doc->id,
+
                 'nombre' => $doc->nombre_original,
+
                 'carpeta_id' => $doc->carpeta_id,
+
             ],
+
         ], 201);
 
+
+
     }
+
+
 
     public function rename(Request $request, string $kind, int $id)
 
@@ -582,7 +1178,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     {
+
+
+
+
+
+
+
+
 
 
 
@@ -598,7 +1210,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         $d = $request->validate(['nombre' => ['required', 'string', 'max:120']]);
+
+
+
+
+
+
+
+
 
 
 
@@ -614,7 +1242,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             $c = $this->folder($id);
+
+
+
+
+
+
+
+
 
 
 
@@ -630,7 +1274,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                 throw ValidationException::withMessages(['nombre' => 'Ya existe otra carpeta con ese nombre.']);
+
+
+
+
+
+
+
+
 
 
 
@@ -646,7 +1306,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             $c->save();
+
+
+
+
+
+
+
+
 
 
 
@@ -662,7 +1338,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             $f = $this->file($id);
+
+
+
+
+
+
+
+
 
 
 
@@ -678,7 +1370,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             $f->save();
+
+
+
+
+
+
+
+
 
 
 
@@ -694,6 +1402,14 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
         return response()->json(['ok' => true]);
 
 
@@ -702,7 +1418,31 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -722,11 +1462,27 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
     {
 
 
 
+
+
+
+
         abort_unless(in_array($kind, ['folders', 'files'], true), 404);
+
+
+
+
+
+
+
+
 
 
 
@@ -738,7 +1494,15 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
             $fecha = now();
+
+
+
+
 
 
 
@@ -750,7 +1514,19 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             if ($kind === 'files') {
+
+
+
+
 
 
 
@@ -758,7 +1534,15 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
                 DB::table('documentos')->where('id', $archivo->id)
+
+
+
+
 
 
 
@@ -766,7 +1550,15 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
                     ->update(['deleted_at' => $fecha]);
+
+
+
+
 
 
 
@@ -774,7 +1566,19 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
             }
+
+
+
+
+
+
+
+
 
 
 
@@ -786,7 +1590,15 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
             $pendientes = [(int) $carpeta->id];
+
+
+
+
 
 
 
@@ -798,7 +1610,19 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
             while ($pendientes) {
+
+
+
+
 
 
 
@@ -806,7 +1630,15 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
                 if (isset($visitados[$carpetaId])) continue;
+
+
+
+
 
 
 
@@ -818,7 +1650,19 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                 $hijos = DB::table('documento_carpetas')
+
+
+
+
 
 
 
@@ -826,11 +1670,23 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
                     ->where('carpeta_padre_id', $carpetaId)
 
 
 
+
+
+
+
                     ->whereNull('deleted_at')->pluck('id');
+
+
+
+
 
 
 
@@ -842,7 +1698,19 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
+
+
+
+
                 DB::table('documentos')->where('subido_por', $usuario)
+
+
+
+
 
 
 
@@ -850,7 +1718,19 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
                     ->update(['deleted_at' => $fecha]);
+
+
+
+
+
+
+
+
 
 
 
@@ -862,7 +1742,15 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
                     ->where('creado_por', $usuario)->whereNull('deleted_at')
+
+
+
+
 
 
 
@@ -870,11 +1758,27 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
             }
 
 
 
+
+
+
+
         });
+
+
+
+
+
+
+
+
 
 
 
@@ -886,7 +1790,21 @@ class DrivePrzController extends Controller
 
 
 
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -898,259 +1816,517 @@ class DrivePrzController extends Controller
 
     // Papelera real: se muestran solo elementos eliminados de primer nivel.
 
+
+
     public function trash()
+
+
 
     {
 
+
+
         $uid = auth()->id();
+
+
 
         $folders = DB::table('documento_carpetas as c')
 
+
+
             ->leftJoin('documento_carpetas as p', 'p.id', '=', 'c.carpeta_padre_id')
+
+
 
             ->where('c.creado_por', $uid)->whereNotNull('c.deleted_at')
 
+
+
             ->where(function ($q) {
+
+
 
                 $q->whereNull('c.carpeta_padre_id')->orWhereNull('p.deleted_at');
 
+
+
             })
+
+
 
             ->select('c.id', 'c.nombre', 'c.deleted_at', 'c.carpeta_padre_id')
 
+
+
             ->get()->map(fn ($c) => [
+
+
 
                 'id' => $c->id, 'type' => 'folder', 'name' => $c->nombre,
 
+
+
                 'modified' => $c->deleted_at, 'parent' => $c->carpeta_padre_id,
+
+
 
                 'size' => null,
 
+
+
             ]);
+
+
 
         $files = DB::table('documentos as d')
 
+
+
             ->leftJoin('documento_carpetas as p', 'p.id', '=', 'd.carpeta_id')
+
+
 
             ->where('d.subido_por', $uid)->whereNotNull('d.deleted_at')
 
+
+
             ->where(function ($q) {
+
+
 
                 $q->whereNull('d.carpeta_id')->orWhereNull('p.deleted_at');
 
+
+
             })
+
+
 
             ->select('d.id', 'd.nombre_original', 'd.deleted_at', 'd.carpeta_id', 'd.ruta_archivo')
 
+
+
             ->get()->map(fn ($d) => [
+
+
 
                 'id' => $d->id, 'type' => 'file', 'name' => $d->nombre_original,
 
+
+
                 'modified' => $d->deleted_at, 'parent' => $d->carpeta_id,
+
+
 
                 'size' => $d->ruta_archivo && Storage::disk('documentos_privados')->exists($d->ruta_archivo)
 
+
+
                     ? Storage::disk('documentos_privados')->size($d->ruta_archivo) : 0,
+
+
 
             ]);
 
+
+
         return response()->json(['items' => $folders->concat($files)->values()]);
 
+
+
     }
+
+
+
+
 
 
 
     // Obtiene los descendientes de una carpeta del usuario, sin importar su estado.
 
+
+
     private function trashTree(int $root, int $uid): array
+
+
 
     {
 
+
+
         $ids = [];
+
+
 
         $pending = [$root];
 
+
+
         while ($pending) {
+
+
 
             $id = array_pop($pending);
 
+
+
             if (in_array($id, $ids, true)) continue;
+
+
 
             $ids[] = $id;
 
+
+
             $children = DB::table('documento_carpetas')
+
+
 
                 ->where('creado_por', $uid)->where('carpeta_padre_id', $id)->pluck('id');
 
+
+
             foreach ($children as $child) $pending[] = (int) $child;
+
+
 
         }
 
+
+
         return $ids;
 
+
+
     }
+
+
+
+
 
 
 
     public function restore(string $kind, int $id)
 
+
+
     {
+
+
 
         abort_unless(in_array($kind, ['folders', 'files'], true), 404);
 
+
+
         $uid = auth()->id();
+
+
 
         DB::transaction(function () use ($kind, $id, $uid) {
 
+
+
             $table = $kind === 'folders' ? 'documento_carpetas' : 'documentos';
+
+
 
             $owner = $kind === 'folders' ? 'creado_por' : 'subido_por';
 
+
+
             $item = DB::table($table)->where('id', $id)->where($owner, $uid)
+
+
 
                 ->whereNotNull('deleted_at')->lockForUpdate()->first();
 
+
+
             abort_unless($item, 404);
+
+
 
             $parentId = $kind === 'folders' ? $item->carpeta_padre_id : $item->carpeta_id;
 
+
+
             if ($parentId !== null) {
+
+
 
                 $parent = DB::table('documento_carpetas')->where('id', $parentId)
 
+
+
                     ->where('creado_por', $uid)->whereNull('deleted_at')->first();
+
+
 
                 if (!$parent) $parentId = null;
 
+
+
             }
+
+
 
             if ($kind === 'folders') {
 
+
+
                 $duplicate = DB::table('documento_carpetas')->where('creado_por', $uid)
+
+
 
                     ->where('carpeta_padre_id', $parentId)->whereNull('deleted_at')
 
+
+
                     ->where('nombre', $item->nombre)->exists();
+
+
 
                 abort_if($duplicate, 422, 'Ya existe una carpeta con ese nombre en el destino.');
 
+
+
                 $ids = $this->trashTree($id, $uid);
+
+
 
                 // Solo restaurar hijos eliminados en la misma operación que la carpeta.
 
+
+
                 DB::table('documento_carpetas')->where('id', $id)->update([
+
+
 
                     'carpeta_padre_id' => $parentId, 'deleted_at' => null,
 
+
+
                 ]);
+
+
 
                 DB::table('documento_carpetas')->whereIn('id', $ids)
 
+
+
                     ->where('creado_por', $uid)->where('deleted_at', $item->deleted_at)
 
+
+
                     ->update(['deleted_at' => null]);
+
+
 
                 DB::table('documentos')->whereIn('carpeta_id', $ids)
 
+
+
                     ->where('subido_por', $uid)->where('deleted_at', $item->deleted_at)
+
+
 
                     ->update(['deleted_at' => null]);
 
+
+
             } else {
+
+
 
                 DB::table('documentos')->where('id', $id)->where('subido_por', $uid)
 
+
+
                     ->update(['carpeta_id' => $parentId, 'deleted_at' => null]);
+
+
 
             }
 
+
+
         });
+
+
 
         return response()->json(['ok' => true, 'message' => 'Elemento restaurado correctamente.']);
 
+
+
     }
+
+
+
+
 
 
 
     public function forceDelete(string $kind, int $id)
 
+
+
     {
+
+
 
         abort_unless(in_array($kind, ['folders', 'files'], true), 404);
 
+
+
         $uid = auth()->id();
+
+
 
         $paths = DB::transaction(function () use ($kind, $id, $uid) {
 
+
+
             $table = $kind === 'folders' ? 'documento_carpetas' : 'documentos';
+
+
 
             $owner = $kind === 'folders' ? 'creado_por' : 'subido_por';
 
+
+
             $item = DB::table($table)->where('id', $id)->where($owner, $uid)
+
+
 
                 ->whereNotNull('deleted_at')->lockForUpdate()->first();
 
+
+
             abort_unless($item, 404);
+
+
 
             if ($kind === 'files') {
 
+
+
                 DB::table('documentos')->where('id', $id)->where('subido_por', $uid)->delete();
+
+
 
                 return array_filter([$item->ruta_archivo]);
 
+
+
             }
+
+
 
             $ids = $this->trashTree($id, $uid);
 
+
+
             // Nunca borrar físicamente contenido todavía activo.
+
+
 
             abort_if(DB::table('documento_carpetas')->whereIn('id', $ids)
 
+
+
                 ->where('creado_por', $uid)->whereNull('deleted_at')->exists(), 409,
+
+
 
                 'La carpeta contiene subcarpetas activas.');
 
+
+
             abort_if(DB::table('documentos')->whereIn('carpeta_id', $ids)
+
+
 
                 ->where('subido_por', $uid)->whereNull('deleted_at')->exists(), 409,
 
+
+
                 'La carpeta contiene archivos activos.');
+
+
 
             $paths = DB::table('documentos')->whereIn('carpeta_id', $ids)
 
+
+
                 ->where('subido_por', $uid)->pluck('ruta_archivo')->filter()->all();
+
+
 
             DB::table('documentos')->whereIn('carpeta_id', $ids)
 
+
+
                 ->where('subido_por', $uid)->delete();
+
+
 
             // Hojas antes que padres, para respetar claves foráneas.
 
+
+
             foreach (array_reverse($ids) as $folderId) {
+
+
 
                 DB::table('documento_carpetas')->where('id', $folderId)
 
+
+
                     ->where('creado_por', $uid)->delete();
 
+
+
             }
+
+
 
             return $paths;
 
+
+
         });
+
+
 
         try {
 
+
+
             if ($paths && !Storage::disk('documentos_privados')->delete($paths)) {
+
+
 
                 \Log::warning('Drive PRZ: no se pudieron borrar todos los archivos físicos', ['paths' => $paths]);
 
+
+
             }
+
+
 
         } catch (\Throwable $e) { report($e); }
 
+
+
         return response()->json(['ok' => true, 'message' => 'Elemento eliminado definitivamente.']);
 
+
+
     }
+
+
+
+
 
 
 
@@ -1162,6 +2338,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     {
 
 
@@ -1170,7 +2354,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
         abort_unless(in_array($kind, ['folders', 'files'], true), 404);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1194,7 +2402,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             'destino_id' => ['present', 'nullable', 'integer', 'min:1'],
+
+
+
+
+
+
+
+
 
 
 
@@ -1218,7 +2442,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         $destinoId = $data['destino_id'] === null
+
+
+
+
+
+
+
+
 
 
 
@@ -1234,7 +2482,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             : (int) $data['destino_id'];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1266,7 +2538,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // Validar que el destino pertenece al usuario.
+
+
+
+
+
+
+
+
 
 
 
@@ -1282,6 +2578,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 $this->folder($destinoId);
 
 
@@ -1290,7 +2594,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1322,7 +2650,39 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 $carpeta = $this->folder($id);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1346,7 +2706,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     ? null
+
+
+
+
+
+
+
+
 
 
 
@@ -1370,7 +2746,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 if ($origenId === $destinoId) {
+
+
+
+
+
+
+
+
 
 
 
@@ -1386,7 +2786,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                         'destino_id' => 'La carpeta ya se encuentra en este destino.',
+
+
+
+
+
+
+
+
 
 
 
@@ -1402,7 +2818,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1426,7 +2866,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     throw ValidationException::withMessages([
+
+
+
+
+
+
+
+
 
 
 
@@ -1442,7 +2898,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     ]);
+
+
+
+
+
+
+
+
 
 
 
@@ -1466,7 +2938,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 // Evitar mover una carpeta dentro de sus descendientes.
+
+
+
+
+
+
+
+
 
 
 
@@ -1482,7 +2978,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 $visitados = [];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1514,7 +3034,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     if (isset($visitados[$cursorId])) {
+
+
+
+
+
+
+
+
 
 
 
@@ -1530,7 +3074,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                             'destino_id' => 'Se detectó una estructura circular de carpetas.',
+
+
+
+
+
+
+
+
 
 
 
@@ -1546,7 +3106,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1578,7 +3162,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     if ($cursorId === (int) $carpeta->id) {
+
+
+
+
+
+
+
+
 
 
 
@@ -1594,7 +3202,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                             'destino_id' => 'No puedes mover una carpeta dentro de una de sus subcarpetas.',
+
+
+
+
+
+
+
+
 
 
 
@@ -1610,7 +3234,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1642,7 +3290,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     $cursorId = $actual->carpeta_padre_id === null
+
+
+
+
+
+
+
+
 
 
 
@@ -1658,6 +3330,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                         : (int) $actual->carpeta_padre_id;
 
 
@@ -1666,7 +3346,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1690,7 +3394,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 if ($this->uniqueFolder(
+
+
+
+
+
+
+
+
 
 
 
@@ -1706,7 +3426,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     $destinoId,
+
+
+
+
+
+
+
+
 
 
 
@@ -1722,7 +3458,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 )) {
+
+
+
+
+
+
+
+
 
 
 
@@ -1738,6 +3490,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                         'destino_id' => 'Ya existe una carpeta con ese nombre en el destino.',
 
 
@@ -1746,7 +3506,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     ]);
+
+
+
+
+
+
+
+
 
 
 
@@ -1770,7 +3546,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 $carpeta->carpeta_padre_id = $destinoId;
+
+
+
+
+
+
+
+
 
 
 
@@ -1786,7 +3586,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             } else {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1818,6 +3642,22 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 $origenId = $archivo->carpeta_id === null
 
 
@@ -1826,7 +3666,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     ? null
+
+
+
+
+
+
+
+
 
 
 
@@ -1850,7 +3706,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 if ($origenId === $destinoId) {
+
+
+
+
+
+
+
+
 
 
 
@@ -1866,6 +3746,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                         'destino_id' => 'El archivo ya se encuentra en esta carpeta.',
 
 
@@ -1874,7 +3762,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                     ]);
+
+
+
+
+
+
+
+
 
 
 
@@ -1898,6 +3802,22 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 $archivo->carpeta_id = $destinoId;
 
 
@@ -1906,7 +3826,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 $archivo->save();
+
+
+
+
+
+
+
+
 
 
 
@@ -1930,7 +3866,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             return response()->json([
+
+
+
+
+
+
+
+
 
 
 
@@ -1946,7 +3906,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 'message' => 'Elemento movido correctamente.',
+
+
+
+
+
+
+
+
 
 
 
@@ -1962,7 +3938,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             ]);
+
+
+
+
+
+
+
+
 
 
 
@@ -1978,7 +3970,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2002,7 +4018,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     {
+
+
+
+
+
+
+
+
 
 
 
@@ -2018,7 +4050,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             ->where('creado_por', auth()->id())
+
+
+
+
+
+
+
+
 
 
 
@@ -2034,7 +4082,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
             ->get([
+
+
+
+
+
+
+
+
 
 
 
@@ -2050,6 +4114,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 'nombre',
 
 
@@ -2058,7 +4130,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
                 'carpeta_padre_id',
+
+
+
+
+
+
+
+
 
 
 
@@ -2082,7 +4170,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         return response()->json([
+
+
+
+
+
+
+
+
 
 
 
@@ -2098,6 +4210,14 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
         ]);
 
 
@@ -2106,7 +4226,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2130,7 +4274,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     {
+
+
+
+
+
+
+
+
 
 
 
@@ -2146,7 +4306,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
         abort_unless(Storage::disk('documentos_privados')->exists($d->ruta_archivo), 404);
+
+
+
+
+
+
+
+
 
 
 
@@ -2162,7 +4338,31 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2186,7 +4386,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     {
+
+
+
+
+
+
+
+
 
 
 
@@ -2202,7 +4418,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
         abort_unless(Storage::disk('documentos_privados')->exists($d->ruta_archivo), 404);
+
+
+
+
+
+
+
+
 
 
 
@@ -2218,7 +4450,23 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
         abort_unless(in_array($mime, ['application/pdf', 'image/png', 'image/jpeg'], true), 415, 'Vista previa no disponible.');
+
+
+
+
+
+
+
+
 
 
 
@@ -2234,9 +4482,27 @@ public function move(Request $request, string $kind, int $id)
 
 
 
+
+
+
+
+
+
+
+
     }
 
-    
+
+
+
+
+
+
+
+
+
+
+
 
 
 

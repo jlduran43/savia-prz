@@ -3536,6 +3536,17 @@
         .modal.prz-modal-folder-drop .modalbody {
             background: #f1faf4;
         }
+    
+        /* Colores configurables de carpetas */
+        .fileico.folder[style*="--folder-color"] {
+            color: var(--folder-color);
+            background: color-mix(in srgb, var(--folder-color) 15%, white);
+        }
+        .prz-folder-palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 11px; margin: 18px 0; }
+        .prz-folder-swatch { width: 46px; height: 46px; border: 2px solid transparent; border-radius: 11px; background: color-mix(in srgb, var(--swatch) 16%, white); color: var(--swatch); display: grid; place-items: center; }
+        .prz-folder-swatch:hover, .prz-folder-swatch.is-selected { border-color: var(--swatch); box-shadow: 0 0 0 2px #fff inset; }
+        .prz-folder-swatch svg { width: 23px; height: 23px; }
+
     </style>
 
     <style>
@@ -4547,6 +4558,56 @@
                 }
             }
 
+            // Únicamente colores permitidos por el servidor (sin CSS arbitrario).
+            const PRZ_FOLDER_COLORS = ['#F59E0B', '#EF4444', '#3B82F6', '#22C55E', '#A855F7', '#EC4899', '#06B6D4', '#64748B', '#14B8A6', '#F97316', '#6366F1', '#84CC16'];
+            function colorCarpetaReal(item) {
+                return item?.type === 'folder' && PRZ_FOLDER_COLORS.includes(item.color) ? item.color : '#F59E0B';
+            }
+            function estiloCarpetaReal(item) {
+                return item?.type === 'folder' ? ` style="--folder-color:${colorCarpetaReal(item)}"` : '';
+            }
+            async function cambiarColorCarpetaLaravel(id, nombre) {
+                const item = realVisible.find(x => x.type === 'folder' && Number(x.id) === Number(id));
+                if (!item) return toast('No se encontró la carpeta.');
+                const colorActual = colorCarpetaReal(item);
+                modal('Cambiar color de carpeta', `
+                    <div class="namecell"><span class="fileico folder" id="przFolderColorPreview" style="--folder-color:${colorActual}">${glyph('folder')}</span><strong>${esc(nombre)}</strong></div>
+                    <p class="hint">Elige un color para identificar esta carpeta.</p>
+                    <div class="prz-folder-palette">${PRZ_FOLDER_COLORS.map(c => `<button type="button" class="prz-folder-swatch ${c === colorActual ? 'is-selected' : ''}" data-folder-palette="${c}" style="--swatch:${c}" aria-label="Color ${c}" title="${c}">${glyph('folder')}</button>`).join('')}</div>
+                    <p id="przFolderColorError" class="hint" role="alert" style="color:#b42318"></p>
+                `, `<button type="button" class="btn" id="przFolderColorCancel">Cancelar</button><button type="button" class="btn primary" id="przFolderColorSave">Guardar color</button>`);
+                const mount = document.getElementById('modalMount');
+                let selected = colorActual;
+                mount.querySelectorAll('[data-folder-palette]').forEach(button => button.addEventListener('click', () => {
+                    selected = button.dataset.folderPalette;
+                    mount.querySelectorAll('[data-folder-palette]').forEach(b => b.classList.toggle('is-selected', b === button));
+                    document.getElementById('przFolderColorPreview').style.setProperty('--folder-color', selected);
+                }));
+                document.getElementById('przFolderColorCancel').onclick = close;
+                document.getElementById('przFolderColorSave').onclick = async function () {
+                    this.disabled = true;
+                    try {
+                        const tokenCookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+                        if (!tokenCookie) throw new Error('Sesión no disponible. Recarga la página.');
+                        const token = decodeURIComponent(tokenCookie.slice('XSRF-TOKEN='.length));
+                        const response = await fetch(`${API}/folders/${encodeURIComponent(id)}/color`, {
+                            method: 'PATCH', credentials: 'same-origin',
+                            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': token },
+                            body: JSON.stringify({ color: selected })
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.message || `Error HTTP ${response.status}`);
+                        item.color = data.color;
+                        close();
+                        dibujarArchivosReales();
+                        toast('Color de carpeta actualizado.');
+                    } catch (error) {
+                        document.getElementById('przFolderColorError').textContent = error.message;
+                        this.disabled = false;
+                    }
+                };
+            }
+
             function dibujarArchivosReales(elementos = realRenderedItems) {
                 realRenderedItems = elementos;
                 document.getElementById('listBtn').classList.toggle('on', realLayout === 'list');
@@ -4565,7 +4626,7 @@
                             ? `<button type="button" class="action" data-real-folder="${x.id}">Abrir</button>`
                             : `<button type="button" class="action" data-real-preview="${x.id}" data-preview-name="${esc(x.name)}" data-preview-size="${Number(x.size) || 0}">Ver</button><a class="action" href="/drive-prz-v5/files/${x.id}/download">Descargar</a>`;
                         return `<article class="tile" draggable="true" data-real-drag="${realKey(x)}" data-real-tile="${realKey(x)}">
-              <div class="tiletop"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"> <span class="fileico ${categoria}">${glyph(icono)}</span></div>
+              <div class="tiletop"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"> <span class="fileico ${categoria}"${estiloCarpetaReal(x)}>${glyph(icono)}</span></div>
               ${carpeta ? `<button class="filename" data-real-folder="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button>` : `<strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong>`}
               <span class="filemeta">${carpeta ? 'Carpeta' : esc(ext.toUpperCase())} · ${carpeta ? '—' : size(x.size)} · ${formatDate(x.modified)}</span>
               <div class="tilefoot">${acciones}
@@ -4635,7 +4696,7 @@
                                     <td class="selcol"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"></td>
                                     <td>
                                         <div class="namecell">
-                                            <span class="fileico ${categoria}">
+                                            <span class="fileico ${categoria}"${estiloCarpetaReal(x)}>
                                                 ${glyph(icono)}
                                             </span>
 
@@ -4927,6 +4988,7 @@
            <div class="optiongrid">
              ${carpeta ? `<button type="button" class="btn" data-option-real-open="${id}">Abrir carpeta</button>` : `<button type="button" class="btn" data-option-real-preview="${id}">Ver archivo</button>`}
              <button type="button" class="btn" data-option-real-share="${id}">Administrar permisos</button>
+             ${carpeta ? `<button type="button" class="btn" data-option-real-color="${id}">Cambiar color</button>` : ''}
              <button type="button" class="btn" data-option-real-rename="${id}" disabled title="Disponible próximamente">Cambiar nombre</button>
              <button type="button" class="btn" data-option-real-move="${id}">Mover a otra carpeta</button>
              <button type="button" class="btn" data-option-real-trash="${id}">Mover a papelera</button>
@@ -4938,6 +5000,7 @@
                 on('[data-option-real-trash]', () => confirmarPapeleraLaravel([{ id, type: carpeta ? 'folder' : 'file', name: nombre }]));
                 on('[data-option-real-open]', async () => { close(); await mostrarArchivosReales(id) });
                 on('[data-option-real-share]', () => abrirCompartirLaravel(id, tipo, nombre));
+                on('[data-option-real-color]', () => cambiarColorCarpetaLaravel(id, nombre));
                 on('[data-option-real-move]', () => abrirMoverLaravel(id, tipo, nombre));
                 on('[data-option-real-preview]', () => { close(); verArchivoLaravel(id, nombre, realVisible.find(x => x.id === id && x.type === 'file')?.size || 0) });
             }

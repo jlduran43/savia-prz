@@ -754,6 +754,11 @@ Route::middleware(['auth'])
 
     ->name('drive-prz.index');
 
+Route::patch('/folders/{id}/color', [
+    DrivePrzController::class,
+    'updateFolderColor'
+])->name('folders.color');
+
 
 
 Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
@@ -813,7 +818,6 @@ Route::middleware('auth')->group(function () {
         DrivePrzEnlaceController::class,
         'revocar'
     ])->name('drive-prz.enlaces.revocar');
-
 });
 
 // =======================================================
