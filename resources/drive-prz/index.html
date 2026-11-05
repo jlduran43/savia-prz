@@ -4234,8 +4234,8 @@
                         renderChoices();
                     }
                 };
-                // Al cerrar (X, Cerrar, Listo, Escape o fondo) descartar únicamente
-                // los destinatarios pendientes, nunca permisos persistidos en MySQL.
+                // La selección temporal se descarta al cerrar. Los permisos
+                // individuales directos se revocan mediante el cierre confirmado.
                 const observarCierre = new MutationObserver(() => {
                     if (!frame.querySelector('#przShareSelected')) {
                         selectedIds.clear();
@@ -4243,6 +4243,72 @@
                     }
                 });
                 observarCierre.observe(frame, { childList: true });
+
+                // Cerrar Compartir revoca todos los permisos individuales directos,
+                // igual que pulsar la X de cada persona. No incluye propietario,
+                // permisos heredados, acceso general ni enlaces externos.
+                let cerrandoCompartir = false;
+                const cerrarYRevocarAccesos = async (event) => {
+                    if (!frame.querySelector('#przSharePeople')) return;
+                    if (event) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }
+                    if (cerrandoCompartir || busy) return;
+                    const people = Array.isArray(info.people) ? info.people : [];
+                    if (!canShare() || !people.length) {
+                        close();
+                        return;
+                    }
+                    const aceptado = window.confirm(
+                        `Al cerrar se quitará el acceso individual a ${people.length} persona(s) de este ${etiqueta}. ¿Confirmas?`
+                    );
+                    if (!aceptado) return;
+                    cerrandoCompartir = true;
+                    busy = true;
+                    errorBox.textContent = 'Quitando accesos individuales…';
+                    frame.querySelectorAll('[data-modal-close]').forEach(b => b.disabled = true);
+                    const errores = [];
+                    for (const person of people) {
+                        try {
+                            await apiCompartir(`${base}/people/${encodeURIComponent(person.id)}`, 'DELETE', {});
+                        } catch (e) {
+                            errores.push(`${person.name || person.email || person.id}: ${e.message}`);
+                        }
+                    }
+                    if (!errores.length) {
+                        toast(`Se quitaron ${people.length} acceso(s) individuales.`);
+                        close();
+                        return;
+                    }
+                    busy = false;
+                    cerrandoCompartir = false;
+                    if (!frame.querySelector('#przSharePeople')) return;
+                    frame.querySelectorAll('[data-modal-close]').forEach(b => b.disabled = false);
+                    errorBox.textContent = 'No se pudieron quitar todos los accesos: ' + errores.join(' | ');
+                    try { await refresh(); } catch (e) { errorBox.textContent += ' | ' + e.message; }
+                };
+                const interceptarCierreClick = e => {
+                    if (!frame.querySelector('#przSharePeople')) return;
+                    if (e.target.closest('[data-modal-close]') || e.target.dataset.backdrop === 'yes') {
+                        void cerrarYRevocarAccesos(e);
+                    }
+                };
+                const interceptarCierreTecla = e => {
+                    if (e.key === 'Escape' && frame.querySelector('#przSharePeople')) {
+                        void cerrarYRevocarAccesos(e);
+                    }
+                };
+                document.addEventListener('click', interceptarCierreClick, true);
+                document.addEventListener('keydown', interceptarCierreTecla, true);
+                const limpiarInterceptores = new MutationObserver(() => {
+                    if (!frame.querySelector('#przSharePeople')) {
+                        document.removeEventListener('click', interceptarCierreClick, true);
+                        document.removeEventListener('keydown', interceptarCierreTecla, true);
+                        limpiarInterceptores.disconnect();
+                    }
+                });
+                limpiarInterceptores.observe(frame, { childList: true });
                 const flagsHtml = (flags, prefix) => Object.entries(names)
                     .filter(([k]) => tipo === 'folders' || !['upload', 'create_folder'].includes(k))
                     .map(([key, label]) => `<label class="prz-flag"><input type="checkbox" data-flag-prefix="${prefix}" data-flag="${key}" ${flags[key] ? 'checked' : ''} ${key === 'view' ? 'disabled' : ''}><span>${label}</span></label>`).join('');
