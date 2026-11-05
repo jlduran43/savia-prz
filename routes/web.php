@@ -1,20 +1,35 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Exports\RegistroIngresosExport;
+
 use Maatwebsite\Excel\Facades\Excel;
+
 use App\Http\Controllers\MicrosoftController;
+
 use App\Models\Documento;
+
 use Illuminate\Support\Facades\Storage;
+
 use App\Support\DocumentoAcceso;
+
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
+
 use PhpOffice\PhpSpreadsheet\IOFactory as ExcelIOFactory;
+
 use PhpOffice\PhpSpreadsheet\Writer\Html as ExcelHtmlWriter;
+
 use App\Http\Controllers\DrivePrzController;
+
 use App\Http\Controllers\DrivePrzSharingController;
+
 use App\Http\Controllers\DrivePrzNotificacionController;
+
 use App\Http\Controllers\DrivePrzSharedController;
+
 use App\Http\Controllers\DrivePrzEnlaceController;
+
 use App\Http\Controllers\DrivePrzConfiguracionController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
@@ -30,15 +45,9 @@ Route::get('/admin/compras/formulario-contenido', function () {
 
     ->name('compras.formulario.contenido');
 
-
-
 Route::get('/exportar-registros', function () {
 
-
-
     $nombreArchivo = 'registro_ingresos.xlsx';
-
-
 
     Excel::store(
 
@@ -50,15 +59,11 @@ Route::get('/exportar-registros', function () {
 
     );
 
-
-
     $rutaArchivo = storage_path(
 
         'app/private/' . $nombreArchivo
 
     );
-
-
 
     return response()->download(
 
@@ -69,8 +74,6 @@ Route::get('/exportar-registros', function () {
     );
 });
 
-
-
 Route::get('/microsoft/login', [
 
     MicrosoftController::class,
@@ -78,8 +81,6 @@ Route::get('/microsoft/login', [
     'redirect'
 
 ])->name('microsoft.login');
-
-
 
 Route::get('/microsoft/callback', [
 
@@ -89,8 +90,6 @@ Route::get('/microsoft/callback', [
 
 ])->name('microsoft.callback');
 
-
-
 Route::get('/microsoft/test', [
 
     MicrosoftController::class,
@@ -99,18 +98,12 @@ Route::get('/microsoft/test', [
 
 ])->name('microsoft.test');
 
-
-
 Route::get('/prueba-session/guardar', function () {
 
     session(['prueba_session' => 'FUNCIONA']);
 
-
-
     return 'Sesión guardada. Ahora entra a /prueba-session/leer';
 });
-
-
 
 Route::get('/prueba-session/leer', function () {
 
@@ -123,8 +116,6 @@ Route::get('/prueba-session/leer', function () {
     ];
 });
 
-
-
 Route::get('/microsoft/subir-excel', [
 
     MicrosoftController::class,
@@ -133,30 +124,18 @@ Route::get('/microsoft/subir-excel', [
 
 ])->name('microsoft.subir.excel');
 
-
-
-
-
 Route::get('/documentos/{documento}/descargar', function (Documento $documento) {
-
-
 
     // Verificar que el usuario tenga permiso
 
     DocumentoAcceso::verificar($documento);
 
-
-
     $disco = Storage::disk('documentos_privados');
-
-
 
     if (!$disco->exists($documento->ruta_archivo)) {
 
         abort(404, 'El archivo no existe en el servidor.');
     }
-
-
 
     return $disco->download(
 
@@ -171,36 +150,22 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
 
     ->name('documentos.descargar');
 
-
-
-
-
 Route::get('/documentos/{documento}/ver', function (Documento $documento) {
-
-
 
     // 1. Verificar permisos
 
     DocumentoAcceso::verificar($documento);
 
-
-
     // 2. Acceder al almacenamiento privado
 
     $disco = Storage::disk('documentos_privados');
-
-
 
     if (!$disco->exists($documento->ruta_archivo)) {
 
         abort(404, 'El documento no existe.');
     }
 
-
-
     $ruta = $disco->path($documento->ruta_archivo);
-
-
 
     $extension = strtolower(
 
@@ -209,8 +174,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             ?: pathinfo($documento->nombre_original, PATHINFO_EXTENSION)
 
     );
-
-
 
     // 3. Mantener vista previa original de PDF e imágenes
 
@@ -224,11 +187,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
     ];
 
-
-
     $mime = $disco->mimeType($documento->ruta_archivo);
-
-
 
     if (
 
@@ -253,8 +212,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         ]);
     }
 
-
-
     // 4. Vista previa Word y Excel
 
     if (!in_array($extension, ['doc', 'docx', 'xls', 'xlsx'], true)) {
@@ -262,28 +219,18 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         abort(415, 'Este tipo de archivo no admite vista previa.');
     }
 
-
-
     // Archivo HTML temporal fuera del directorio público
 
     $temporal = tempnam(sys_get_temp_dir(), 'savia_preview_');
-
-
 
     if ($temporal === false) {
 
         abort(500, 'No fue posible preparar la vista previa.');
     }
 
-
-
     try {
 
-
-
         if (in_array($extension, ['doc', 'docx'], true)) {
-
-
 
             // Leer Word
 
@@ -293,11 +240,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
                 : 'Word2007';
 
-
-
             $word = WordIOFactory::load($ruta, $lector);
-
-
 
             // Convertir Word a HTML
 
@@ -306,17 +249,11 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             $writer->save($temporal);
         } else {
 
-
-
             // Leer Excel
 
             $reader = ExcelIOFactory::createReaderForFile($ruta);
 
-
-
             $excel = $reader->load($ruta);
-
-
 
             try {
 
@@ -324,17 +261,11 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
                 $writer = new ExcelHtmlWriter($excel);
 
-
-
                 $writer->writeAllSheets();
-
-
 
                 // Evitar recalcular fórmulas durante la vista previa
 
                 $writer->setPreCalculateFormulas(false);
-
-
 
                 $writer->save($temporal);
             } finally {
@@ -343,11 +274,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             }
         }
 
-
-
         $html = file_get_contents($temporal);
-
-
 
         if ($html === false) {
 
@@ -359,11 +286,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         }
     } catch (\Throwable $e) {
 
-
-
         report($e);
-
-
 
         abort(
 
@@ -374,15 +297,11 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         );
     } finally {
 
-
-
         if (file_exists($temporal)) {
 
             unlink($temporal);
         }
     }
-
-
 
     // 5. Mostrar HTML sin descargar archivo original
 
@@ -407,23 +326,15 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
     ->name('documentos.ver');
 
-
-
 Route::get('/documentos/{documento}/office-original', function (Documento $documento) {
 
-
-
     DocumentoAcceso::verificar($documento);
-
-
 
     $extension = strtolower(
 
         pathinfo($documento->nombre_original ?? '', PATHINFO_EXTENSION)
 
     );
-
-
 
     abort_unless(
 
@@ -433,11 +344,7 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
     );
 
-
-
     $disco = Storage::disk('documentos_privados');
-
-
 
     abort_unless(
 
@@ -446,8 +353,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
         404
 
     );
-
-
 
     $mime = match ($extension) {
 
@@ -459,8 +364,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     };
-
-
 
     $response = response()->file(
 
@@ -478,8 +381,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
     );
 
-
-
     $response->setContentDisposition(
 
         'inline',
@@ -490,8 +391,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
     );
 
-
-
     return $response;
 })
 
@@ -499,11 +398,7 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
     ->name('documentos.office-original');
 
-
-
 // DRIVE PRZ V5 - EXPLORADOR DE ARCHIVOS
-
-
 
 Route::middleware(['auth'])
 
@@ -512,8 +407,6 @@ Route::middleware(['auth'])
     ->name('drive-prz-v5.')
 
     ->group(function () {
-
-
 
         // Pantalla
 
@@ -525,8 +418,6 @@ Route::middleware(['auth'])
 
         ])->name('screen');
 
-
-
         // Listar carpetas y documentos
 
         Route::get('/data', [
@@ -536,8 +427,6 @@ Route::middleware(['auth'])
             'listing'
 
         ])->name('data');
-
-
 
         // Crear carpeta
 
@@ -549,7 +438,11 @@ Route::middleware(['auth'])
 
         ])->name('folders');
 
-
+        // Personalizar color de una carpeta
+        Route::patch('/folders/{id}/color', [
+            DrivePrzController::class,
+            'updateFolderColor'
+        ])->whereNumber('id')->name('folders.color');
 
         // Crear carpetas por meses
 
@@ -561,8 +454,6 @@ Route::middleware(['auth'])
 
         ])->name('months');
 
-
-
         // Crear varias carpetas
 
         Route::post('/bulk', [
@@ -572,8 +463,6 @@ Route::middleware(['auth'])
             'bulk'
 
         ])->name('bulk');
-
-
 
         // Crear carpeta si no existe
 
@@ -585,8 +474,6 @@ Route::middleware(['auth'])
 
         ])->name('ensure-folder');
 
-
-
         // Subir documentos
 
         Route::post('/files', [
@@ -596,8 +483,6 @@ Route::middleware(['auth'])
             'upload'
 
         ])->name('files.upload');
-
-
 
         // Renombrar carpetas o documentos
 
@@ -610,8 +495,6 @@ Route::middleware(['auth'])
         ])->whereIn('kind', ['folders', 'files'])
 
             ->name('rename');
-
-
 
         // Eliminar carpetas o documentos
 
@@ -626,29 +509,44 @@ Route::middleware(['auth'])
             ->name('delete');
 
         // Consultar elementos de la papelera
+
         Route::get('/trash', [
+
             DrivePrzController::class,
+
             'trash'
+
         ])->name('trash');
 
         // Restaurar archivos o carpetas
+
         Route::post('/trash/{kind}/{id}/restore', [
+
             DrivePrzController::class,
+
             'restore'
+
         ])->whereIn('kind', ['folders', 'files'])
+
             ->name('restore');
 
         // Eliminar definitivamente
+
         Route::delete('/trash/{kind}/{id}', [
+
             DrivePrzController::class,
+
             'forceDelete'
+
         ])->whereIn('kind', ['folders', 'files'])
+
             ->name('force-delete');
 
         Route::get('/shared', [DrivePrzSharedController::class, 'listing'])->name('shared.list');
-        Route::get('/shared/files/{id}/preview', [DrivePrzSharedController::class, 'preview'])->whereNumber('id')->name('shared.preview');
-        Route::get('/shared/files/{id}/download', [DrivePrzSharedController::class, 'download'])->whereNumber('id')->name('shared.download');
 
+        Route::get('/shared/files/{id}/preview', [DrivePrzSharedController::class, 'preview'])->whereNumber('id')->name('shared.preview');
+
+        Route::get('/shared/files/{id}/download', [DrivePrzSharedController::class, 'download'])->whereNumber('id')->name('shared.download');
 
         // Mover carpetas o documentos
 
@@ -662,8 +560,6 @@ Route::middleware(['auth'])
 
             ->name('move');
 
-
-
         // Carpetas disponibles como destino
 
         Route::get('/destinations', [
@@ -674,8 +570,6 @@ Route::middleware(['auth'])
 
         ])->name('destinations');
 
-
-
         // Descargar documento
 
         Route::get('/files/{id}/download', [
@@ -685,8 +579,6 @@ Route::middleware(['auth'])
             'download'
 
         ])->name('download');
-
-
 
         // Vista previa
 
@@ -699,20 +591,25 @@ Route::middleware(['auth'])
         ])->name('preview');
 
         Route::post('/logout', function (
+
             \Illuminate\Http\Request $request
+
         ) {
+
             \Illuminate\Support\Facades\Auth::logout();
 
             $request->session()->invalidate();
+
             $request->session()->regenerateToken();
 
             return response()->json([
+
                 'ok' => true,
+
                 'message' => 'Sesión cerrada correctamente.'
+
             ]);
         })->name('logout');
-
-
 
         Route::get('/sharing/users', [DrivePrzSharingController::class, 'users'])->name('sharing.users');
 
@@ -727,19 +624,24 @@ Route::middleware(['auth'])
         Route::put('/{kind}/{id}/sharing/everyone', [DrivePrzSharingController::class, 'general'])->whereIn('kind', ['files', 'folders'])->whereNumber('id')->name('sharing.general');
 
         // Notificaciones internas de Drive PRZ (usuario autenticado).
+
         Route::prefix('notificaciones')
+
             ->name('notificaciones.')
+
             ->group(function () {
+
                 Route::get('/', [DrivePrzNotificacionController::class, 'index'])
+
                     ->name('index');
 
                 Route::post('/{id}/leer', [DrivePrzNotificacionController::class, 'marcarLeida'])
+
                     ->whereNumber('id')
+
                     ->name('leer');
             });
     });
-
-
 
 Route::middleware(['auth'])
 
@@ -754,18 +656,9 @@ Route::middleware(['auth'])
 
     ->name('drive-prz.index');
 
-Route::patch('/folders/{id}/color', [
-    DrivePrzController::class,
-    'updateFolderColor'
-])->name('folders.color');
-
-
-
 Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 
     $usuario = auth()->user();
-
-
 
     $nombre = trim(
 
@@ -774,8 +667,6 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
             ($usuario->apellido ?? '')
 
     );
-
-
 
     return response()->json([
 
@@ -787,7 +678,7 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 
         'rol' => $usuario->rol,
 
-        'iniciales' => collect(preg_split('/\s+/u', $nombre))
+        'iniciales' => collect(preg_split('/**\s**+/u', $nombre))
 
             ->filter()
 
@@ -805,57 +696,95 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 Route::middleware('auth')->group(function () {
 
     Route::post('/drive-prz-v5/enlaces/{id}', [
+
         DrivePrzEnlaceController::class,
+
         'generar'
+
     ])->name('drive-prz.enlaces.generar');
 
     Route::get('/drive-prz-v5/enlaces/{id}', [
+
         DrivePrzEnlaceController::class,
+
         'estado'
+
     ])->name('drive-prz.enlaces.estado');
 
     Route::delete('/drive-prz-v5/enlaces/{id}', [
+
         DrivePrzEnlaceController::class,
+
         'revocar'
+
     ])->name('drive-prz.enlaces.revocar');
 });
 
 // =======================================================
+
 // DRIVE PRZ - ENLACES PÚBLICOS
+
 // No requieren iniciar sesión
+
 // =======================================================
 
 // Abrir pantalla pública
+
 Route::get('/drive-prz/publico/{token}', [
+
     DrivePrzEnlaceController::class,
+
     'publico'
+
 ])
+
     ->where('token', '[A-Za-z0-9]{64}')
+
     ->middleware('throttle:60,1')
+
     ->name('drive-prz.publico');
 
 // Obtener contenido autorizado
+
 Route::get('/drive-prz/publico/{token}/contenido', [
+
     DrivePrzEnlaceController::class,
+
     'contenido'
+
 ])
+
     ->where('token', '[A-Za-z0-9]{64}')
+
     ->middleware('throttle:120,1')
+
     ->name('drive-prz.publico.contenido');
 
 // DRIVE PRZ - Páginas de PDF compartido
+
 Route::get('/drive-prz/publico/{token}/pagina/{pagina}', [
+
     DrivePrzEnlaceController::class,
+
     'pagina'
+
 ])
+
     ->where('token', '[A-Za-z0-9]{64}')
+
     ->whereNumber('pagina')
+
     ->middleware('throttle:120,1')
+
     ->name('drive-prz.publico.pagina');
 
 Route::middleware('auth')->group(function () {
+
     Route::get('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'mostrar'])
+
         ->name('drive-prz-v5.configuracion.mostrar');
+
     Route::put('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'guardar'])
+
         ->name('drive-prz-v5.configuracion.guardar');
 });
