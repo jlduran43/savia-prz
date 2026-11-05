@@ -4217,7 +4217,8 @@
                 const names = { view: 'Ver', download: 'Descargar', copy: 'Copiar', rename: 'Renombrar', move: 'Mover', delete: 'Enviar a papelera', upload: 'Subir archivos', create_folder: 'Crear subcarpetas' };
                 const newFlags = { view: true, download: true };
                 const generalFlags = { view: true, download: true };
-                // Selección temporal: no se guarda entre aperturas del modal.
+                // Selección temporal: se limpia en cada apertura del modal.
+                // La lista de sugerencias permanece oculta hasta escribir una búsqueda.
                 // Los accesos existentes se consultan siempre desde Laravel.
                 const limpiarSeleccionTemporal = () => {
                     selectedIds.clear();
@@ -4269,7 +4270,13 @@
                     const candidates = availableUsers().filter(u => !peopleAlready.has(Number(u.id)) &&
                         (!query || `${u.name || ''} ${u.email}`.toLocaleLowerCase().includes(query))).slice(0, 100);
                     const box = q('przShareChoices');
-                    if (!canShare()) { box.classList.add('hidden'); return; }
+                    // No mostrar una lista de personas al abrir el modal.
+                    // Solo sugerir destinatarios cuando se escribe una búsqueda.
+                    if (!canShare() || !query) {
+                        box.innerHTML = '';
+                        box.classList.add('hidden');
+                        return;
+                    }
                     box.innerHTML = candidates.length ? candidates.map(u => `
             <label class="prz-multi-option">
               <input type="checkbox" data-share-user="${Number(u.id)}" ${selectedIds.has(Number(u.id)) ? 'checked' : ''} ${busy ? 'disabled' : ''}>
