@@ -3063,8 +3063,9 @@
             border: 1px solid #dce8f4;
             border-radius: 9px;
             background: #fff;
-            max-height: 195px;
+            max-height: 250px;
             overflow-y: auto;
+            overscroll-behavior: contain;
             margin-top: 7px;
             padding: 4px;
         }
@@ -4208,22 +4209,24 @@
           <div class="sharepeople"><label class="field">Personas con acceso</label><div id="przSharePeople">Consultando permisos...</div></div>
           <div class="notice">Los permisos heredados de carpetas superiores no pueden reducirse desde un archivo hijo.</div>
           <p id="przShareError" class="hint" role="alert" style="color:#b33c46"></p>
-        `, '<button type="button" class="btn primary" data-modal-close>Listo</button>', true);
+        `, '<button type="button" class="btn primary" data-modal-close data-share-done>Listo</button>', true);
                 const frame = document.getElementById('modalMount');
                 const q = elementId => frame.querySelector('#' + elementId);
                 const errorBox = q('przShareError');
                 let users = [], info = {}, busy = false;
                 const selectedIds = new Set();
+                let listaUsuariosAbierta = false;
                 const names = { view: 'Ver', download: 'Descargar', copy: 'Copiar', rename: 'Renombrar', move: 'Mover', delete: 'Enviar a papelera', upload: 'Subir archivos', create_folder: 'Crear subcarpetas' };
                 const newFlags = { view: true, download: true };
                 const generalFlags = { view: true, download: true };
                 // Selección temporal: se limpia en cada apertura del modal.
-                // La lista de sugerencias permanece oculta hasta escribir una búsqueda.
+                // La lista aparece al enfocar el buscador y se filtra al escribir.
                 // Los accesos existentes se consultan siempre desde Laravel.
                 const limpiarSeleccionTemporal = () => {
                     selectedIds.clear();
                     const buscador = q('przShareSearch');
                     if (buscador) buscador.value = '';
+                    listaUsuariosAbierta = false;
                     const rol = q('przShareNewRole');
                     if (rol) rol.value = 'view';
                     Object.keys(newFlags).forEach(k => delete newFlags[k]);
@@ -4290,6 +4293,8 @@
                 };
                 const interceptarCierreClick = e => {
                     if (!frame.querySelector('#przSharePeople')) return;
+                    // «Listo» cierra y conserva los accesos ya concedidos.
+                    if (e.target.closest('[data-share-done]')) return;
                     if (e.target.closest('[data-modal-close]') || e.target.dataset.backdrop === 'yes') {
                         void cerrarYRevocarAccesos(e);
                     }
@@ -4333,12 +4338,15 @@
                 const renderChoices = () => {
                     const query = q('przShareSearch').value.trim().toLocaleLowerCase();
                     const peopleAlready = new Set((info.people || []).map(p => Number(p.id)));
-                    const candidates = availableUsers().filter(u => !peopleAlready.has(Number(u.id)) &&
-                        (!query || `${u.name || ''} ${u.email}`.toLocaleLowerCase().includes(query))).slice(0, 100);
+                    const ownerId = Number(info.owner?.id);
+                    const candidates = availableUsers()
+                        .filter(u => Number(u.id) !== ownerId && !peopleAlready.has(Number(u.id)) &&
+                            (!query || `${u.name || ''} ${u.email}`.toLocaleLowerCase('es').includes(query)))
+                        .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email, 'es', { sensitivity: 'base' }));
                     const box = q('przShareChoices');
-                    // No mostrar una lista de personas al abrir el modal.
-                    // Solo sugerir destinatarios cuando se escribe una búsqueda.
-                    if (!canShare() || !query) {
+                    // Mostrar todos los usuarios activos disponibles al enfocar.
+                    // Al escribir, filtrar inmediatamente por nombre o correo.
+                    if (!canShare() || !listaUsuariosAbierta) {
                         box.innerHTML = '';
                         box.classList.add('hidden');
                         return;
@@ -4382,7 +4390,30 @@
                     catch (e) { errorBox.textContent = e.message; }
                     finally { busy = false; if (frame.isConnected && q('przShareAdd')) { renderPermissions(); updateControls(); renderChoices(); } }
                 };
-                q('przShareSearch').addEventListener('input', renderChoices);
+                const buscadorUsuarios = q('przShareSearch');
+                const abrirListaUsuarios = () => {
+                    if (buscadorUsuarios.disabled) return;
+                    listaUsuariosAbierta = true;
+                    renderChoices();
+                };
+                buscadorUsuarios.addEventListener('focus', abrirListaUsuarios);
+                buscadorUsuarios.addEventListener('click', abrirListaUsuarios);
+                buscadorUsuarios.addEventListener('input', () => {
+                    listaUsuariosAbierta = true;
+                    renderChoices();
+                });
+                // Clic fuera del buscador: ocultar sugerencias sin borrar la selección.
+                const ocultarListaAlSalir = e => {
+                    if (!frame.querySelector('#przShareChoices')) {
+                        document.removeEventListener('click', ocultarListaAlSalir, true);
+                        return;
+                    }
+                    if (!e.target.closest('.prz-multi-wrap')) {
+                        listaUsuariosAbierta = false;
+                        renderChoices();
+                    }
+                };
+                document.addEventListener('click', ocultarListaAlSalir, true);
                 q('przShareNewRole').addEventListener('change', refreshCustom);
                 q('przShareEveryoneRole').addEventListener('change', refreshCustom);
                 frame.addEventListener('change', e => {
@@ -4512,6 +4543,10 @@
                     // Reiniciar el formulario para cada apertura del modal.
                     limpiarSeleccionTemporal();
                     renderPermissions(); updateControls(); refreshCustom();
+                    if (document.activeElement === q('przShareSearch')) {
+                        listaUsuariosAbierta = true;
+                        renderChoices();
+                    }
                     if (tipo === 'files') {
                         q('przExternalGenerate').disabled = !canShare();
                         q('przExternalRevoke').disabled = !canShare() || !q('przExternalStatus').textContent.startsWith('Existe un enlace activo');
