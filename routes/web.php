@@ -548,6 +548,30 @@ Route::middleware(['auth'])
 
         Route::get('/shared/files/{id}/download', [DrivePrzSharedController::class, 'download'])->whereNumber('id')->name('shared.download');
 
+        // Renombrar archivo compartido
+        Route::patch(
+            '/shared/files/{id}',
+            [DrivePrzSharedController::class, 'rename']
+        )->whereNumber('id')->name('shared.rename');
+
+        // Mover archivo compartido
+        Route::post(
+            '/shared/files/{id}/move',
+            [DrivePrzSharedController::class, 'move']
+        )->whereNumber('id')->name('shared.move');
+
+        // Copiar archivo compartido
+        Route::post(
+            '/shared/files/{id}/copy',
+            [DrivePrzSharedController::class, 'copy']
+        )->whereNumber('id')->name('shared.copy');
+
+        // Obtener carpetas destino autorizadas
+        Route::get(
+            '/shared/destinations',
+            [DrivePrzSharedController::class, 'destinations']
+        )->name('shared.destinations');
+
         // Mover carpetas o documentos
 
         Route::post('/{kind}/{id}/move', [
@@ -778,7 +802,7 @@ Route::get('/drive-prz/publico/{token}/pagina/{pagina}', [
 
     ->name('drive-prz.publico.pagina');
 
-    Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function () {
 
     Route::get('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'mostrar'])
 

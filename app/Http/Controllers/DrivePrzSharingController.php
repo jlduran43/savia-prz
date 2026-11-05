@@ -133,8 +133,17 @@ class DrivePrzSharingController extends Controller
     private function permisosPorRol(?string $role): array
     {
         return match ($role) {
-            'edit' => self::PERMISOS_DISPONIBLES,
-            'view' => ['ver', 'descargar'],
+            'edit' => [
+                'ver',
+                'descargar',
+                'renombrar',
+                'mover',
+                'copiar',
+            ],
+            'view' => [
+                'ver',
+                'descargar',
+            ],
             default => [],
         };
     }
@@ -241,8 +250,8 @@ class DrivePrzSharingController extends Controller
     {
         $name = trim(
             ($user->nombre ?? $user->name ?? '') .
-            ' ' .
-            ($user->apellido ?? '')
+                ' ' .
+                ($user->apellido ?? '')
         );
 
         return [
@@ -384,7 +393,7 @@ class DrivePrzSharingController extends Controller
                 ->orderBy('email')
                 ->limit(100)
                 ->get()
-                ->map(fn ($u) => $this->person($u))
+                ->map(fn($u) => $this->person($u))
                 ->values(),
         ]);
     }
@@ -500,8 +509,8 @@ class DrivePrzSharingController extends Controller
 
         abort_unless(
             $recipient &&
-            (! Schema::hasColumn('users', 'activo') ||
-                $recipient->activo),
+                (! Schema::hasColumn('users', 'activo') ||
+                    $recipient->activo),
             422,
             'Selecciona una cuenta activa de SAVIA PRZ.'
         );

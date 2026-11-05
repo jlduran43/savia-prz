@@ -4,177 +4,205 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** Compartidos conmigo. No altera el controlador de documentos propios. */
+/** Documentos compartidos: acceso por permisos efectivos, sin alterar Mis archivos. */
 class DrivePrzSharedController extends Controller
 {
-    private const PERMISOS = 'drive_prz_permisos';
+    private const TABLE = 'drive_prz_permisos';
+    private const PERMISSIONS = ['ver', 'descargar', 'renombrar', 'mover', 'copiar', 'eliminar', 'compartir'];
 
-
-
-    private function config(): array
+    private function types(string $kind): array
     {
-        abort_unless(
-            Schema::hasTable(self::PERMISOS),
-            503,
-            'La tabla de permisos no existe.'
-        );
+        return $kind === 'folders'
+            ? ['folders', 'folder', 'carpeta', 'documento_carpeta', 'App\\Models\\DocumentoCarpeta']
+            : ['files', 'file', 'archivo', 'documento', 'App\\Models\\Documento'];
+    }
 
-        $cols = Schema::getColumnListing(self::PERMISOS);
-
-        $pick = static function (array $names) use ($cols): ?string {
-            foreach ($names as $name) {
-                if (in_array($name, $cols, true)) {
-                    return $name;
+    private function fromGrant(object $grant): array
+    {
+        // El controlador de Compartir escribe el JSON en la columna `permisos`.
+        foreach (['permisos', 'permisos_json'] as $column) {
+            if (isset($grant->{$column}) && $grant->{$column} !== '') {
+                $decoded = json_decode((string) $grant->{$column}, true);
+                if (is_array($decoded)) {
+                    return array_values(array_intersect(self::PERMISSIONS, $decoded));
                 }
             }
-
-            return null;
+        }
+        // Compatibilidad con registros anteriores a los permisos individuales.
+        return match (strtolower((string) ($grant->permiso ?? ''))) {
+            'view', 'ver' => ['ver', 'descargar'],
+            'edit', 'editar' => ['ver', 'descargar', 'renombrar', 'mover', 'copiar'],
+            default => [],
         };
-
-        // Identificar la columna del tipo de elemento.
-        $tipo = $pick([
-            'tipo',
-            'elemento_tipo',
-            'tipo_elemento',
-            'recurso_tipo',
-        ]);
-
-        // Identificar el ID del archivo o carpeta.
-        $id = $pick([
-            'elemento_id',
-            'recurso_id',
-        ]);
-
-        // Identificar al usuario destinatario.
-        $destinatario = $pick([
-            'usuario_id',
-            'destinatario_id',
-            'usuario_destino_id',
-            'compartido_con_id',
-        ]);
-
-        abort_unless(
-            $tipo !== null &&
-                $id !== null &&
-                $destinatario !== null,
-            503,
-            'No se pudo interpretar la estructura de drive_prz_permisos.'
-        );
-
-        return compact('tipo', 'id', 'destinatario');
     }
 
-    private function permisos(string $kind, int $id): bool
+    private function directPermissions(string $kind, int $id): array
     {
-        $cfg = $this->config();
-        $types = $kind === 'folders' ? ['folders', 'folder', 'carpeta', 'documento_carpeta', 'App\\Models\\DocumentoCarpeta']
-            : ['files', 'file', 'archivo', 'documento', 'App\\Models\\Documento'];
-        return DB::table(self::PERMISOS)
-            ->where($cfg['destinatario'], auth()->id())
-            ->whereIn($cfg['tipo'], $types)
-            ->where($cfg['id'], $id)
-            ->when(Schema::hasColumn(self::PERMISOS, 'deleted_at'), fn($q) => $q->whereNull('deleted_at'))
-            ->exists();
+        $grants = DB::table(self::TABLE)
+            ->whereIn('tipo', $this->types($kind))
+            ->where('elemento_id', $id)
+            ->where(function ($q) {
+                $q->where('usuario_id', auth()->id())->orWhereNull('usuario_id');
+            })->get();
+        $permissions = [];
+        foreach ($grants as $grant) {
+            $permissions = array_merge($permissions, $this->fromGrant($grant));
+        }
+        return array_values(array_unique($permissions));
     }
 
-    private function canFolder(int $id): bool
+    private function folderPermissions(int $id): array
     {
         $seen = [];
-        while ($id > 0 && !isset($seen[$id])) {
+        $permissions = [];
+        while ($id > 0) {
+            abort_if(isset($seen[$id]), 409, 'Estructura circular de carpetas.');
             $seen[$id] = true;
-            $folder = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
-            if (!$folder) return false;
-            if ($this->permisos('folders', $id)) return true;
+            $folder = DB::table('documento_carpetas')->where('id', $id)
+                ->whereNull('deleted_at')->first();
+            if (!$folder) return [];
+            $permissions = array_merge($permissions, $this->directPermissions('folders', $id));
             $id = (int) ($folder->carpeta_padre_id ?? 0);
         }
-        return false;
+        return array_values(array_unique($permissions));
     }
 
-    private function canFile(object $file): bool
+    private function effectiveFilePermissions(object $file): array
     {
-        return $this->permisos('files', (int) $file->id)
-            || ($file->carpeta_id !== null && $this->canFolder((int) $file->carpeta_id));
+        if ($file->carpeta_id !== null) {
+            $inherited = $this->folderPermissions((int) $file->carpeta_id);
+            // Si falta algún ancestro, no exponer el documento.
+            $this->assertFolderTreeValid((int) $file->carpeta_id);
+        } else {
+            $inherited = [];
+        }
+        return array_values(array_unique(array_merge(
+            $this->directPermissions('files', (int) $file->id),
+            $inherited
+        )));
     }
 
-    private function folderData(object $f): array
+    private function assertFolderTreeValid(int $id): void
     {
-        return [
-            'id' => $f->id,
-            'type' => 'folder',
-            'name' => $f->nombre,
-            'modified' => $f->updated_at,
-            'parent' => $f->carpeta_padre_id,
-            'owner_id' => $f->creado_por,
-            'owner' => $this->ownerName((int)$f->creado_por)
-        ];
+        $seen = [];
+        while ($id > 0) {
+            abort_if(isset($seen[$id]), 403);
+            $seen[$id] = true;
+            $folder = DB::table('documento_carpetas')->where('id', $id)
+                ->whereNull('deleted_at')->first();
+            abort_unless($folder, 404);
+            $id = (int) ($folder->carpeta_padre_id ?? 0);
+        }
     }
 
-    private function fileData(object $f): array
+    private function accessibleFile(int $id, string $permission = 'ver'): object
     {
-        $disk = Storage::disk('documentos_privados');
-        return [
-            'id' => $f->id,
-            'type' => 'file',
-            'name' => $f->nombre_original,
-            'modified' => $f->updated_at,
-            'parent' => $f->carpeta_id,
-            'owner_id' => $f->subido_por,
-            'owner' => $this->ownerName((int)$f->subido_por),
-            'size' => $disk->exists($f->ruta_archivo) ? $disk->size($f->ruta_archivo) : 0
-        ];
+        $file = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->firstOrFail();
+        abort_unless((int) $file->subido_por !== (int) auth()->id(), 403, 'Utiliza Mis archivos.');
+        abort_unless(in_array($permission, $this->effectiveFilePermissions($file), true),
+            403, 'No tienes permiso para realizar esta acción.');
+        return $file;
     }
 
     private function ownerName(int $uid): string
     {
-        $u = DB::table('users')->where('id', $uid)->first();
-        return trim(($u->nombre ?? $u->name ?? '') . ' ' . ($u->apellido ?? '')) ?: 'Otro usuario';
+        $user = DB::table('users')->where('id', $uid)->first();
+        return trim(($user->nombre ?? $user->name ?? '') . ' ' . ($user->apellido ?? '')) ?: 'Otro usuario';
+    }
+
+    private function fileData(object $file): array
+    {
+        $disk = Storage::disk('documentos_privados');
+        $permissions = $this->effectiveFilePermissions($file);
+        return [
+            'id' => $file->id,
+            'type' => 'file',
+            'name' => $file->nombre_original,
+            'modified' => $file->updated_at,
+            'parent' => $file->carpeta_id,
+            'owner_id' => $file->subido_por,
+            'owner' => $this->ownerName((int) $file->subido_por),
+            'size' => $disk->exists($file->ruta_archivo) ? $disk->size($file->ruta_archivo) : 0,
+            'permissions' => $permissions,
+            'permisos' => $permissions,
+            'role' => count(array_intersect($permissions, ['renombrar', 'mover', 'copiar', 'eliminar', 'compartir'])) ? 'edit' : 'view',
+        ];
+    }
+
+    private function folderData(object $folder): array
+    {
+        $permissions = $this->folderPermissions((int) $folder->id);
+        return [
+            'id' => $folder->id,
+            'type' => 'folder',
+            'name' => $folder->nombre,
+            'modified' => $folder->updated_at,
+            'parent' => $folder->carpeta_padre_id,
+            'owner_id' => $folder->creado_por,
+            'owner' => $this->ownerName((int) $folder->creado_por),
+            'permissions' => $permissions,
+            'permisos' => $permissions,
+            'role' => count(array_intersect($permissions, ['renombrar', 'mover', 'copiar', 'eliminar', 'compartir'])) ? 'edit' : 'view',
+        ];
     }
 
     public function listing(Request $request)
     {
-        $cfg = $this->config();
         $data = $request->validate(['carpeta_id' => ['nullable', 'integer', 'min:1']]);
-        $parent = isset($data['carpeta_id']) ? (int)$data['carpeta_id'] : null;
+        $parent = isset($data['carpeta_id']) ? (int) $data['carpeta_id'] : null;
         $uid = (int) auth()->id();
         $items = [];
         $trail = [];
         if ($parent !== null) {
-            abort_unless($this->canFolder($parent), 403, 'No tienes acceso a esta carpeta.');
+            abort_unless(in_array('ver', $this->folderPermissions($parent), true), 403,
+                'No tienes acceso a esta carpeta.');
             $cursor = $parent;
             $seen = [];
             while ($cursor && !isset($seen[$cursor])) {
                 $seen[$cursor] = true;
-                $f = DB::table('documento_carpetas')->where('id', $cursor)->whereNull('deleted_at')->first();
-                if (!$f) break;
-                array_unshift($trail, ['id' => $f->id, 'name' => $f->nombre]);
-                $cursor = $f->carpeta_padre_id;
+                $folder = DB::table('documento_carpetas')->where('id', $cursor)
+                    ->whereNull('deleted_at')->first();
+                abort_unless($folder, 404);
+                array_unshift($trail, ['id' => $folder->id, 'name' => $folder->nombre]);
+                $cursor = $folder->carpeta_padre_id;
             }
-            $folders = DB::table('documento_carpetas')->where('carpeta_padre_id', $parent)->whereNull('deleted_at')->orderBy('nombre')->get();
-            $files = DB::table('documentos')->where('carpeta_id', $parent)->whereNull('deleted_at')->orderBy('nombre_original')->get();
-            foreach ($folders as $f) if ((int)$f->creado_por !== $uid && $this->canFolder((int)$f->id)) $items[] = $this->folderData($f);
-            foreach ($files as $f) if ((int)$f->subido_por !== $uid && $this->canFile($f)) $items[] = $this->fileData($f);
+            abort_if($cursor, 409, 'Estructura de carpetas circular.');
+            $folders = DB::table('documento_carpetas')->where('carpeta_padre_id', $parent)
+                ->whereNull('deleted_at')->orderBy('nombre')->get();
+            $files = DB::table('documentos')->where('carpeta_id', $parent)
+                ->whereNull('deleted_at')->orderBy('nombre_original')->get();
+            foreach ($folders as $folder) {
+                if ((int) $folder->creado_por !== $uid && in_array('ver', $this->folderPermissions((int) $folder->id), true)) {
+                    $items[] = $this->folderData($folder);
+                }
+            }
+            foreach ($files as $file) {
+                if ((int) $file->subido_por !== $uid && in_array('ver', $this->effectiveFilePermissions($file), true)) {
+                    $items[] = $this->fileData($file);
+                }
+            }
         } else {
-            $grants = DB::table(self::PERMISOS)->where($cfg['destinatario'], $uid)
-                ->when(Schema::hasColumn(self::PERMISOS, 'deleted_at'), fn($q) => $q->whereNull('deleted_at'))->get();
+            $grants = DB::table(self::TABLE)->where('usuario_id', $uid)->get();
             $found = [];
-            foreach ($grants as $g) {
-                $type = strtolower((string)$g->{$cfg['tipo']});
-                $id = (int)$g->{$cfg['id']};
-                if (in_array($type, ['folders', 'folder', 'carpeta', 'documento_carpeta', 'app\\models\\documentocarpeta'], true)) {
-                    $f = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
-                    if ($f && (int)$f->creado_por !== $uid && !isset($found['folder:' . $id])) {
-                        $items[] = $this->folderData($f);
-                        $found['folder:' . $id] = true;
+            foreach ($grants as $grant) {
+                $type = strtolower((string) $grant->tipo);
+                $id = (int) $grant->elemento_id;
+                if (in_array($type, array_map('strtolower', $this->types('folders')), true)) {
+                    $folder = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
+                    if ($folder && (int) $folder->creado_por !== $uid && !isset($found['folder:'.$id])
+                        && in_array('ver', $this->folderPermissions($id), true)) {
+                        $items[] = $this->folderData($folder);
+                        $found['folder:'.$id] = true;
                     }
-                } elseif (in_array($type, ['files', 'file', 'archivo', 'documento', 'app\\models\\documento'], true)) {
-                    $f = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->first();
-                    if ($f && (int)$f->subido_por !== $uid && !isset($found['file:' . $id])) {
-                        $items[] = $this->fileData($f);
-                        $found['file:' . $id] = true;
+                } elseif (in_array($type, array_map('strtolower', $this->types('files')), true)) {
+                    $file = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->first();
+                    if ($file && (int) $file->subido_por !== $uid && !isset($found['file:'.$id])
+                        && in_array('ver', $this->effectiveFilePermissions($file), true)) {
+                        $items[] = $this->fileData($file);
+                        $found['file:'.$id] = true;
                     }
                 }
             }
@@ -182,42 +210,96 @@ class DrivePrzSharedController extends Controller
         return response()->json(['items' => $items, 'trail' => $trail]);
     }
 
-    private function accessibleFile(int $id): object
-    {
-        $f = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->firstOrFail();
-        abort_unless((int)$f->subido_por !== (int)auth()->id() && $this->canFile($f), 403, 'No tienes acceso al documento.');
-        // Si un ancestro fue eliminado, no exponer el documento.
-        $cursor = $f->carpeta_id;
-        $seen = [];
-        while ($cursor !== null) {
-            abort_unless(!isset($seen[$cursor]), 403);
-            $seen[$cursor] = true;
-            $folder = DB::table('documento_carpetas')->where('id', $cursor)->whereNull('deleted_at')->first();
-            abort_unless($folder, 404);
-            $cursor = $folder->carpeta_padre_id;
-        }
-        return $f;
-    }
-
     public function download(int $id)
     {
-        $f = $this->accessibleFile($id);
+        $file = $this->accessibleFile($id, 'descargar');
         $disk = Storage::disk('documentos_privados');
-        abort_unless($disk->exists($f->ruta_archivo), 404, 'Archivo físico no encontrado.');
-        return $disk->download($f->ruta_archivo, $f->nombre_original);
+        abort_unless($disk->exists($file->ruta_archivo), 404);
+        return $disk->download($file->ruta_archivo, $file->nombre_original);
     }
 
     public function preview(int $id): BinaryFileResponse
     {
-        $f = $this->accessibleFile($id);
+        $file = $this->accessibleFile($id, 'ver');
         $disk = Storage::disk('documentos_privados');
-        abort_unless($disk->exists($f->ruta_archivo), 404);
-        $mime = $disk->mimeType($f->ruta_archivo);
-        abort_unless(in_array($mime, ['application/pdf', 'image/png', 'image/jpeg'], true), 415, 'Formato sin vista previa; descárgalo.');
-        return response()->file($disk->path($f->ruta_archivo), [
+        abort_unless($disk->exists($file->ruta_archivo), 404);
+        $mime = $disk->mimeType($file->ruta_archivo);
+        abort_unless(in_array($mime, ['application/pdf', 'image/png', 'image/jpeg'], true),
+            415, 'Formato sin vista previa; descárgalo.');
+        return response()->file($disk->path($file->ruta_archivo), [
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline',
-            'X-Content-Type-Options' => 'nosniff'
+            'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function rename(Request $request, int $id)
+    {
+        $data = $request->validate(['nombre' => ['required', 'string', 'max:120']]);
+        $file = $this->accessibleFile($id, 'renombrar');
+        DB::table('documentos')->where('id', $file->id)->whereNull('deleted_at')->update([
+            'nombre_original' => trim($data['nombre']), 'updated_at' => now(),
+        ]);
+        return response()->json(['ok' => true]);
+    }
+
+    public function move(Request $request, int $id)
+    {
+        $data = $request->validate(['destino_id' => ['required', 'integer', 'min:1']]);
+        $file = $this->accessibleFile($id, 'mover');
+        $dest = DB::table('documento_carpetas')->where('id', $data['destino_id'])
+            ->where('creado_por', $file->subido_por)->whereNull('deleted_at')->first();
+        abort_unless($dest, 403, 'El destino debe pertenecer al propietario del documento.');
+        $this->assertFolderTreeValid((int) $dest->id);
+        // La carpeta de destino debe conceder al destinatario permiso de mover.
+        abort_unless(in_array('mover', $this->folderPermissions((int) $dest->id), true),
+            403, 'No tienes permiso para mover documentos a esta carpeta.');
+        abort_if((int) $file->carpeta_id === (int) $dest->id, 422,
+            'El documento ya está en esta carpeta.');
+        DB::table('documentos')->where('id', $file->id)->whereNull('deleted_at')->update([
+            'carpeta_id' => $dest->id, 'updated_at' => now(),
+        ]);
+        return response()->json(['ok' => true]);
+    }
+
+    public function destinations()
+    {
+        $folders = DB::table('documento_carpetas')->whereNull('deleted_at')
+            ->orderBy('nombre')->get(['id', 'nombre', 'carpeta_padre_id', 'creado_por'])
+            ->filter(fn ($folder) => in_array('mover', $this->folderPermissions((int) $folder->id), true))
+            ->values();
+        return response()->json(['folders' => $folders]);
+    }
+
+    public function copy(Request $request, int $id)
+    {
+        $data = $request->validate(['destino_id' => ['present', 'nullable', 'integer', 'min:1']]);
+        $file = $this->accessibleFile($id, 'copiar');
+        $destination = $data['destino_id'] === null ? null : (int) $data['destino_id'];
+        if ($destination !== null) {
+            $folder = DB::table('documento_carpetas')->where('id', $destination)
+                ->where('creado_por', auth()->id())->whereNull('deleted_at')->first();
+            abort_unless($folder, 403, 'Solo puedes copiar a una carpeta propia.');
+            $this->assertFolderTreeValid($destination);
+        }
+        $disk = Storage::disk('documentos_privados');
+        abort_unless($disk->exists($file->ruta_archivo), 404);
+        $newPath = 'archivos/' . \Illuminate\Support\Str::random(40);
+        abort_unless($disk->copy($file->ruta_archivo, $newPath), 500, 'No se pudo copiar el archivo.');
+        try {
+            $newId = DB::table('documentos')->insertGetId([
+                'carpeta_id' => $destination,
+                'nombre_original' => $file->nombre_original,
+                'nombre_almacenado' => basename($newPath),
+                'ruta_archivo' => $newPath,
+                'subido_por' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $error) {
+            $disk->delete($newPath);
+            throw $error;
+        }
+        return response()->json(['ok' => true, 'id' => $newId], 201);
     }
 }

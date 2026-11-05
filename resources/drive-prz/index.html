@@ -836,23 +836,137 @@
 
 
         /* Vista de ejemplo Office: aislada, responsive y sin contenido de archivos. */
-        .prz-office-example {width:100%; color:#263b52; text-align:left;}
-        .prz-office-heading {display:flex; align-items:center; gap:10px; margin:0 0 14px; flex-wrap:wrap;}
-        .prz-office-heading strong {font-size:13px;}
-        .prz-office-tag {background:#e5f4eb; color:#176B45; border-radius:6px; font-size:11px; font-weight:800; padding:5px 9px;}
-        .prz-office-sheet {overflow-x:auto; background:#fff; border:1px solid #dee8e2; border-radius:8px;}
-        .prz-office-sheet table {border-collapse:collapse; min-width:360px; width:100%; font-size:12px;}
-        .prz-office-sheet th,.prz-office-sheet td {padding:11px 9px; border:1px solid #e5ebe7; text-align:left;}
-        .prz-office-sheet th {background:#e9f4ed; color:#176B45;}
-        .prz-office-paper {max-width:350px; min-height:220px; margin:auto; background:white; padding:30px; border:1px solid #dce5f0; box-shadow:0 4px 16px #14263d10;}
-        .prz-office-paper-title {font-size:18px; font-weight:750; margin-bottom:25px;}
-        .prz-office-line {background:#e4eaf1; border-radius:4px; height:9px; margin:12px 0;}
-        .prz-office-line.short {width:52%;} .prz-office-line.medium {width:76%;} .prz-office-gap {height:14px;}
-        .prz-office-slide {aspect-ratio:16/9; max-width:420px; margin:auto; border-radius:8px; padding:26px; background:linear-gradient(135deg,#e4efff,#f0f5fd); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;}
-        .prz-office-slide span {font-size:clamp(16px,3vw,24px);font-weight:800;color:#174d7d;}
-        .prz-office-slide-rule {width:65px;height:4px;background:#176B45;border-radius:5px;margin:17px auto;}
-        .prz-office-slide small {color:#58718a;}
-        .prz-office-disclaimer {font-size:11.5px; line-height:1.55; color:#62788e; background:#fff; border:1px solid #e1e9f1; border-radius:7px; padding:11px; margin:14px 0 0; overflow-wrap:anywhere;}
+        .prz-office-example {
+            width: 100%;
+            color: #263b52;
+            text-align: left;
+        }
+
+        .prz-office-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 14px;
+            flex-wrap: wrap;
+        }
+
+        .prz-office-heading strong {
+            font-size: 13px;
+        }
+
+        .prz-office-tag {
+            background: #e5f4eb;
+            color: #176B45;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 5px 9px;
+        }
+
+        .prz-office-sheet {
+            overflow-x: auto;
+            background: #fff;
+            border: 1px solid #dee8e2;
+            border-radius: 8px;
+        }
+
+        .prz-office-sheet table {
+            border-collapse: collapse;
+            min-width: 360px;
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .prz-office-sheet th,
+        .prz-office-sheet td {
+            padding: 11px 9px;
+            border: 1px solid #e5ebe7;
+            text-align: left;
+        }
+
+        .prz-office-sheet th {
+            background: #e9f4ed;
+            color: #176B45;
+        }
+
+        .prz-office-paper {
+            max-width: 350px;
+            min-height: 220px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border: 1px solid #dce5f0;
+            box-shadow: 0 4px 16px #14263d10;
+        }
+
+        .prz-office-paper-title {
+            font-size: 18px;
+            font-weight: 750;
+            margin-bottom: 25px;
+        }
+
+        .prz-office-line {
+            background: #e4eaf1;
+            border-radius: 4px;
+            height: 9px;
+            margin: 12px 0;
+        }
+
+        .prz-office-line.short {
+            width: 52%;
+        }
+
+        .prz-office-line.medium {
+            width: 76%;
+        }
+
+        .prz-office-gap {
+            height: 14px;
+        }
+
+        .prz-office-slide {
+            aspect-ratio: 16/9;
+            max-width: 420px;
+            margin: auto;
+            border-radius: 8px;
+            padding: 26px;
+            background: linear-gradient(135deg, #e4efff, #f0f5fd);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .prz-office-slide span {
+            font-size: clamp(16px, 3vw, 24px);
+            font-weight: 800;
+            color: #174d7d;
+        }
+
+        .prz-office-slide-rule {
+            width: 65px;
+            height: 4px;
+            background: #176B45;
+            border-radius: 5px;
+            margin: 17px auto;
+        }
+
+        .prz-office-slide small {
+            color: #58718a;
+        }
+
+        .prz-office-disclaimer {
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: #62788e;
+            background: #fff;
+            border: 1px solid #e1e9f1;
+            border-radius: 7px;
+            padding: 11px;
+            margin: 14px 0 0;
+            overflow-wrap: anywhere;
+        }
 
         .detailrow {
             display: flex;
@@ -3557,17 +3671,41 @@
         .modal.prz-modal-folder-drop .modalbody {
             background: #f1faf4;
         }
-    
+
         /* Colores configurables de carpetas */
         .fileico.folder[style*="--folder-color"] {
             color: var(--folder-color);
             background: color-mix(in srgb, var(--folder-color) 15%, white);
         }
-        .prz-folder-palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 11px; margin: 18px 0; }
-        .prz-folder-swatch { width: 46px; height: 46px; border: 2px solid transparent; border-radius: 11px; background: color-mix(in srgb, var(--swatch) 16%, white); color: var(--swatch); display: grid; place-items: center; }
-        .prz-folder-swatch:hover, .prz-folder-swatch.is-selected { border-color: var(--swatch); box-shadow: 0 0 0 2px #fff inset; }
-        .prz-folder-swatch svg { width: 23px; height: 23px; }
 
+        .prz-folder-palette {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 11px;
+            margin: 18px 0;
+        }
+
+        .prz-folder-swatch {
+            width: 46px;
+            height: 46px;
+            border: 2px solid transparent;
+            border-radius: 11px;
+            background: color-mix(in srgb, var(--swatch) 16%, white);
+            color: var(--swatch);
+            display: grid;
+            place-items: center;
+        }
+
+        .prz-folder-swatch:hover,
+        .prz-folder-swatch.is-selected {
+            border-color: var(--swatch);
+            box-shadow: 0 0 0 2px #fff inset;
+        }
+
+        .prz-folder-swatch svg {
+            width: 23px;
+            height: 23px;
+        }
     </style>
 
     <style>
@@ -3882,12 +4020,14 @@
                                         de agua</label><input required maxlength="255" class="textinput"
                                         id="dpMarcaTexto" name="marca_agua_texto"></div>
                                 <div class="drive-config-wide">
-                                    <label class="field" for="dpMarcaTextoSecundario">Texto secundario de la marca de agua</label>
+                                    <label class="field" for="dpMarcaTextoSecundario">Texto secundario de la marca de
+                                        agua</label>
                                     <textarea class="textinput" id="dpMarcaTextoSecundario"
                                         name="marca_agua_texto_secundario" rows="3" maxlength="500"
                                         placeholder="Documento de uso interno&#10;Prohibida su distribución"
                                         style="resize:vertical;min-height:100px;font-family:inherit;line-height:1.6"></textarea>
-                                    <p class="hint">Aparecerá debajo del texto principal. Puedes usar varias líneas o dejarlo vacío.</p>
+                                    <p class="hint">Aparecerá debajo del texto principal. Puedes usar varias líneas o
+                                        dejarlo vacío.</p>
                                 </div>
                                 <div><label class="field" for="dpMarcaColor">Color</label><input required
                                         class="textinput" style="height:45px;padding:5px" type="color" id="dpMarcaColor"
@@ -4268,88 +4408,92 @@
                 });
                 observarCierre.observe(frame, { childList: true });
 
-                // Cerrar Compartir revoca todos los permisos individuales directos,
-                // igual que pulsar la X de cada persona. No incluye propietario,
-                // permisos heredados, acceso general ni enlaces externos.
-                let cerrandoCompartir = false;
-                const cerrarYRevocarAccesos = async (event) => {
-                    if (!frame.querySelector('#przSharePeople')) return;
-                    if (event) {
-                        event.preventDefault();
-                        event.stopImmediatePropagation();
-                    }
-                    if (cerrandoCompartir || busy) return;
-                    const people = Array.isArray(info.people) ? info.people : [];
-                    if (!canShare() || !people.length) {
-                        close();
-                        return;
-                    }
-                    const aceptado = window.confirm(
-                        `Al cerrar se quitará el acceso individual a ${people.length} persona(s) de este ${etiqueta}. ¿Confirmas?`
-                    );
-                    if (!aceptado) return;
-                    cerrandoCompartir = true;
-                    busy = true;
-                    errorBox.textContent = 'Quitando accesos individuales…';
-                    frame.querySelectorAll('[data-modal-close]').forEach(b => b.disabled = true);
-                    const errores = [];
-                    for (const person of people) {
-                        try {
-                            await apiCompartir(`${base}/people/${encodeURIComponent(person.id)}`, 'DELETE', {});
-                        } catch (e) {
-                            errores.push(`${person.name || person.email || person.id}: ${e.message}`);
-                        }
-                    }
-                    if (!errores.length) {
-                        toast(`Se quitaron ${people.length} acceso(s) individuales.`);
-                        close();
-                        return;
-                    }
-                    busy = false;
-                    cerrandoCompartir = false;
-                    if (!frame.querySelector('#przSharePeople')) return;
-                    frame.querySelectorAll('[data-modal-close]').forEach(b => b.disabled = false);
-                    errorBox.textContent = 'No se pudieron quitar todos los accesos: ' + errores.join(' | ');
-                    try { await refresh(); } catch (e) { errorBox.textContent += ' | ' + e.message; }
-                };
+
+                // Cerrar Compartir nunca revoca permisos guardados.
+                // Solo se descartan las selecciones temporales.
+
                 const interceptarCierreClick = e => {
                     if (!frame.querySelector('#przSharePeople')) return;
-                    // «Listo» cierra y conserva los accesos ya concedidos.
-                    if (e.target.closest('[data-share-done]')) {
-                        if (busy || cerrandoCompartir) {
-                            e.preventDefault();
-                            e.stopImmediatePropagation();
-                            return;
-                        }
-                        // El cierre normal lo realiza el manejador original del modal.
-                        // Mostramos la confirmación después de que termine ese cierre.
-                        if (cambiosCompartirGuardados > 0) {
-                            const total = cambiosCompartirGuardados;
-                            setTimeout(() => toast(total === 1
-                                ? 'Los cambios para compartir se guardaron correctamente.'
-                                : `Se guardaron correctamente ${total} cambios de permisos.`), 0);
-                        }
+
+                    const boton = e.target.closest('[data-modal-close]');
+                    const fondo = e.target.dataset.backdrop === 'yes';
+
+                    if (!boton && !fondo) return;
+
+                    // Evitar cerrar mientras se guardan permisos.
+                    if (busy) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
                         return;
                     }
-                    if (e.target.closest('[data-modal-close]') || e.target.dataset.backdrop === 'yes') {
-                        void cerrarYRevocarAccesos(e);
+
+                    // Listo: mostrar confirmación si hubo cambios.
+                    if (
+                        boton?.hasAttribute('data-share-done') &&
+                        cambiosCompartirGuardados > 0
+                    ) {
+                        const total = cambiosCompartirGuardados;
+
+                        setTimeout(() => {
+                            toast(
+                                total === 1
+                                    ? 'Los cambios para compartir se guardaron correctamente.'
+                                    : `Se guardaron correctamente ${total} cambios de permisos.`
+                            );
+                        }, 0);
                     }
+
+                    // Los botones de cierre mantienen su funcionamiento normal.
+                    // No se eliminan permisos de la base de datos.
                 };
+
                 const interceptarCierreTecla = e => {
-                    if (e.key === 'Escape' && frame.querySelector('#przSharePeople')) {
-                        void cerrarYRevocarAccesos(e);
+                    if (
+                        e.key === 'Escape' &&
+                        frame.querySelector('#przSharePeople') &&
+                        busy
+                    ) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
                     }
                 };
-                document.addEventListener('click', interceptarCierreClick, true);
-                document.addEventListener('keydown', interceptarCierreTecla, true);
+
+                document.addEventListener(
+                    'click',
+                    interceptarCierreClick,
+                    true
+                );
+
+                document.addEventListener(
+                    'keydown',
+                    interceptarCierreTecla,
+                    true
+                );
+
+                // Retirar los eventos cuando desaparezca la ventana.
                 const limpiarInterceptores = new MutationObserver(() => {
                     if (!frame.querySelector('#przSharePeople')) {
-                        document.removeEventListener('click', interceptarCierreClick, true);
-                        document.removeEventListener('keydown', interceptarCierreTecla, true);
+                        document.removeEventListener(
+                            'click',
+                            interceptarCierreClick,
+                            true
+                        );
+
+                        document.removeEventListener(
+                            'keydown',
+                            interceptarCierreTecla,
+                            true
+                        );
+
                         limpiarInterceptores.disconnect();
                     }
                 });
-                limpiarInterceptores.observe(frame, { childList: true });
+
+                limpiarInterceptores.observe(frame, {
+                    childList: true
+                });
+
+
                 const flagsHtml = (flags, prefix) => Object.entries(names)
                     .filter(([k]) => tipo === 'folders' || !['upload', 'create_folder'].includes(k))
                     .map(([key, label]) => `<label class="prz-flag"><input type="checkbox" data-flag-prefix="${prefix}" data-flag="${key}" ${flags[key] ? 'checked' : ''} ${key === 'view' ? 'disabled' : ''}><span>${label}</span></label>`).join('');
@@ -7922,6 +8066,7 @@
             });
         })();
     </script>
+    <script src="{{ asset('js/drive-prz-shared-actions.js') }}"></script>
 </body>
 
 </html>
