@@ -4214,6 +4214,7 @@
                 const q = elementId => frame.querySelector('#' + elementId);
                 const errorBox = q('przShareError');
                 let users = [], info = {}, busy = false;
+                let cambiosCompartirGuardados = 0;
                 const selectedIds = new Set();
                 let listaUsuariosAbierta = false;
                 const names = { view: 'Ver', download: 'Descargar', copy: 'Copiar', rename: 'Renombrar', move: 'Mover', delete: 'Enviar a papelera', upload: 'Subir archivos', create_folder: 'Crear subcarpetas' };
@@ -4294,7 +4295,22 @@
                 const interceptarCierreClick = e => {
                     if (!frame.querySelector('#przSharePeople')) return;
                     // «Listo» cierra y conserva los accesos ya concedidos.
-                    if (e.target.closest('[data-share-done]')) return;
+                    if (e.target.closest('[data-share-done]')) {
+                        if (busy || cerrandoCompartir) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            return;
+                        }
+                        // El cierre normal lo realiza el manejador original del modal.
+                        // Mostramos la confirmación después de que termine ese cierre.
+                        if (cambiosCompartirGuardados > 0) {
+                            const total = cambiosCompartirGuardados;
+                            setTimeout(() => toast(total === 1
+                                ? 'Los cambios para compartir se guardaron correctamente.'
+                                : `Se guardaron correctamente ${total} cambios de permisos.`), 0);
+                        }
+                        return;
+                    }
                     if (e.target.closest('[data-modal-close]') || e.target.dataset.backdrop === 'yes') {
                         void cerrarYRevocarAccesos(e);
                     }
@@ -4386,7 +4402,7 @@
                 const execute = async action => {
                     if (busy || !canShare()) return;
                     busy = true; errorBox.textContent = ''; updateControls();
-                    try { await action(); await refresh(); toast('Permisos actualizados correctamente.'); }
+                    try { await action(); cambiosCompartirGuardados++; await refresh(); toast('Permisos actualizados correctamente.'); }
                     catch (e) { errorBox.textContent = e.message; }
                     finally { busy = false; if (frame.isConnected && q('przShareAdd')) { renderPermissions(); updateControls(); renderChoices(); } }
                 };
@@ -4441,7 +4457,7 @@
                     for (const u of pending) {
                         try {
                             await apiCompartir(`${base}/people`, 'POST', { email: u.email, ...rolePayload(q('przShareNewRole').value, newFlags) });
-                            selectedIds.delete(Number(u.id)); completed++;
+                            selectedIds.delete(Number(u.id)); completed++; cambiosCompartirGuardados++;
                         } catch (e) { failures.push(`${u.email}: ${e.message}`); }
                     }
                     try { await refresh(); }
