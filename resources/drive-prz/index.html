@@ -3785,7 +3785,10 @@
         /* Drive PRZ: ocultar el botón de tres puntos
         únicamente en Compartidos conmigo */
 
-        [data-shared-item] .dots {
+        /* Solo en Compartidos conmigo: acciones extra exclusivamente con clic derecho. */
+        #filesArea [data-shared-item] .actions button:not([data-shared-view]):not([data-shared-open]),
+        #filesArea [data-shared-item] .tilefoot button:not([data-shared-view]):not([data-shared-open]),
+        #filesArea [data-shared-item] .dots {
             display: none !important;
         }
     </style>
