@@ -59,6 +59,15 @@
     .prz-move-footer button.prz-move-submit:hover{background:#82addb;border-color:#82addb}
     .prz-move-option:focus-visible,.prz-move-footer button:focus-visible,.prz-move-x:focus-visible{outline:3px solid #c5daf0;outline-offset:2px}
     @media(max-width:720px){.prz-move-modal{width:min(96vw,100%)}.prz-move-head{padding:20px 18px 15px}.prz-move-content{padding:18px}.prz-move-footer{padding:16px 18px}.prz-move-heading h3{font-size:18px}}
+    /* Arrastrar y soltar en Compartidos conmigo - paleta azul Drive PRZ */
+    tr.prz-shared-draggable-file{cursor:grab}
+    tr.prz-shared-draggable-file:active{cursor:grabbing}
+    tr.prz-shared-dragging{opacity:.46}
+    tr.prz-shared-drop-folder{outline:2px dashed #adc9e5;outline-offset:-3px;background:#f3f8fe!important}
+    tr.prz-shared-drop-folder.prz-shared-drop-hover{outline:2px solid #75a5d6;background:#e9f3ff!important}
+    .prz-shared-dragroot{position:fixed;z-index:100005;bottom:22px;left:50%;transform:translateX(-50%);width:min(510px,calc(100vw - 32px));padding:17px 22px;border:2px dashed #9bbde0;border-radius:14px;background:#f5f9ff;color:#3b5f83;text-align:center;box-shadow:0 12px 35px #223f6029;font:inherit;font-size:14px;font-weight:700;pointer-events:auto}
+    .prz-shared-dragroot.prz-shared-drop-hover{background:#e4f0fc;border-color:#5f97d4}
+    .prz-shared-dragroot[aria-disabled="true"]{opacity:.65;border-color:#cdd5de;background:#f5f7fa;color:#7a8796}
   `;
   document.head.appendChild(styles);
 
@@ -253,6 +262,164 @@
         el.children.length === 0 && el.textContent?.trim().endsWith('· Solo ver'));
       if (label && item.role === 'edit') {
         label.textContent = label.textContent.replace(/Solo ver\s*$/, 'Puede editar');
+      }
+    }
+    attachSharedDrag();
+  }
+
+  // DnD propio del listado compartido. No habilita mover carpetas: exige ruta y
+  // autorización de carpeta que el backend actual no implementa.
+  let dragItem = null;
+  let dragTargets = [];
+  let dragRoot = null;
+  let allowedDestinationIds = new Set();
+  let canDropToRoot = false;
+  let dragRequestVersion = 0;
+  const DRAG_TYPE = 'application/x-prz-shared-file';
+
+  function findSharedRow(item) {
+    // getRow() usa el nombre visible. Los IDs ya vienen del endpoint /shared.
+    return getRow(item);
+  }
+  function clearHover() {
+    document.querySelectorAll('.prz-shared-drop-hover').forEach(el => el.classList.remove('prz-shared-drop-hover'));
+  }
+  function cleanupDrag() {
+    dragRequestVersion++;
+    clearHover();
+    document.querySelectorAll('.prz-shared-dragging,.prz-shared-drop-folder').forEach(el => {
+      el.classList.remove('prz-shared-dragging','prz-shared-drop-folder');
+    });
+    dragRoot?.remove(); dragRoot = null;
+    dragItem = null;
+    allowedDestinationIds = new Set();
+    canDropToRoot = false;
+  }
+  function showDragRoot() {
+    dragRoot?.remove();
+    dragRoot = document.createElement('div');
+    dragRoot.className = 'prz-shared-dragroot';
+    dragRoot.textContent = 'Comprobando permiso para mover a la raíz del propietario…';
+    dragRoot.setAttribute('aria-disabled', 'true');
+    document.body.appendChild(dragRoot);
+    // Evitar que el frontend principal reciba esta acción de drop.
+    dragRoot.addEventListener('dragenter', e => {
+      if (!dragItem) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (canDropToRoot) dragRoot.classList.add('prz-shared-drop-hover');
+    }, true);
+    dragRoot.addEventListener('dragover', e => {
+      if (!dragItem) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      e.dataTransfer.dropEffect = canDropToRoot ? 'move' : 'none';
+    }, true);
+    dragRoot.addEventListener('dragleave', () => dragRoot?.classList.remove('prz-shared-drop-hover'));
+    dragRoot.addEventListener('drop', e => {
+      if (!dragItem) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      const item = dragItem;
+      if (!canDropToRoot) { cleanupDrag(); return; }
+      cleanupDrag();
+      commitDragMove(item, null, 'Raíz del propietario');
+    }, true);
+  }
+  function enableDropHighlights() {
+    document.querySelectorAll('.prz-shared-drop-folder').forEach(el => el.classList.remove('prz-shared-drop-folder'));
+    for (const item of currentItems) {
+      if (item.type !== 'folder' || !dragItem) continue;
+      if (!allowedDestinationIds.has(Number(item.id))) continue;
+      if (Number(item.owner_id) !== Number(dragItem.owner_id)) continue;
+      if (Number(item.id) === Number(dragItem.parent)) continue;
+      const row = findSharedRow(item);
+      if (row) row.classList.add('prz-shared-drop-folder');
+    }
+  }
+  async function commitDragMove(item, destinationId, destinationName) {
+    if (busy) return;
+    if (!window.confirm(`¿Mover "${item.name}" a "${destinationName}"?`)) return;
+    busy = true;
+    try {
+      // Laravel verifica propietario y permisos efectivos al realizar el POST.
+      await request(`/shared/files/${item.id}/move`, {
+        method: 'POST', body: JSON.stringify({destino_id: destinationId})
+      });
+      window.location.reload();
+    } catch (error) {
+      alert(error.message || 'No se pudo mover el archivo.');
+    } finally { busy = false; }
+  }
+  function attachSharedDrag() {
+    if (!sharedVisible() || dragItem) return;
+    for (const item of currentItems) {
+      const row = findSharedRow(item);
+      if (!row || row.dataset.przDragBound === '1') continue;
+      row.dataset.przDragBound = '1';
+      if (item.type === 'file' && can(item, 'mover')) {
+        row.draggable = true;
+        row.classList.add('prz-shared-draggable-file');
+        row.title = 'Arrastra este archivo a una carpeta compartida autorizada';
+      }
+      // Se identifica el item al momento de arrastrar, por si el listado cambió.
+      row.addEventListener('dragstart', e => {
+        if (!sharedVisible() || busy) return;
+        const latest = currentItems.find(x => x.type === 'file' && String(x.id) === String(item.id));
+        if (!latest || !can(latest, 'mover') || !row.classList.contains('prz-shared-draggable-file')) {
+          e.preventDefault(); return;
+        }
+        if (e.target.closest('button,input,select,a,textarea')) { e.preventDefault(); return; }
+        e.stopImmediatePropagation();
+        cleanupDrag();
+        dragItem = latest;
+        row.classList.add('prz-shared-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData(DRAG_TYPE, String(latest.id));
+        e.dataTransfer.setData('text/plain', latest.name || 'Archivo');
+        showDragRoot();
+        const version = ++dragRequestVersion;
+        request('/shared/destinations?archivo_id=' + encodeURIComponent(latest.id))
+          .then(data => {
+            if (version !== dragRequestVersion || !dragItem || Number(dragItem.id) !== Number(latest.id)) return;
+            allowedDestinationIds = new Set((data.folders || []).map(f => Number(f.id)));
+            canDropToRoot = data.root_available === true;
+            if (dragRoot) {
+              dragRoot.textContent = canDropToRoot
+                ? '⇧ Suelta aquí para mover a la raíz del propietario'
+                : 'Raíz no autorizada · Suelta sobre una carpeta permitida';
+              dragRoot.setAttribute('aria-disabled', String(!canDropToRoot));
+            }
+            enableDropHighlights();
+          })
+          .catch(() => {
+            if (dragRoot && version === dragRequestVersion) {
+              dragRoot.textContent = 'No se pudieron comprobar los destinos autorizados';
+            }
+          });
+      }, true);
+      row.addEventListener('dragend', () => cleanupDrag(), true);
+      if (item.type === 'folder') {
+        row.addEventListener('dragover', e => {
+          if (!dragItem || !sharedVisible()) return;
+          e.preventDefault(); e.stopImmediatePropagation();
+          const permitted = allowedDestinationIds.has(Number(item.id))
+            && Number(item.owner_id) === Number(dragItem.owner_id)
+            && Number(item.id) !== Number(dragItem.parent);
+          e.dataTransfer.dropEffect = permitted ? 'move' : 'none';
+          clearHover();
+          if (permitted) row.classList.add('prz-shared-drop-hover');
+        }, true);
+        row.addEventListener('dragleave', e => {
+          if (!row.contains(e.relatedTarget)) row.classList.remove('prz-shared-drop-hover');
+        }, true);
+        row.addEventListener('drop', e => {
+          if (!dragItem || !sharedVisible()) return;
+          e.preventDefault(); e.stopImmediatePropagation();
+          const source = dragItem;
+          const permitted = allowedDestinationIds.has(Number(item.id))
+            && Number(item.owner_id) === Number(source.owner_id)
+            && Number(item.id) !== Number(source.parent);
+          cleanupDrag();
+          if (permitted) commitDragMove(source, Number(item.id), item.name);
+        }, true);
       }
     }
   }
