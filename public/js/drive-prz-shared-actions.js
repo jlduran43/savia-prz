@@ -137,24 +137,23 @@
   function decorate() {
     if (!sharedVisible()) return;
     for (const item of currentItems) {
-      if (item.type !== 'file' || !can(item,'ver')) continue;
+      if (item.type !== 'file' || !can(item, 'ver')) continue;
       const row = getRow(item);
       if (!row) continue;
-      const actions = [...row.querySelectorAll('td')].at(-1);
-      if (!actions) continue;
-      const existing = actions.querySelector(`[${marker}]`);
-      if (existing) continue;
-      if (!['renombrar','mover','copiar'].some(action=>can(item,action))) continue;
-      const b = document.createElement('button'); b.type='button'; b.className='prz-shared-trigger';
-      b.textContent='⋮'; b.title='Acciones del documento compartido'; b.setAttribute('aria-label',`Acciones para ${item.name}`);
-      b.setAttribute(marker,''); b.onclick=e=>{e.stopPropagation();currentMenu?closeMenu():showMenu(item,b);};
-      actions.append(b);
-      // Corregir etiqueta Solo ver únicamente cuando sea un texto contenido en un nodo específico.
+
+      // Los comandos se ofrecen mediante clic derecho en el HTML principal.
+      // Eliminar cualquier botón antiguo generado por este complemento.
+      row.querySelectorAll(`[${marker}], .prz-shared-trigger`).forEach(button => button.remove());
+
+      // Mantener actualizada la etiqueta del permiso.
       const label = [...row.querySelectorAll('small,span,p,div')].find(el =>
         el.children.length === 0 && el.textContent?.trim().endsWith('· Solo ver'));
-      if (label && item.role === 'edit') label.textContent = label.textContent.replace(/Solo ver\s*$/, 'Puede editar');
+      if (label && item.role === 'edit') {
+        label.textContent = label.textContent.replace(/Solo ver\s*$/, 'Puede editar');
+      }
     }
   }
+
   let scheduled = false;
   function schedule() {if(scheduled) return; scheduled=true; setTimeout(()=>{scheduled=false;decorate();},150);}
   async function refresh() {
