@@ -126,6 +126,7 @@ class DrivePrzSharedController extends Controller
             'owner_id' => $file->subido_por,
             'owner' => $this->ownerName((int) $file->subido_por),
             'size' => $disk->exists($file->ruta_archivo) ? $disk->size($file->ruta_archivo) : 0,
+            'direct_shared' => DB::table(self::TABLE)->where('usuario_id', auth()->id())->whereIn('tipo', $this->types('files'))->where('elemento_id', $file->id)->exists(),
             'permissions' => $permissions,
             'permisos' => $permissions,
             'role' => count(array_intersect($permissions, ['renombrar', 'mover', 'copiar', 'eliminar', 'compartir'])) ? 'edit' : 'view',
@@ -143,36 +144,19 @@ class DrivePrzSharedController extends Controller
             'parent' => $folder->carpeta_padre_id,
             'owner_id' => $folder->creado_por,
             'owner' => $this->ownerName((int) $folder->creado_por),
+            'direct_shared' => DB::table(self::TABLE)->where('usuario_id', auth()->id())->whereIn('tipo', $this->types('folders'))->where('elemento_id', $folder->id)->exists(),
             'permissions' => $permissions,
             'permisos' => $permissions,
             'role' => count(array_intersect($permissions, ['renombrar', 'mover', 'copiar', 'eliminar', 'compartir'])) ? 'edit' : 'view',
         ];
     }
 
-    /**
-     * Indica si existe una carpeta compartida visible en la ruta indicada.
-     * Se usa solo para organizar el listado raíz, no para revocar permisos.
-     */
-    private function hasSharedFolderInPath(?int $folderId): bool
+    private function isHidden(string $kind, int $id): bool
     {
-        $seen = [];
-        while ($folderId !== null && $folderId > 0) {
-            if (isset($seen[$folderId])) {
-                return false;
-            }
-            $seen[$folderId] = true;
-            $folder = DB::table('documento_carpetas')->where('id', $folderId)
-                ->whereNull('deleted_at')->first();
-            if (! $folder) {
-                return false;
-            }
-            if (in_array('ver', $this->directPermissions('folders', $folderId), true)) {
-                return true;
-            }
-            $folderId = $folder->carpeta_padre_id === null
-                ? null : (int) $folder->carpeta_padre_id;
-        }
-        return false;
+        return DB::table('drive_prz_compartidos_ocultos')
+            ->where('usuario_id', auth()->id())
+            ->where('tipo', $kind)
+            ->where('elemento_id', $id)->exists();
     }
 
     public function listing(Request $request)
@@ -201,12 +185,12 @@ class DrivePrzSharedController extends Controller
             $files = DB::table('documentos')->where('carpeta_id', $parent)
                 ->whereNull('deleted_at')->orderBy('nombre_original')->get();
             foreach ($folders as $folder) {
-                if ((int) $folder->creado_por !== $uid && in_array('ver', $this->folderPermissions((int) $folder->id), true)) {
+                if ((int) $folder->creado_por !== $uid && !$this->isHidden('folders', (int) $folder->id) && in_array('ver', $this->folderPermissions((int) $folder->id), true)) {
                     $items[] = $this->folderData($folder);
                 }
             }
             foreach ($files as $file) {
-                if ((int) $file->subido_por !== $uid && in_array('ver', $this->effectiveFilePermissions($file), true)) {
+                if ((int) $file->subido_por !== $uid && !$this->isHidden('files', (int) $file->id) && in_array('ver', $this->effectiveFilePermissions($file), true)) {
                     $items[] = $this->fileData($file);
                 }
             }
@@ -218,19 +202,15 @@ class DrivePrzSharedController extends Controller
                 $id = (int) $grant->elemento_id;
                 if (in_array($type, array_map('strtolower', $this->types('folders')), true)) {
                     $folder = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
-                    if ($folder && (int) $folder->creado_por !== $uid && !isset($found['folder:'.$id])
-                        && in_array('ver', $this->folderPermissions($id), true)
-                        && ! $this->hasSharedFolderInPath($folder->carpeta_padre_id === null
-                            ? null : (int) $folder->carpeta_padre_id)) {
+                    if ($folder && (int) $folder->creado_por !== $uid && !$this->isHidden('folders', $id) && !isset($found['folder:'.$id])
+                        && in_array('ver', $this->folderPermissions($id), true)) {
                         $items[] = $this->folderData($folder);
                         $found['folder:'.$id] = true;
                     }
                 } elseif (in_array($type, array_map('strtolower', $this->types('files')), true)) {
                     $file = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->first();
-                    if ($file && (int) $file->subido_por !== $uid && !isset($found['file:'.$id])
-                        && in_array('ver', $this->effectiveFilePermissions($file), true)
-                        && ! $this->hasSharedFolderInPath($file->carpeta_id === null
-                            ? null : (int) $file->carpeta_id)) {
+                    if ($file && (int) $file->subido_por !== $uid && !$this->isHidden('files', $id) && !isset($found['file:'.$id])
+                        && in_array('ver', $this->effectiveFilePermissions($file), true)) {
                         $items[] = $this->fileData($file);
                         $found['file:'.$id] = true;
                     }
@@ -275,65 +255,30 @@ class DrivePrzSharedController extends Controller
 
     public function move(Request $request, int $id)
     {
-        // null representa la raiz del propietario, no la del destinatario.
-        $data = $request->validate([
-            'destino_id' => ['present', 'nullable', 'integer', 'min:1'],
-        ]);
+        $data = $request->validate(['destino_id' => ['required', 'integer', 'min:1']]);
         $file = $this->accessibleFile($id, 'mover');
-        $destination = $data['destino_id'] === null ? null : (int) $data['destino_id'];
-
-        if ($destination === null) {
-            // La raiz no tiene una fila en documento_carpetas que pueda compartirse.
-            // Exigir permiso Mover DIRECTO sobre este archivo, concedido por su propietario.
-            abort_unless(in_array('mover', $this->directPermissions('files', (int) $file->id), true),
-                403, 'El propietario debe autorizar Mover directamente sobre este documento para enviarlo a su raiz.');
-        } else {
-            $dest = DB::table('documento_carpetas')->where('id', $destination)
-                ->where('creado_por', $file->subido_por)->whereNull('deleted_at')->first();
-            abort_unless($dest, 403, 'El destino debe pertenecer al propietario del documento.');
-            $this->assertFolderTreeValid($destination);
-            abort_unless(in_array('mover', $this->folderPermissions($destination), true),
-                403, 'No tienes permiso para mover documentos a esta carpeta.');
-        }
-
-        abort_if(($file->carpeta_id === null && $destination === null)
-            || ($file->carpeta_id !== null && (int) $file->carpeta_id === $destination),
-            422, 'El documento ya esta en esta ubicacion.');
-
+        $dest = DB::table('documento_carpetas')->where('id', $data['destino_id'])
+            ->where('creado_por', $file->subido_por)->whereNull('deleted_at')->first();
+        abort_unless($dest, 403, 'El destino debe pertenecer al propietario del documento.');
+        $this->assertFolderTreeValid((int) $dest->id);
+        // La carpeta de destino debe conceder al destinatario permiso de mover.
+        abort_unless(in_array('mover', $this->folderPermissions((int) $dest->id), true),
+            403, 'No tienes permiso para mover documentos a esta carpeta.');
+        abort_if((int) $file->carpeta_id === (int) $dest->id, 422,
+            'El documento ya está en esta carpeta.');
         DB::table('documentos')->where('id', $file->id)->whereNull('deleted_at')->update([
-            'carpeta_id' => $destination, 'updated_at' => now(),
+            'carpeta_id' => $dest->id, 'updated_at' => now(),
         ]);
         return response()->json(['ok' => true]);
     }
 
-    public function destinations(Request $request)
+    public function destinations()
     {
-        $data = $request->validate(['archivo_id' => ['nullable', 'integer', 'min:1']]);
-        $file = isset($data['archivo_id'])
-            ? $this->accessibleFile((int) $data['archivo_id'], 'mover')
-            : null;
-
-        $query = DB::table('documento_carpetas')->whereNull('deleted_at');
-        if ($file) {
-            $query->where('creado_por', $file->subido_por);
-            if ($file->carpeta_id !== null) {
-                $query->where('id', '<>', (int) $file->carpeta_id);
-            }
-        }
-        $folders = $query->orderBy('nombre')
-            ->get(['id', 'nombre', 'carpeta_padre_id', 'creado_por'])
+        $folders = DB::table('documento_carpetas')->whereNull('deleted_at')
+            ->orderBy('nombre')->get(['id', 'nombre', 'carpeta_padre_id', 'creado_por'])
             ->filter(fn ($folder) => in_array('mover', $this->folderPermissions((int) $folder->id), true))
             ->values();
-
-        // Sin propietario/archivo concreto, no ofrecer la raiz.
-        $rootAvailable = $file !== null
-            && $file->carpeta_id !== null
-            && in_array('mover', $this->directPermissions('files', (int) $file->id), true);
-
-        return response()->json([
-            'folders' => $folders,
-            'root_available' => $rootAvailable,
-        ]);
+        return response()->json(['folders' => $folders]);
     }
 
     public function copy(Request $request, int $id)

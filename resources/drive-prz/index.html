@@ -7749,6 +7749,7 @@
                     return false;
                 } finally { sharedRealBusy = false; }
             }
+            window.przSharedRefresh = () => sharedRealOpen(sharedRealFolder);
             // Desde una notificación, buscar únicamente en carpetas que el servidor
             // autoriza a consultar. Nunca abrir URLs ni IDs sin comprobar el listado.
             async function abrirCompartidoDesdeAviso(aviso) {
@@ -8302,7 +8303,7 @@
             })[c]);
             const renderMenu = (label, actions, event) => {
                 menu.innerHTML = `<div class="prz-context-title" title="${escapeHtml(label)}">${escapeHtml(label)}</div>` +
-                    actions.map(a => `<button type="button" class="prz-context-item" role="menuitem" data-prz-shared-action="${a.action}">${a.label}</button>`).join('');
+                    actions.map(a => `<button type="button" class="prz-context-item${a.danger ? ' danger' : ''}" role="menuitem" data-prz-shared-action="${a.action}">${a.label}</button>`).join('');
                 menu.style.left = '0px';
                 menu.style.top = '0px';
                 menu.hidden = false;
@@ -8355,8 +8356,10 @@
                         if (can('descargar')) actions.push({action: 'download', label: 'Descargar'});
                         if (can('renombrar')) actions.push({action: 'renombrar', label: 'Renombrar'});
                         if (can('mover')) actions.push({action: 'mover', label: 'Mover'});
-                        if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar'});
+                        if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar a Mis archivos'});
                     }
+                    if (item.direct_shared === true) actions.push({action: 'hide', label: 'Quitar de mis compartidos'});
+                    if (can('eliminar')) actions.push({action: 'trash', label: 'Mover a la papelera', danger: true});
                     if (!actions.length) return;
                     selected = {type, id, element: el, item, actions: actions.map(a => a.action)};
                     renderMenu(label, actions, pointer);
@@ -8381,6 +8384,25 @@
                         new URL(a.href, location.href).pathname ===
                         `/drive-prz-v5/shared/files/${id}/download`);
                     if (link) link.click();
+                } else if (['hide', 'trash'].includes(action)) {
+                    const msg = action === 'hide'
+                        ? `¿Quitar "${item.name}" de tus compartidos? El original no será eliminado.`
+                        : `¿Mover "${item.name}" a la papelera del propietario? El original dejará de estar disponible.`;
+                    if (!confirm(msg)) return;
+                    (async () => {
+                        try {
+                            const csrf = decodeURIComponent((document.cookie.split('; ').find(x => x.startsWith('XSRF-TOKEN=')) || '').slice('XSRF-TOKEN='.length));
+                            const response = await fetch(`/drive-prz-v5/shared/${type === 'file' ? 'files' : 'folders'}/${id}/${action}`, {
+                                method: 'POST', credentials: 'same-origin',
+                                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json',
+                                    'X-XSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) throw new Error(data.message || `Error HTTP ${response.status}`);
+                            await window.przSharedRefresh?.();
+                            alert(data.message || 'Operación realizada.');
+                        } catch (error) { alert(error.message); }
+                    })();
                 } else if (['renombrar', 'mover', 'copiar'].includes(action) && type === 'file') {
                     if (typeof window.przSharedExecuteAction === 'function') {
                         window.przSharedExecuteAction(item, action);

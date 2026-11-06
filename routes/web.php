@@ -33,6 +33,7 @@ use App\Http\Controllers\DrivePrzEnlaceController;
 use App\Http\Controllers\DrivePrzConfiguracionController;
 
 use App\Http\Controllers\DrivePrzRenameController;
+use App\Http\Controllers\DrivePrzSharedTrashController;
 
 Route::get('/admin/compras/formulario-contenido', function () {
 
@@ -573,6 +574,11 @@ Route::middleware(['auth'])
             '/shared/destinations',
             [DrivePrzSharedController::class, 'destinations']
         )->name('shared.destinations');
+
+        Route::post('/shared/{kind}/{id}/hide', [DrivePrzSharedTrashController::class, 'hide'])
+            ->where(['kind' => 'files|folders', 'id' => '[0-9]+']);
+        Route::post('/shared/{kind}/{id}/trash', [DrivePrzSharedTrashController::class, 'trash'])
+            ->where(['kind' => 'files|folders', 'id' => '[0-9]+']);
 
         // Mover carpetas o documentos
 
