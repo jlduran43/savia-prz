@@ -110,6 +110,7 @@
     } catch (error) { alert(error.message || 'No se pudo completar la operación.'); }
     finally { busy = false; }
   }
+  window.przSharedExecuteAction = execute;
   function showMenu(item, trigger) {
     closeMenu();
     const menu = document.createElement('div'); menu.className='prz-shared-menu';
@@ -160,7 +161,9 @@
     if(!sharedVisible()) return;
     try {
       // Misma lista que usa el frontend; para carpetas abiertas se conserva la detección por nombre.
-      const d = await request('/shared'); currentItems = d.items || []; schedule();
+      const folder = window.przSharedCurrentFolder;
+      const d = await request('/shared' + (folder == null ? '' : '?carpeta_id=' + encodeURIComponent(folder)));
+      currentItems = d.items || []; schedule();
     } catch (e) {console.warn('Drive PRZ compartidos: no fue posible cargar permisos',e);}
   }
   document.addEventListener('click',e=>{if(currentMenu && !currentMenu.contains(e.target) && !e.target.closest(`[${marker}]`))closeMenu();});
@@ -168,5 +171,5 @@
   document.addEventListener('click',e=>{if(e.target.closest('button,a,[role="tab"]'))setTimeout(refresh,350);},true);
   new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
   refresh();
-  setInterval(()=>{ if(sharedVisible() && !currentItems.length)refresh(); },4000);
+  setInterval(()=>{ if(sharedVisible())refresh(); },4000);
 })();

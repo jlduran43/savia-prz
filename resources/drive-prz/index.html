@@ -7713,7 +7713,7 @@
                 if (realLayout === 'grid') {
                     area.innerHTML = `<div class="griditems">${items.map(x => `<article class="tile" data-shared-item="${x.type}:${x.id}"><div class="tiletop">${icono(x)}</div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<span class="filemeta">${x.type === 'folder' ? 'Carpeta' : 'Archivo'} · Compartido por ${esc(x.owner || 'Otro usuario')}</span><div class="tilefoot">${oper(x)}</div></article>`).join('')}</div>`;
                 } else {
-                    area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr data-shared-item="${x.type}:${x.id}"><td></td><td><div class="namecell">${icono(x)}<div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner || 'Otro usuario')} · Solo ver</div></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size || 0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+                    area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr data-shared-item="${x.type}:${x.id}"><td></td><td><div class="namecell">${icono(x)}<div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner || 'Otro usuario')} · ${x.role === 'edit' ? 'Puede editar' : 'Solo ver'}</div></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size || 0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
                 }
             }
             async function sharedRealOpen(folderId = null) {
@@ -7739,6 +7739,7 @@
                     sharedRealFolder = folderId;
                     sharedRealTrail = data.trail || [];
                     sharedRealItems = data.items || [];
+                    window.przSharedCurrentFolder = folderId;
                     document.getElementById('currentPlace').textContent = sharedRealTrail.length ? sharedRealTrail.map(x => x.name).join(' / ') : 'Compartidos conmigo';
                     document.getElementById('breadcrumbs').innerHTML = `<button type="button" data-shared-root>Compartidos conmigo</button>` + sharedRealTrail.map(x => ` ${glyph('arrow')} <button type="button" data-shared-open="${x.id}">${esc(x.name)}</button>`).join('');
                     sharedRealRender();
@@ -8276,13 +8277,10 @@
             });
         })();
     </script>
-    <!-- Menú contextual de solo lectura para Compartidos conmigo (MySQL). -->
+    <!-- Menú contextual de Compartidos conmigo: permisos efectivos obtenidos desde Laravel. -->
     <script>
         (() => {
             'use strict';
-            const area = document.getElementById('filesArea');
-            if (!area) return;
-
             const menu = document.createElement('div');
             menu.id = 'przSharedContextMenu';
             menu.className = 'prz-context-menu';
@@ -8292,39 +8290,17 @@
             document.body.appendChild(menu);
 
             let selected = null;
+            let requestNumber = 0;
             const close = () => {
                 menu.hidden = true;
-                menu.innerHTML = '';
+                menu.replaceChildren();
                 selected = null;
+                requestNumber++;
             };
             const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             })[c]);
-
-            // Solo elementos compartidos reales. Nunca actúa sobre Mis archivos.
-            document.addEventListener('contextmenu', event => {
-                const el = event.target instanceof Element
-                    ? event.target.closest('#filesArea [data-shared-item]')
-                    : null;
-                if (!el || window.drivePrzLaravelActivo !== true) {
-                    close();
-                    return;
-                }
-                const key = el.getAttribute('data-shared-item') || '';
-                const match = /^(file|folder):(\d+)$/.exec(key);
-                if (!match) return;
-                event.preventDefault();
-                event.stopImmediatePropagation();
-
-                const [, type, rawId] = match;
-                const id = Number(rawId);
-                const label = el.querySelector('.filename')?.textContent?.trim() ||
-                    (type === 'folder' ? 'Carpeta compartida' : 'Archivo compartido');
-                selected = { type, id, element: el };
-
-                const actions = type === 'folder'
-                    ? [{ action: 'open', label: 'Abrir carpeta' }]
-                    : [{ action: 'view', label: 'Ver archivo' }, { action: 'download', label: 'Descargar' }];
+            const renderMenu = (label, actions, event) => {
                 menu.innerHTML = `<div class="prz-context-title" title="${escapeHtml(label)}">${escapeHtml(label)}</div>` +
                     actions.map(a => `<button type="button" class="prz-context-item" role="menuitem" data-prz-shared-action="${a.action}">${a.label}</button>`).join('');
                 menu.style.left = '0px';
@@ -8333,25 +8309,84 @@
                 const rect = menu.getBoundingClientRect();
                 menu.style.left = `${Math.max(8, Math.min(event.clientX, innerWidth - rect.width - 8))}px`;
                 menu.style.top = `${Math.max(8, Math.min(event.clientY, innerHeight - rect.height - 8))}px`;
+            };
+
+            document.addEventListener('contextmenu', async event => {
+                const el = event.target instanceof Element
+                    ? event.target.closest('#filesArea [data-shared-item]') : null;
+                if (!el || window.drivePrzLaravelActivo !== true) {
+                    close();
+                    return;
+                }
+                const match = /^(file|folder):(\d+)$/.exec(el.getAttribute('data-shared-item') || '');
+                if (!match) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                close();
+                const ticket = ++requestNumber;
+                const [, type, rawId] = match;
+                const id = Number(rawId);
+                const label = el.querySelector('.filename')?.textContent?.trim() ||
+                    (type === 'folder' ? 'Carpeta compartida' : 'Archivo compartido');
+                const pointer = {clientX: event.clientX, clientY: event.clientY};
+                try {
+                    const url = new URL('/drive-prz-v5/shared', location.origin);
+                    if (window.przSharedCurrentFolder != null) {
+                        url.searchParams.set('carpeta_id', String(window.przSharedCurrentFolder));
+                    }
+                    const response = await fetch(url, {
+                        credentials: 'same-origin', cache: 'no-store',
+                        headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    if (ticket !== requestNumber || !el.isConnected) return;
+                    const item = (data.items || []).find(x =>
+                        x.type === type && Number(x.id) === id);
+                    if (!item) return; // Compartido revocado o elemento ya no accesible.
+                    const permissions = Array.isArray(item.permissions) ? item.permissions :
+                        (Array.isArray(item.permisos) ? item.permisos : []);
+                    const can = action => permissions.includes(action);
+                    const actions = [];
+                    if (type === 'folder') {
+                        if (can('ver')) actions.push({action: 'open', label: 'Abrir carpeta'});
+                    } else {
+                        if (can('ver')) actions.push({action: 'view', label: 'Ver archivo'});
+                        if (can('descargar')) actions.push({action: 'download', label: 'Descargar'});
+                        if (can('renombrar')) actions.push({action: 'renombrar', label: 'Renombrar'});
+                        if (can('mover')) actions.push({action: 'mover', label: 'Mover'});
+                        if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar a Mis archivos'});
+                    }
+                    if (!actions.length) return;
+                    selected = {type, id, element: el, item, actions: actions.map(a => a.action)};
+                    renderMenu(label, actions, pointer);
+                } catch (error) {
+                    console.warn('Drive PRZ: no se pudo consultar el permiso actualizado.', error);
+                }
             }, true);
 
             menu.addEventListener('click', event => {
                 const button = event.target.closest('[data-prz-shared-action]');
                 if (!button || !selected) return;
-                const { type, id, element } = selected;
+                const {type, id, element, item, actions} = selected;
                 const action = button.dataset.przSharedAction;
+                if (!actions.includes(action)) return;
                 close();
                 if (action === 'open' && type === 'folder') {
                     element.querySelector(`[data-shared-open="${id}"]`)?.click();
                 } else if (action === 'view' && type === 'file') {
                     element.querySelector(`[data-shared-view="${id}"]`)?.click();
                 } else if (action === 'download' && type === 'file') {
-                    // Usa exactamente el enlace autorizado ya dibujado en la fila.
                     const link = [...element.querySelectorAll('a[href]')].find(a =>
                         new URL(a.href, location.href).pathname ===
-                        `/drive-prz-v5/shared/files/${id}/download`
-                    );
+                        `/drive-prz-v5/shared/files/${id}/download`);
                     if (link) link.click();
+                } else if (['renombrar', 'mover', 'copiar'].includes(action) && type === 'file') {
+                    if (typeof window.przSharedExecuteAction === 'function') {
+                        window.przSharedExecuteAction(item, action);
+                    } else {
+                        alert('No se cargaron las acciones de edición. Actualiza la página.');
+                    }
                 }
             });
             document.addEventListener('pointerdown', event => {
