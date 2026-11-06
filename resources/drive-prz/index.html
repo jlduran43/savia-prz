@@ -3706,6 +3706,51 @@
             width: 23px;
             height: 23px;
         }
+        /* Menú contextual propio de Drive PRZ; no afecta los visores protegidos. */
+        .prz-context-menu {
+            position: fixed;
+            z-index: 110;
+            width: min(270px, calc(100vw - 16px));
+            max-height: calc(100vh - 16px);
+            overflow-y: auto;
+            padding: 6px;
+            border: 1px solid #dce5ee;
+            border-radius: 11px;
+            background: #fff;
+            box-shadow: 0 14px 36px rgba(19, 40, 64, .2);
+        }
+        .prz-context-menu[hidden] { display: none !important; }
+        .prz-context-title {
+            padding: 9px 11px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #e9edf2;
+            font-size: 12px;
+            font-weight: 750;
+            color: #263b52;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .prz-context-item {
+            display: block;
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #3a5670;
+            padding: 10px 11px;
+            text-align: left;
+            font-size: 12.5px;
+            font-weight: 600;
+            border-radius: 7px;
+        }
+        .prz-context-item:hover:not(:disabled), .prz-context-item:focus-visible {
+            background: #eaf3ff;
+            color: #115aa3;
+            outline: none;
+        }
+        .prz-context-item.danger { color: #b13d48; }
+        .prz-context-item.danger:hover { background: #fff0f0; color: #a52a37; }
+        .prz-context-item:disabled { opacity: .42; cursor: not-allowed; }
     </style>
 
     <style>
@@ -4920,7 +4965,6 @@
               <div class="tilefoot">${acciones}
                 <button type="button" class="action move-action" data-real-move="${x.id}" data-move-kind="${carpeta ? 'folders' : 'files'}" data-move-name="${esc(x.name)}">Mover</button>
                 <button type="button" class="action" data-real-share="${x.id}" data-share-kind="${carpeta ? 'folders' : 'files'}" data-share-name="${esc(x.name)}">Compartir</button>
-                <button type="button" class="dots" title="Opciones" aria-label="Opciones de ${esc(x.name)}" data-real-options="${x.id}" data-real-kind="${carpeta ? 'folders' : 'files'}" data-real-name="${esc(x.name)}">${glyph('dots')}</button>
               </div></article>`;
                     }).join('')}</div>`;
                     updateRealSelection();
@@ -5027,9 +5071,6 @@
             data-real-share="${x.id}"
             data-share-kind="${carpeta ? 'folders' : 'files'}"
             data-share-name="${esc(x.name)}">Compartir</button>
-        <button type="button" class="dots" title="Opciones" aria-label="Opciones de ${esc(x.name)}"
-            data-real-options="${x.id}" data-real-kind="${carpeta ? 'folders' : 'files'}"
-            data-real-name="${esc(x.name)}">${glyph('dots')}</button>
     </div>
 </td>
                                 </tr>
@@ -5321,6 +5362,113 @@
                     } catch (ex) { error.textContent = ex.message; btn.disabled = false; btn.textContent = 'Mover a papelera'; await mostrarArchivosReales(carpetaRealActual).catch(() => { }); }
                 });
             }
+            // Menú contextual de archivos y carpetas reales (Laravel).
+            // Reutiliza las acciones ya existentes; no altera endpoints ni permisos backend.
+            (() => {
+                const area = document.getElementById('filesArea');
+                const menu = document.createElement('div');
+                menu.id = 'przContextMenu';
+                menu.className = 'prz-context-menu';
+                menu.setAttribute('role', 'menu');
+                menu.setAttribute('aria-label', 'Opciones del elemento');
+                menu.hidden = true;
+                document.body.appendChild(menu);
+
+                let current = null;
+                let pressTimer = null;
+                let pressPoint = null;
+                const hide = () => {
+                    menu.hidden = true;
+                    current = null;
+                    menu.innerHTML = '';
+                };
+                const identify = target => {
+                    if (!(target instanceof Element)) return null;
+                    const node = target.closest('#filesArea [data-real-drag]');
+                    if (!node) return null;
+                    const key = node.dataset.realDrag;
+                    return realVisible.find(item => realKey(item) === key) || null;
+                };
+                const show = (item, x, y) => {
+                    hide();
+                    current = item;
+                    const folder = item.type === 'folder';
+                    const available = [
+                        { id: 'open', label: folder ? 'Abrir carpeta' : 'Ver archivo' },
+                        ...(!folder ? [{ id: 'download', label: 'Descargar' }] : []),
+                        { id: 'share', label: 'Administrar permisos' },
+                        ...(folder ? [{ id: 'color', label: 'Cambiar color' }] : []),
+                        { id: 'rename', label: 'Cambiar nombre', disabled: true },
+                        { id: 'move', label: 'Mover a otra carpeta' },
+                        { id: 'trash', label: 'Mover a papelera', destructive: true },
+                        { id: 'star', label: '☆ Destacar', disabled: true }
+                    ];
+                    menu.innerHTML = `<div class="prz-context-title" title="${esc(item.name)}">${esc(item.name)}</div>` +
+                        available.map(a => `<button type="button" role="menuitem" data-prz-context-action="${a.id}" ${a.disabled ? 'disabled title="Disponible próximamente"' : ''} class="prz-context-item${a.destructive ? ' danger' : ''}">${a.label}</button>`).join('');
+                    menu.hidden = false;
+                    // El menú siempre queda dentro de la zona visible de la pantalla.
+                    menu.style.left = '0px';
+                    menu.style.top = '0px';
+                    const bounds = menu.getBoundingClientRect();
+                    menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
+                    menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`;
+                    menu.querySelector('[data-prz-context-action]')?.focus({ preventScroll: true });
+                };
+                area.addEventListener('contextmenu', e => {
+                    if (window.drivePrzLaravelActivo !== true) return;
+                    const item = identify(e.target);
+                    if (!item) { hide(); return; }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    show(item, e.clientX, e.clientY);
+                });
+                menu.addEventListener('click', e => {
+                    const button = e.target.closest('[data-prz-context-action]');
+                    if (!button || button.disabled || !current) return;
+                    const { id, name } = current;
+                    const folder = current.type === 'folder';
+                    const type = folder ? 'folders' : 'files';
+                    const action = button.dataset.przContextAction;
+                    const bytes = current.size || 0;
+                    hide();
+                    if (action === 'open') {
+                        if (folder) mostrarArchivosReales(Number(id));
+                        else verArchivoLaravel(Number(id), name, Number(bytes));
+                    } else if (action === 'download' && !folder) {
+                        const a = document.createElement('a');
+                        a.href = `/drive-prz-v5/files/${encodeURIComponent(id)}/download`;
+                        a.download = name;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    } else if (action === 'share') abrirCompartirLaravel(Number(id), type, name);
+                    else if (action === 'color' && folder) cambiarColorCarpetaLaravel(Number(id), name);
+                    else if (action === 'move') abrirMoverLaravel(Number(id), type, name);
+                    else if (action === 'trash') confirmarPapeleraLaravel([{ id: Number(id), type: folder ? 'folder' : 'file', name }]);
+                });
+                document.addEventListener('pointerdown', e => {
+                    if (!menu.hidden && !menu.contains(e.target)) hide();
+                    if (e.pointerType !== 'touch' || !area.contains(e.target)) return;
+                    const item = identify(e.target);
+                    if (!item) return;
+                    pressPoint = { x: e.clientX, y: e.clientY };
+                    clearTimeout(pressTimer);
+                    pressTimer = setTimeout(() => { pressTimer = null; show(item, pressPoint.x, pressPoint.y); }, 600);
+                }, true);
+                document.addEventListener('pointermove', e => {
+                    if (pressTimer && pressPoint && Math.hypot(e.clientX - pressPoint.x, e.clientY - pressPoint.y) > 12) {
+                        clearTimeout(pressTimer); pressTimer = null;
+                    }
+                }, true);
+                ['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => {
+                    clearTimeout(pressTimer); pressTimer = null;
+                }, true));
+                document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+                window.addEventListener('scroll', hide, true);
+                window.addEventListener('resize', hide);
+                area.addEventListener('click', hide);
+            })();
+
             document.getElementById('filesArea').addEventListener('click', e => {
                 const btn = e.target.closest('[data-real-options]'); if (!btn) return;
                 e.preventDefault(); e.stopImmediatePropagation();
