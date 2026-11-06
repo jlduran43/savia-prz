@@ -5309,6 +5309,56 @@
                 abrirMoverLaravel(Number(btn.dataset.realMove), btn.dataset.moveKind, btn.dataset.moveName);
             }, true);
 
+            // RENOMBRAR ELEMENTOS REALES: persistencia mediante Laravel y MySQL.
+            function abrirRenombrarLaravel(id, tipo, nombre) {
+                const esCarpeta = tipo === 'folders';
+                const punto = nombre.lastIndexOf('.');
+                const extension = !esCarpeta && punto > 0 ? nombre.slice(punto) : '';
+                const base = extension ? nombre.slice(0, -extension.length) : nombre;
+                modal('Cambiar nombre', `
+                    <p class="hint">${esCarpeta ? 'Carpeta' : 'Archivo'}: <strong>${esc(nombre)}</strong></p>
+                    <label class="field" for="przRenameInput">Nuevo nombre${extension ? ' (sin la extensión)' : ''}</label>
+                    <input id="przRenameInput" class="textinput" maxlength="180" autocomplete="off" value="${esc(base)}">
+                    ${extension ? `<p class="hint">Se conservará la extensión <strong>${esc(extension)}</strong>.</p>` : ''}
+                    <p id="przRenameError" class="hint" style="color:#b42318" role="alert"></p>`,
+                    '<button type="button" class="btn primary" id="przRenameConfirm">Guardar nombre</button>');
+                const input = document.getElementById('przRenameInput');
+                const boton = document.getElementById('przRenameConfirm');
+                const error = document.getElementById('przRenameError');
+                input.focus(); input.select();
+                const guardar = async () => {
+                    const valor = input.value.trim();
+                    const nuevoNombre = valor + extension;
+                    if (!valor || valor === '.' || valor === '..' || /[\\/\x00-\x1f]/.test(valor) || valor.endsWith('.') || valor.endsWith(' ')) {
+                        error.textContent = 'Escribe un nombre válido, sin barras ni caracteres de control.';
+                        return;
+                    }
+                    if (nuevoNombre.length > 180) { error.textContent = 'El nombre es demasiado largo.'; return; }
+                    if (nuevoNombre === nombre) { close(); return; }
+                    boton.disabled = true; boton.textContent = 'Guardando...'; error.textContent = '';
+                    try {
+                        const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+                        if (!cookie) throw new Error('Sesión no disponible. Recarga la página.');
+                        const response = await fetch(`${API}/${tipo}/${encodeURIComponent(id)}/rename`, {
+                            method: 'PATCH', credentials: 'same-origin',
+                            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json',
+                                'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) },
+                            body: JSON.stringify({ nombre: nuevoNombre })
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || `Error HTTP ${response.status}`));
+                        close();
+                        await mostrarArchivosReales(carpetaRealActual);
+                        toast('Nombre actualizado correctamente.');
+                    } catch (ex) {
+                        error.textContent = ex.message;
+                        boton.disabled = false; boton.textContent = 'Guardar nombre';
+                    }
+                };
+                boton.addEventListener('click', guardar);
+                input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); guardar(); } });
+            }
+
             // PAPELERA REAL: no utiliza IndexedDB ni los elementos de demostración.
             function opcionesElementoLaravel(id, tipo, nombre) {
                 const carpeta = tipo === 'folders';
@@ -5318,7 +5368,7 @@
              ${carpeta ? `<button type="button" class="btn" data-option-real-open="${id}">Abrir carpeta</button>` : `<button type="button" class="btn" data-option-real-preview="${id}">Ver archivo</button>`}
              <button type="button" class="btn" data-option-real-share="${id}">Administrar permisos</button>
              ${carpeta ? `<button type="button" class="btn" data-option-real-color="${id}">Cambiar color</button>` : ''}
-             <button type="button" class="btn" data-option-real-rename="${id}" disabled title="Disponible próximamente">Cambiar nombre</button>
+             <button type="button" class="btn" data-option-real-rename="${id}">Cambiar nombre</button>
              <button type="button" class="btn" data-option-real-move="${id}">Mover a otra carpeta</button>
              <button type="button" class="btn" data-option-real-trash="${id}">Mover a papelera</button>
              <button type="button" class="btn" disabled title="Disponible próximamente">☆ Destacar</button>
@@ -5331,6 +5381,7 @@
                 on('[data-option-real-share]', () => abrirCompartirLaravel(id, tipo, nombre));
                 on('[data-option-real-color]', () => cambiarColorCarpetaLaravel(id, nombre));
                 on('[data-option-real-move]', () => abrirMoverLaravel(id, tipo, nombre));
+                on('[data-option-real-rename]', () => abrirRenombrarLaravel(id, tipo, nombre));
                 on('[data-option-real-preview]', () => { close(); verArchivoLaravel(id, nombre, realVisible.find(x => x.id === id && x.type === 'file')?.size || 0) });
             }
 
@@ -5398,7 +5449,7 @@
                         ...(!folder ? [{ id: 'download', label: 'Descargar' }] : []),
                         { id: 'share', label: 'Administrar permisos' },
                         ...(folder ? [{ id: 'color', label: 'Cambiar color' }] : []),
-                        { id: 'rename', label: 'Cambiar nombre', disabled: true },
+                        { id: 'rename', label: 'Cambiar nombre' },
                         { id: 'move', label: 'Mover a otra carpeta' },
                         { id: 'trash', label: 'Mover a papelera', destructive: true },
                         { id: 'star', label: '☆ Destacar', disabled: true }
@@ -5443,6 +5494,7 @@
                         a.remove();
                     } else if (action === 'share') abrirCompartirLaravel(Number(id), type, name);
                     else if (action === 'color' && folder) cambiarColorCarpetaLaravel(Number(id), name);
+                    else if (action === 'rename') abrirRenombrarLaravel(Number(id), type, name);
                     else if (action === 'move') abrirMoverLaravel(Number(id), type, name);
                     else if (action === 'trash') confirmarPapeleraLaravel([{ id: Number(id), type: folder ? 'folder' : 'file', name }]);
                 });

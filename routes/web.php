@@ -32,6 +32,8 @@ use App\Http\Controllers\DrivePrzEnlaceController;
 
 use App\Http\Controllers\DrivePrzConfiguracionController;
 
+use App\Http\Controllers\DrivePrzRenameController;
+
 Route::get('/admin/compras/formulario-contenido', function () {
 
     return view(
@@ -665,6 +667,11 @@ Route::middleware(['auth'])
 
                     ->name('leer');
             });
+
+        Route::patch('drive-prz-v5/{tipo}/{id}/rename', [DrivePrzRenameController::class, 'rename'])
+            ->whereIn('tipo', ['files', 'folders'])
+            ->whereNumber('id')
+            ->name('drive-prz-v5.rename');
     });
 
 Route::middleware(['auth'])
