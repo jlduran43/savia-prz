@@ -570,6 +570,7 @@ class DrivePrzSharingController extends Controller
         ]);
     }
 
+
     public function update(
         Request $request,
         string $kind,
@@ -582,28 +583,69 @@ class DrivePrzSharingController extends Controller
 
         $permisos = $this->validarPermisos($request);
 
-        $existing = $this->obtenerRegistro(
-            $kind,
-            $id,
-            $userId
-        );
-
-        abort_unless(
-            $existing !== null,
-            404,
-            'El usuario no tiene un permiso directo.'
-        );
-
-        $this->guardarPermiso(
+        $notificacionCreada = DB::transaction(function () use (
             $kind,
             $id,
             $userId,
+            $item,
             $permisos
-        );
+        ): bool {
+            $existing = DB::table(self::TABLE)
+                ->where('tipo', $kind)
+                ->where('elemento_id', $id)
+                ->where('usuario_id', $userId)
+                ->lockForUpdate()
+                ->first();
+
+            abort_unless(
+                $existing !== null,
+                404,
+                'El usuario no tiene un permiso directo.'
+            );
+
+            $anteriores = $this->permisosDeRegistro($existing);
+
+            // No guardar ni notificar si no hubo cambios.
+            if (
+                empty(array_diff($anteriores, $permisos)) &&
+                empty(array_diff($permisos, $anteriores))
+            ) {
+                return false;
+            }
+
+            $this->guardarPermiso(
+                $kind,
+                $id,
+                $userId,
+                $permisos
+            );
+
+            $nombre = $kind === 'files'
+                ? (string) ($item->nombre_original ?: $item->nombre ?: 'Documento')
+                : (string) ($item->nombre ?: 'Carpeta');
+
+
+            $descripcionPermiso = $this->rolCompatible($permisos)
+                === 'edit'
+                ? 'Puede editar'
+                : 'Solo ver';
+
+            DrivePrzAvisos::permisosActualizados(
+                $userId,
+                (int) $this->actor()->id,
+                $kind,
+                $id,
+                $nombre,
+                $descripcionPermiso
+            );
+
+            return true;
+        });
 
         return response()->json([
             'ok' => true,
             'permisos' => $permisos,
+            'notificacion_creada' => $notificacionCreada,
         ]);
     }
 
