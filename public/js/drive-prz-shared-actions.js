@@ -22,6 +22,43 @@
     .prz-shared-dialog-actions button{border:1px solid #d7e0e8;padding:9px 14px;border-radius:8px;cursor:pointer;background:white}
     .prz-shared-dialog-actions button.prz-primary{background:#176b45;color:#fff;border-color:#176b45}
     .prz-shared-dialog-actions button:disabled{opacity:.55;cursor:wait}
+    /* Ventana Mover - mismo lenguaje visual del modal principal de Drive PRZ */
+    .prz-move-overlay{position:fixed;inset:0;background:rgba(76,96,122,.34);backdrop-filter:blur(2px);z-index:100010;display:flex;align-items:center;justify-content:center;padding:24px}
+    .prz-move-modal{width:min(820px,100%);max-height:min(760px,calc(100vh - 48px));overflow:hidden;display:flex;flex-direction:column;background:#ffffff;border:1px solid #e5ebf3;border-radius:22px;box-shadow:0 24px 60px rgba(45,67,92,.18);font-family:inherit;color:#334e68}
+    .prz-move-head{display:flex;align-items:center;justify-content:space-between;padding:24px 28px 18px;border-bottom:1px solid #e8eef5}
+    .prz-move-symbol{display:none}
+    .prz-move-heading{min-width:0;flex:1}
+    .prz-move-heading h3{font-size:20px;font-weight:800;margin:0;color:#23384d;line-height:1.35}
+    .prz-move-heading p{display:none}
+    .prz-move-x{width:42px;height:42px;flex:none;border:0;border-radius:12px;background:#f3f6fa;font-size:24px;line-height:1;color:#7d8fa4;cursor:pointer;display:grid;place-items:center}
+    .prz-move-x:hover{background:#eaf0f6;color:#4c637a}
+    .prz-move-content{padding:20px 28px 24px;overflow:auto}
+    .prz-move-file{border:1px solid #d7e3f1;background:#f4f8fc;border-radius:12px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;min-width:0}
+    .prz-move-file svg{width:20px;height:20px;color:#5f7895;flex:none;margin-top:1px}
+    .prz-move-file-meta{min-width:0;flex:1}
+    .prz-move-file-name{display:block;font-weight:700;color:#4f6780;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;margin-bottom:3px}
+    .prz-move-file-caption{display:block;font-size:13px;line-height:1.45;color:#59728e}
+    .prz-move-label{font-size:14px;font-weight:700;color:#425b76;margin:0 0 12px}
+    .prz-move-options{display:grid;gap:10px;max-height:320px;overflow:auto;padding:1px}
+    .prz-move-option{width:100%;border:1px solid #d8e3ef;border-radius:12px;background:#fff;padding:14px 15px;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font:inherit;color:#324b65;transition:background .15s,border-color .15s, box-shadow .15s}
+    .prz-move-option:hover{background:#f8fbfe;border-color:#b9d0e8}
+    .prz-move-option[aria-checked="true"]{border-color:#a7c4e3;background:#f5f9fd;box-shadow:0 0 0 1px #c6dbef inset}
+    .prz-move-option-icon{width:38px;height:38px;border-radius:10px;background:#f9edcb;color:#d39e2e;display:grid;place-items:center;flex:none}
+    .prz-move-option[data-root="true"] .prz-move-option-icon{background:#e9f1fa;color:#6b89aa}
+    .prz-move-option-icon svg{width:21px;height:21px}
+    .prz-move-option-text{flex:1;min-width:0}
+    .prz-move-option-title{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#2d465f}
+    .prz-move-option-caption{display:block;font-size:12px;color:#7b8fa3;margin-top:3px}
+    .prz-move-radio{width:20px;height:20px;border:2px solid #c5d4e3;border-radius:50%;flex:none;display:grid;place-items:center;background:#fff}
+    .prz-move-option[aria-checked="true"] .prz-move-radio{border-color:#94b7da}
+    .prz-move-option[aria-checked="true"] .prz-move-radio::after{content:"";width:10px;height:10px;border-radius:50%;background:#9abfe4}
+    .prz-move-footer{border-top:1px solid #e8eef5;padding:20px 28px;display:flex;justify-content:flex-end;gap:12px;background:#fbfdff}
+    .prz-move-footer button{font:inherit;font-size:14px;font-weight:700;padding:12px 22px;border-radius:12px;cursor:pointer;border:1px solid #d8e2ec;background:#fff;color:#45617d}
+    .prz-move-footer button:hover{background:#f3f7fb}
+    .prz-move-footer button.prz-move-submit{background:#8fb6e0;border-color:#8fb6e0;color:#fff;box-shadow:none}
+    .prz-move-footer button.prz-move-submit:hover{background:#82addb;border-color:#82addb}
+    .prz-move-option:focus-visible,.prz-move-footer button:focus-visible,.prz-move-x:focus-visible{outline:3px solid #c5daf0;outline-offset:2px}
+    @media(max-width:720px){.prz-move-modal{width:min(96vw,100%)}.prz-move-head{padding:20px 18px 15px}.prz-move-content{padding:18px}.prz-move-footer{padding:16px 18px}.prz-move-heading h3{font-size:18px}}
   `;
   document.head.appendChild(styles);
 
@@ -77,6 +114,63 @@
       control.focus();
     });
   }
+  // Diálogo exclusivo para mover: conserva los valores y las comprobaciones del backend.
+  function moveDialog(item, options) {
+    return new Promise(resolve => {
+      const iconFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/></svg>';
+      const iconHome = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>';
+      const iconFile = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v6h5M9 14h6M9 18h6"/></svg>';
+      const overlay = document.createElement('div'); overlay.className = 'prz-move-overlay';
+      const modal = document.createElement('section'); modal.className = 'prz-move-modal';
+      modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+      const headingId = 'prz-move-title'; modal.setAttribute('aria-labelledby',headingId);
+      const head = document.createElement('div'); head.className = 'prz-move-head';
+      const symbol = document.createElement('span'); symbol.className = 'prz-move-symbol'; symbol.innerHTML = iconFolder;
+      const headerText = document.createElement('div'); headerText.className = 'prz-move-heading';
+      const title = document.createElement('h3'); title.id=headingId; title.textContent = 'Mover archivo';
+      const sub = document.createElement('p'); sub.textContent='';
+      headerText.append(title,sub);
+      const close = document.createElement('button');close.type='button';close.className='prz-move-x';close.textContent='×';close.setAttribute('aria-label','Cerrar');
+      head.append(symbol,headerText,close);
+      const content = document.createElement('div'); content.className='prz-move-content';
+      const file = document.createElement('div');file.className='prz-move-file';
+      const ficon=document.createElement('span');ficon.innerHTML=iconFile;
+      const fmeta=document.createElement('div');fmeta.className='prz-move-file-meta';
+      const fname=document.createElement('span');fname.className='prz-move-file-name';fname.textContent=item.name || 'Archivo compartido';fname.title=item.name || '';
+      const fcaption=document.createElement('span');fcaption.className='prz-move-file-caption';fcaption.textContent='El archivo seguirá perteneciendo al propietario. Selecciona un destino autorizado para cambiar su ubicación.';
+      fmeta.append(fname,fcaption);
+      file.append(ficon,fmeta);
+      const label=document.createElement('p');label.className='prz-move-label';label.textContent='Selecciona la carpeta de destino';
+      const choices=document.createElement('div');choices.className='prz-move-options';choices.setAttribute('role','radiogroup');choices.setAttribute('aria-label','Destino del archivo');
+      let selected=String(options[0].value);
+      const buttons=[];
+      const update=()=>buttons.forEach(b=>{const active=b.dataset.value===selected;b.setAttribute('aria-checked',String(active));b.tabIndex=active?0:-1;});
+      options.forEach((opt,index)=>{
+        const root=String(opt.value)==='root';
+        const b=document.createElement('button');b.type='button';b.className='prz-move-option';b.dataset.value=String(opt.value);b.dataset.root=String(root);b.setAttribute('role','radio');
+        const bi=document.createElement('span');bi.className='prz-move-option-icon';bi.innerHTML=root?iconHome:iconFolder;
+        const bt=document.createElement('span');bt.className='prz-move-option-text';
+        const name=document.createElement('span');name.className='prz-move-option-title';name.textContent=root?'Raíz del propietario':String(opt.label).replace(/ \(carpeta del propietario\)$/,'');
+        const detail=document.createElement('span');detail.className='prz-move-option-caption';detail.textContent=root?'Fuera de las carpetas':'Carpeta compartida autorizada';
+        bt.append(name,detail);
+        const radio=document.createElement('span');radio.className='prz-move-radio';radio.setAttribute('aria-hidden','true');
+        b.append(bi,bt,radio);b.onclick=()=>{selected=b.dataset.value;update();};
+        b.onkeydown=e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const next=(buttons.indexOf(b)+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;selected=buttons[next].dataset.value;update();buttons[next].focus();}};
+        buttons.push(b);choices.append(b);
+      });
+      update();content.append(file,label,choices);
+      const footer=document.createElement('div');footer.className='prz-move-footer';
+      const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cerrar';
+      const submit=document.createElement('button');submit.type='button';submit.className='prz-move-submit';submit.textContent='Mover archivo';
+      footer.append(cancel,submit);modal.append(head,content,footer);overlay.append(modal);
+      const previousFocus=document.activeElement;
+      function done(value){document.removeEventListener('keydown',onKey,true);overlay.remove();if(previousFocus?.isConnected)previousFocus.focus();resolve(value);}
+      function onKey(e){if(e.key==='Escape'){e.preventDefault();done(null);}if(e.key==='Tab'){const focusable=[close,...buttons,cancel,submit];const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}
+      close.onclick=cancel.onclick=()=>done(null);submit.onclick=()=>done(selected);
+      overlay.onclick=e=>{if(e.target===overlay)done(null);};
+      document.body.append(overlay);document.addEventListener('keydown',onKey,true);buttons[0].focus();
+    });
+  }
   async function execute(item, action) {
     if (busy || !can(item, action)) return;
     try {
@@ -98,7 +192,7 @@
           options.push({value:String(f.id),label:f.nombre + ' (carpeta del propietario)'});
         }
         if (!options.length) return alert('No hay otros destinos autorizados para este archivo. Pide al propietario que comparta otra carpeta con permiso Mover o que autorice Mover directamente sobre el archivo para devolverlo a su raíz.');
-        const id = await dialog({title:'Mover documento',description:'El archivo seguirá perteneciendo al propietario. Selecciona un destino autorizado.',options,submitText:'Mover'});
+        const id = await moveDialog(item, options);
         if (id === null) return;
         url = `/shared/files/${item.id}/move`; body = {destino_id:id === 'root' ? null : Number(id)};
       } else if (action === 'copiar') {
