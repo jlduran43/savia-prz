@@ -8355,7 +8355,7 @@
                         if (can('descargar')) actions.push({action: 'download', label: 'Descargar'});
                         if (can('renombrar')) actions.push({action: 'renombrar', label: 'Renombrar'});
                         if (can('mover')) actions.push({action: 'mover', label: 'Mover'});
-                        if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar a Mis archivos'});
+                        if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar'});
                     }
                     if (!actions.length) return;
                     selected = {type, id, element: el, item, actions: actions.map(a => a.action)};
