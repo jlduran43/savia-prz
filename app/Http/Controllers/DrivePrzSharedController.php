@@ -275,28 +275,39 @@ class DrivePrzSharedController extends Controller
 
     public function move(Request $request, int $id)
     {
-        $data = $request->validate(['destino_id' => ['required', 'integer', 'min:1']]);
+        // null representa la raiz del propietario, no la del destinatario.
+        $data = $request->validate([
+            'destino_id' => ['present', 'nullable', 'integer', 'min:1'],
+        ]);
         $file = $this->accessibleFile($id, 'mover');
-        $dest = DB::table('documento_carpetas')->where('id', $data['destino_id'])
-            ->where('creado_por', $file->subido_por)->whereNull('deleted_at')->first();
-        abort_unless($dest, 403, 'El destino debe pertenecer al propietario del documento.');
-        $this->assertFolderTreeValid((int) $dest->id);
-        // La carpeta de destino debe conceder al destinatario permiso de mover.
-        abort_unless(in_array('mover', $this->folderPermissions((int) $dest->id), true),
-            403, 'No tienes permiso para mover documentos a esta carpeta.');
-        abort_if((int) $file->carpeta_id === (int) $dest->id, 422,
-            'El documento ya está en esta carpeta.');
+        $destination = $data['destino_id'] === null ? null : (int) $data['destino_id'];
+
+        if ($destination === null) {
+            // La raiz no tiene una fila en documento_carpetas que pueda compartirse.
+            // Exigir permiso Mover DIRECTO sobre este archivo, concedido por su propietario.
+            abort_unless(in_array('mover', $this->directPermissions('files', (int) $file->id), true),
+                403, 'El propietario debe autorizar Mover directamente sobre este documento para enviarlo a su raiz.');
+        } else {
+            $dest = DB::table('documento_carpetas')->where('id', $destination)
+                ->where('creado_por', $file->subido_por)->whereNull('deleted_at')->first();
+            abort_unless($dest, 403, 'El destino debe pertenecer al propietario del documento.');
+            $this->assertFolderTreeValid($destination);
+            abort_unless(in_array('mover', $this->folderPermissions($destination), true),
+                403, 'No tienes permiso para mover documentos a esta carpeta.');
+        }
+
+        abort_if(($file->carpeta_id === null && $destination === null)
+            || ($file->carpeta_id !== null && (int) $file->carpeta_id === $destination),
+            422, 'El documento ya esta en esta ubicacion.');
+
         DB::table('documentos')->where('id', $file->id)->whereNull('deleted_at')->update([
-            'carpeta_id' => $dest->id, 'updated_at' => now(),
+            'carpeta_id' => $destination, 'updated_at' => now(),
         ]);
         return response()->json(['ok' => true]);
     }
 
     public function destinations(Request $request)
     {
-        // `archivo_id` es opcional para conservar compatibilidad con el JS actual.
-        // Cuando se envía, la lista queda restringida al propietario del documento
-        // y excluye la carpeta donde ya está ubicado.
         $data = $request->validate(['archivo_id' => ['nullable', 'integer', 'min:1']]);
         $file = isset($data['archivo_id'])
             ? $this->accessibleFile((int) $data['archivo_id'], 'mover')
@@ -314,7 +325,15 @@ class DrivePrzSharedController extends Controller
             ->filter(fn ($folder) => in_array('mover', $this->folderPermissions((int) $folder->id), true))
             ->values();
 
-        return response()->json(['folders' => $folders]);
+        // Sin propietario/archivo concreto, no ofrecer la raiz.
+        $rootAvailable = $file !== null
+            && $file->carpeta_id !== null
+            && in_array('mover', $this->directPermissions('files', (int) $file->id), true);
+
+        return response()->json([
+            'folders' => $folders,
+            'root_available' => $rootAvailable,
+        ]);
     }
 
     public function copy(Request $request, int $id)

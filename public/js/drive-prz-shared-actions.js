@@ -86,13 +86,21 @@
         if (name === null || name === item.name) return;
         method = 'PATCH'; url = `/shared/files/${item.id}`; body = {nombre:name};
       } else if (action === 'mover') {
-        const data = await request('/shared/destinations');
-        const options = (data.folders || []).filter(f => Number(f.id) !== Number(item.parent)).filter(f => Number(f.creado_por) === Number(item.owner_id))
-          .map(f => ({value:f.id,label:f.nombre + ' (carpeta del propietario)'}));
-        if (!options.length) return alert('No hay carpetas de destino autorizadas. El propietario debe compartir una carpeta con permiso Mover.');
-        const id = await dialog({title:'Mover documento',description:'Solo puedes moverlo a carpetas autorizadas del propietario.',options,submitText:'Mover'});
+        // Consultar destinos del archivo concreto: Laravel verifica propietario y permisos.
+        const data = await request('/shared/destinations?archivo_id=' + encodeURIComponent(item.id));
+        const options = [];
+        if (data.root_available === true) {
+          options.push({value:'root',label:'Raíz del propietario (fuera de las carpetas)'});
+        }
+        for (const f of (data.folders || [])) {
+          if (Number(f.id) === Number(item.parent)) continue;
+          if (Number(f.creado_por) !== Number(item.owner_id)) continue;
+          options.push({value:String(f.id),label:f.nombre + ' (carpeta del propietario)'});
+        }
+        if (!options.length) return alert('No hay otros destinos autorizados para este archivo. Pide al propietario que comparta otra carpeta con permiso Mover o que autorice Mover directamente sobre el archivo para devolverlo a su raíz.');
+        const id = await dialog({title:'Mover documento',description:'El archivo seguirá perteneciendo al propietario. Selecciona un destino autorizado.',options,submitText:'Mover'});
         if (id === null) return;
-        url = `/shared/files/${item.id}/move`; body = {destino_id:Number(id)};
+        url = `/shared/files/${item.id}/move`; body = {destino_id:id === 'root' ? null : Number(id)};
       } else if (action === 'copiar') {
         const data = await request('/destinations');
         const raw = Array.isArray(data) ? data : (data.folders || data.items || data.destinations || []);
