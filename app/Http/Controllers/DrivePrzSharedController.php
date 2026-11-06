@@ -149,6 +149,32 @@ class DrivePrzSharedController extends Controller
         ];
     }
 
+    /**
+     * Indica si existe una carpeta compartida visible en la ruta indicada.
+     * Se usa solo para organizar el listado raíz, no para revocar permisos.
+     */
+    private function hasSharedFolderInPath(?int $folderId): bool
+    {
+        $seen = [];
+        while ($folderId !== null && $folderId > 0) {
+            if (isset($seen[$folderId])) {
+                return false;
+            }
+            $seen[$folderId] = true;
+            $folder = DB::table('documento_carpetas')->where('id', $folderId)
+                ->whereNull('deleted_at')->first();
+            if (! $folder) {
+                return false;
+            }
+            if (in_array('ver', $this->directPermissions('folders', $folderId), true)) {
+                return true;
+            }
+            $folderId = $folder->carpeta_padre_id === null
+                ? null : (int) $folder->carpeta_padre_id;
+        }
+        return false;
+    }
+
     public function listing(Request $request)
     {
         $data = $request->validate(['carpeta_id' => ['nullable', 'integer', 'min:1']]);
@@ -193,14 +219,18 @@ class DrivePrzSharedController extends Controller
                 if (in_array($type, array_map('strtolower', $this->types('folders')), true)) {
                     $folder = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
                     if ($folder && (int) $folder->creado_por !== $uid && !isset($found['folder:'.$id])
-                        && in_array('ver', $this->folderPermissions($id), true)) {
+                        && in_array('ver', $this->folderPermissions($id), true)
+                        && ! $this->hasSharedFolderInPath($folder->carpeta_padre_id === null
+                            ? null : (int) $folder->carpeta_padre_id)) {
                         $items[] = $this->folderData($folder);
                         $found['folder:'.$id] = true;
                     }
                 } elseif (in_array($type, array_map('strtolower', $this->types('files')), true)) {
                     $file = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->first();
                     if ($file && (int) $file->subido_por !== $uid && !isset($found['file:'.$id])
-                        && in_array('ver', $this->effectiveFilePermissions($file), true)) {
+                        && in_array('ver', $this->effectiveFilePermissions($file), true)
+                        && ! $this->hasSharedFolderInPath($file->carpeta_id === null
+                            ? null : (int) $file->carpeta_id)) {
                         $items[] = $this->fileData($file);
                         $found['file:'.$id] = true;
                     }
@@ -262,12 +292,28 @@ class DrivePrzSharedController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function destinations()
+    public function destinations(Request $request)
     {
-        $folders = DB::table('documento_carpetas')->whereNull('deleted_at')
-            ->orderBy('nombre')->get(['id', 'nombre', 'carpeta_padre_id', 'creado_por'])
+        // `archivo_id` es opcional para conservar compatibilidad con el JS actual.
+        // Cuando se envía, la lista queda restringida al propietario del documento
+        // y excluye la carpeta donde ya está ubicado.
+        $data = $request->validate(['archivo_id' => ['nullable', 'integer', 'min:1']]);
+        $file = isset($data['archivo_id'])
+            ? $this->accessibleFile((int) $data['archivo_id'], 'mover')
+            : null;
+
+        $query = DB::table('documento_carpetas')->whereNull('deleted_at');
+        if ($file) {
+            $query->where('creado_por', $file->subido_por);
+            if ($file->carpeta_id !== null) {
+                $query->where('id', '<>', (int) $file->carpeta_id);
+            }
+        }
+        $folders = $query->orderBy('nombre')
+            ->get(['id', 'nombre', 'carpeta_padre_id', 'creado_por'])
             ->filter(fn ($folder) => in_array('mover', $this->folderPermissions((int) $folder->id), true))
             ->values();
+
         return response()->json(['folders' => $folders]);
     }
 
