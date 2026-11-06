@@ -668,10 +668,14 @@ Route::middleware(['auth'])
                     ->name('leer');
             });
 
-        Route::patch('drive-prz-v5/{tipo}/{id}/rename', [DrivePrzRenameController::class, 'rename'])
+        // Renombrar archivos y carpetas
+        Route::patch('/{tipo}/{id}/rename', [
+            DrivePrzRenameController::class,
+            'rename'
+        ])
             ->whereIn('tipo', ['files', 'folders'])
             ->whereNumber('id')
-            ->name('drive-prz-v5.rename');
+            ->name('renombrar');
     });
 
 Route::middleware(['auth'])
