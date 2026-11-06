@@ -22,52 +22,29 @@
     .prz-shared-dialog-actions button{border:1px solid #d7e0e8;padding:9px 14px;border-radius:8px;cursor:pointer;background:white}
     .prz-shared-dialog-actions button.prz-primary{background:#176b45;color:#fff;border-color:#176b45}
     .prz-shared-dialog-actions button:disabled{opacity:.55;cursor:wait}
-    /* Ventana Mover - mismo lenguaje visual del modal principal de Drive PRZ */
-    .prz-move-overlay{position:fixed;inset:0;background:rgba(76,96,122,.34);backdrop-filter:blur(2px);z-index:100010;display:flex;align-items:center;justify-content:center;padding:24px}
-    .prz-move-modal{width:min(820px,100%);max-height:min(760px,calc(100vh - 48px));overflow:hidden;display:flex;flex-direction:column;background:#ffffff;border:1px solid #e5ebf3;border-radius:22px;box-shadow:0 24px 60px rgba(45,67,92,.18);font-family:inherit;color:#334e68}
-    .prz-move-head{display:flex;align-items:center;justify-content:space-between;padding:24px 28px 18px;border-bottom:1px solid #e8eef5}
-    .prz-move-symbol{display:none}
-    .prz-move-heading{min-width:0;flex:1}
-    .prz-move-heading h3{font-size:20px;font-weight:800;margin:0;color:#23384d;line-height:1.35}
-    .prz-move-heading p{display:none}
-    .prz-move-x{width:42px;height:42px;flex:none;border:0;border-radius:12px;background:#f3f6fa;font-size:24px;line-height:1;color:#7d8fa4;cursor:pointer;display:grid;place-items:center}
-    .prz-move-x:hover{background:#eaf0f6;color:#4c637a}
-    .prz-move-content{padding:20px 28px 24px;overflow:auto}
-    .prz-move-file{border:1px solid #d7e3f1;background:#f4f8fc;border-radius:12px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;min-width:0}
-    .prz-move-file svg{width:20px;height:20px;color:#5f7895;flex:none;margin-top:1px}
-    .prz-move-file-meta{min-width:0;flex:1}
-    .prz-move-file-name{display:block;font-weight:700;color:#4f6780;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;margin-bottom:3px}
-    .prz-move-file-caption{display:block;font-size:13px;line-height:1.45;color:#59728e}
-    .prz-move-label{font-size:14px;font-weight:700;color:#425b76;margin:0 0 12px}
-    .prz-move-options{display:grid;gap:10px;max-height:320px;overflow:auto;padding:1px}
-    .prz-move-option{width:100%;border:1px solid #d8e3ef;border-radius:12px;background:#fff;padding:14px 15px;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font:inherit;color:#324b65;transition:background .15s,border-color .15s, box-shadow .15s}
-    .prz-move-option:hover{background:#f8fbfe;border-color:#b9d0e8}
-    .prz-move-option[aria-checked="true"]{border-color:#a7c4e3;background:#f5f9fd;box-shadow:0 0 0 1px #c6dbef inset}
-    .prz-move-option-icon{width:38px;height:38px;border-radius:10px;background:#f9edcb;color:#d39e2e;display:grid;place-items:center;flex:none}
-    .prz-move-option[data-root="true"] .prz-move-option-icon{background:#e9f1fa;color:#6b89aa}
-    .prz-move-option-icon svg{width:21px;height:21px}
-    .prz-move-option-text{flex:1;min-width:0}
-    .prz-move-option-title{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#2d465f}
-    .prz-move-option-caption{display:block;font-size:12px;color:#7b8fa3;margin-top:3px}
-    .prz-move-radio{width:20px;height:20px;border:2px solid #c5d4e3;border-radius:50%;flex:none;display:grid;place-items:center;background:#fff}
-    .prz-move-option[aria-checked="true"] .prz-move-radio{border-color:#94b7da}
-    .prz-move-option[aria-checked="true"] .prz-move-radio::after{content:"";width:10px;height:10px;border-radius:50%;background:#9abfe4}
-    .prz-move-footer{border-top:1px solid #e8eef5;padding:20px 28px;display:flex;justify-content:flex-end;gap:12px;background:#fbfdff}
-    .prz-move-footer button{font:inherit;font-size:14px;font-weight:700;padding:12px 22px;border-radius:12px;cursor:pointer;border:1px solid #d8e2ec;background:#fff;color:#45617d}
-    .prz-move-footer button:hover{background:#f3f7fb}
-    .prz-move-footer button.prz-move-submit{background:#8fb6e0;border-color:#8fb6e0;color:#fff;box-shadow:none}
-    .prz-move-footer button.prz-move-submit:hover{background:#82addb;border-color:#82addb}
-    .prz-move-option:focus-visible,.prz-move-footer button:focus-visible,.prz-move-x:focus-visible{outline:3px solid #c5daf0;outline-offset:2px}
-    @media(max-width:720px){.prz-move-modal{width:min(96vw,100%)}.prz-move-head{padding:20px 18px 15px}.prz-move-content{padding:18px}.prz-move-footer{padding:16px 18px}.prz-move-heading h3{font-size:18px}}
-    /* Arrastrar y soltar en Compartidos conmigo - paleta azul Drive PRZ */
-    tr.prz-shared-draggable-file{cursor:grab}
-    tr.prz-shared-draggable-file:active{cursor:grabbing}
-    tr.prz-shared-dragging{opacity:.46}
-    tr.prz-shared-drop-folder{outline:2px dashed #adc9e5;outline-offset:-3px;background:#f3f8fe!important}
-    tr.prz-shared-drop-folder.prz-shared-drop-hover{outline:2px solid #75a5d6;background:#e9f3ff!important}
-    .prz-shared-dragroot{position:fixed;z-index:100005;bottom:22px;left:50%;transform:translateX(-50%);width:min(510px,calc(100vw - 32px));padding:17px 22px;border:2px dashed #9bbde0;border-radius:14px;background:#f5f9ff;color:#3b5f83;text-align:center;box-shadow:0 12px 35px #223f6029;font:inherit;font-size:14px;font-weight:700;pointer-events:auto}
-    .prz-shared-dragroot.prz-shared-drop-hover{background:#e4f0fc;border-color:#5f97d4}
-    .prz-shared-dragroot[aria-disabled="true"]{opacity:.65;border-color:#cdd5de;background:#f5f7fa;color:#7a8796}
+    /* Selector Copiar: estética azul/blanco Drive PRZ, independiente de Mover */
+    .prz-copy-panel{width:min(510px,100%);padding:0;overflow:hidden;font-family:inherit}
+    .prz-copy-head{display:flex;justify-content:space-between;align-items:center;padding:19px 22px;border-bottom:1px solid #e5ebf2}
+    .prz-copy-head h3{margin:0;color:#243b53;font-size:19px}
+    .prz-copy-close{border:0;background:transparent;color:#64748b;cursor:pointer;font-size:25px;line-height:1}
+    .prz-copy-body{padding:18px 22px}
+    .prz-copy-source{background:#f6f8fc;padding:11px 12px;border-radius:10px;display:flex;gap:9px;align-items:center;color:#334b65;font-size:13px;overflow-wrap:anywhere}
+    .prz-copy-source-icon{font-size:22px}
+    .prz-copy-help{margin:14px 0 9px!important;color:#697f94!important;font-size:13px!important}
+    .prz-copy-crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:9px 0;color:#627792;font-size:13px}
+    .prz-copy-crumbs button{border:0;background:transparent;color:#2165b0;font:inherit;cursor:pointer;padding:3px}
+    .prz-copy-crumbs strong{color:#263e59}
+    .prz-copy-folders{border:1px solid #e0e7f0;border-radius:10px;min-height:155px;max-height:275px;overflow:auto;padding:5px}
+    .prz-copy-folder{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:transparent;border:0;border-radius:8px;padding:12px;color:#2d4562;font:inherit;cursor:pointer}
+    .prz-copy-folder:hover{background:#edf4fc}
+    .prz-copy-folder .prz-copy-foldername{flex:1;overflow-wrap:anywhere}
+    .prz-copy-folder .prz-copy-arrow{color:#7d94ad}
+    .prz-copy-empty{padding:28px 12px;text-align:center;color:#8797ab;font-size:13px}
+    .prz-copy-current{font-size:12px;color:#627792;margin-top:11px;overflow-wrap:anywhere}
+    .prz-copy-actions{padding:15px 22px;border-top:1px solid #e5ebf2;display:flex;justify-content:flex-end;gap:10px}
+    .prz-copy-actions button{border:1px solid #d7e2ee;border-radius:9px;padding:10px 16px;background:white;color:#324a66;font:inherit;cursor:pointer}
+    .prz-copy-actions .prz-copy-confirm{background:#2168b8;border-color:#2168b8;color:white;font-weight:600}
+    .prz-copy-actions button:disabled{opacity:.55;cursor:wait}
   `;
   document.head.appendChild(styles);
 
@@ -123,63 +100,87 @@
       control.focus();
     });
   }
-  // Diálogo exclusivo para mover: conserva los valores y las comprobaciones del backend.
-  function moveDialog(item, options) {
+  /** Navegador de carpetas propias. Se envía null al backend para la raíz. */
+  function copyDestinationDialog(item, folders) {
     return new Promise(resolve => {
-      const iconFolder = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/></svg>';
-      const iconHome = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>';
-      const iconFile = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v6h5M9 14h6M9 18h6"/></svg>';
-      const overlay = document.createElement('div'); overlay.className = 'prz-move-overlay';
-      const modal = document.createElement('section'); modal.className = 'prz-move-modal';
-      modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
-      const headingId = 'prz-move-title'; modal.setAttribute('aria-labelledby',headingId);
-      const head = document.createElement('div'); head.className = 'prz-move-head';
-      const symbol = document.createElement('span'); symbol.className = 'prz-move-symbol'; symbol.innerHTML = iconFolder;
-      const headerText = document.createElement('div'); headerText.className = 'prz-move-heading';
-      const title = document.createElement('h3'); title.id=headingId; title.textContent = 'Mover archivo';
-      const sub = document.createElement('p'); sub.textContent='';
-      headerText.append(title,sub);
-      const close = document.createElement('button');close.type='button';close.className='prz-move-x';close.textContent='×';close.setAttribute('aria-label','Cerrar');
-      head.append(symbol,headerText,close);
-      const content = document.createElement('div'); content.className='prz-move-content';
-      const file = document.createElement('div');file.className='prz-move-file';
-      const ficon=document.createElement('span');ficon.innerHTML=iconFile;
-      const fmeta=document.createElement('div');fmeta.className='prz-move-file-meta';
-      const fname=document.createElement('span');fname.className='prz-move-file-name';fname.textContent=item.name || 'Archivo compartido';fname.title=item.name || '';
-      const fcaption=document.createElement('span');fcaption.className='prz-move-file-caption';fcaption.textContent='El archivo seguirá perteneciendo al propietario. Selecciona un destino autorizado para cambiar su ubicación.';
-      fmeta.append(fname,fcaption);
-      file.append(ficon,fmeta);
-      const label=document.createElement('p');label.className='prz-move-label';label.textContent='Selecciona la carpeta de destino';
-      const choices=document.createElement('div');choices.className='prz-move-options';choices.setAttribute('role','radiogroup');choices.setAttribute('aria-label','Destino del archivo');
-      let selected=String(options[0].value);
-      const buttons=[];
-      const update=()=>buttons.forEach(b=>{const active=b.dataset.value===selected;b.setAttribute('aria-checked',String(active));b.tabIndex=active?0:-1;});
-      options.forEach((opt,index)=>{
-        const root=String(opt.value)==='root';
-        const b=document.createElement('button');b.type='button';b.className='prz-move-option';b.dataset.value=String(opt.value);b.dataset.root=String(root);b.setAttribute('role','radio');
-        const bi=document.createElement('span');bi.className='prz-move-option-icon';bi.innerHTML=root?iconHome:iconFolder;
-        const bt=document.createElement('span');bt.className='prz-move-option-text';
-        const name=document.createElement('span');name.className='prz-move-option-title';name.textContent=root?'Raíz del propietario':String(opt.label).replace(/ \(carpeta del propietario\)$/,'');
-        const detail=document.createElement('span');detail.className='prz-move-option-caption';detail.textContent=root?'Fuera de las carpetas':'Carpeta compartida autorizada';
-        bt.append(name,detail);
-        const radio=document.createElement('span');radio.className='prz-move-radio';radio.setAttribute('aria-hidden','true');
-        b.append(bi,bt,radio);b.onclick=()=>{selected=b.dataset.value;update();};
-        b.onkeydown=e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const next=(buttons.indexOf(b)+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;selected=buttons[next].dataset.value;update();buttons[next].focus();}};
-        buttons.push(b);choices.append(b);
-      });
-      update();content.append(file,label,choices);
-      const footer=document.createElement('div');footer.className='prz-move-footer';
-      const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cerrar';
-      const submit=document.createElement('button');submit.type='button';submit.className='prz-move-submit';submit.textContent='Mover archivo';
-      footer.append(cancel,submit);modal.append(head,content,footer);overlay.append(modal);
-      const previousFocus=document.activeElement;
-      function done(value){document.removeEventListener('keydown',onKey,true);overlay.remove();if(previousFocus?.isConnected)previousFocus.focus();resolve(value);}
-      function onKey(e){if(e.key==='Escape'){e.preventDefault();done(null);}if(e.key==='Tab'){const focusable=[close,...buttons,cancel,submit];const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}}
-      close.onclick=cancel.onclick=()=>done(null);submit.onclick=()=>done(selected);
-      overlay.onclick=e=>{if(e.target===overlay)done(null);};
-      document.body.append(overlay);document.addEventListener('keydown',onKey,true);buttons[0].focus();
+      const folderId = f => Number(f.id);
+      const parentId = f => {
+        const v = f.carpeta_padre_id ?? f.parent_id ?? f.parentId ?? f.padre_id ?? null;
+        return v === '' || v == null ? null : Number(v);
+      };
+      const all = folders.map(f => ({
+        id: folderId(f),
+        name: String(f.nombre ?? f.name ?? `Carpeta ${f.id}`),
+        parent: parentId(f),
+      })).filter(f => Number.isSafeInteger(f.id) && f.id > 0);
+      const ids = new Set(all.map(f => f.id));
+      // Si el endpoint no entrega jerarquía, las carpetas se muestran en una lista plana.
+      const hasParentFields = folders.some(f => ['carpeta_padre_id','parent_id','parentId','padre_id'].some(k => Object.hasOwn(f,k)));
+      let current = null;
+      const backdrop = document.createElement('div'); backdrop.className = 'prz-shared-dialog-backdrop';
+      const panel = document.createElement('div'); panel.className = 'prz-shared-dialog prz-copy-panel';
+      panel.setAttribute('role','dialog'); panel.setAttribute('aria-modal','true'); panel.setAttribute('aria-label','Copiar archivo');
+      const head = document.createElement('div'); head.className = 'prz-copy-head';
+      const heading = document.createElement('h3'); heading.textContent = 'Copiar archivo';
+      const close = document.createElement('button'); close.type='button'; close.className='prz-copy-close'; close.textContent='×'; close.setAttribute('aria-label','Cerrar');
+      head.append(heading,close);
+      const body = document.createElement('div'); body.className='prz-copy-body';
+      const source = document.createElement('div'); source.className='prz-copy-source';
+      const icon=document.createElement('span'); icon.className='prz-copy-source-icon'; icon.textContent='📄';
+      const file=document.createElement('strong'); file.textContent=String(item.name || 'Archivo compartido');
+      source.append(icon,file);
+      const help=document.createElement('p'); help.className='prz-copy-help';
+      help.textContent='Abre una carpeta para elegir dónde guardar una copia independiente del archivo.';
+      const crumbs=document.createElement('div'); crumbs.className='prz-copy-crumbs';
+      const folderList=document.createElement('div'); folderList.className='prz-copy-folders';
+      const selected=document.createElement('div'); selected.className='prz-copy-current';
+      body.append(source,help,crumbs,folderList,selected);
+      const actions=document.createElement('div'); actions.className='prz-copy-actions';
+      const cancel=document.createElement('button'); cancel.type='button'; cancel.textContent='Cancelar';
+      const confirm=document.createElement('button'); confirm.type='button'; confirm.className='prz-copy-confirm'; confirm.textContent='Copiar aquí';
+      actions.append(cancel,confirm); panel.append(head,body,actions); backdrop.append(panel); document.body.append(backdrop);
+      const onKey=e=>{if(e.key==='Escape')finish(null);};
+      document.addEventListener('keydown',onKey);
+      const finish=v=>{document.removeEventListener('keydown',onKey);backdrop.remove();resolve(v);};
+      close.onclick=cancel.onclick=()=>finish(null);
+      backdrop.onclick=e=>{if(e.target===backdrop)finish(null);};
+      confirm.onclick=()=>finish(current === null ? 'root' : String(current));
+      const button=(text, click)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=click;return b;};
+      function pathTo(id) {
+        const chain=[]; const seen=new Set(); let node=all.find(f=>f.id===id);
+        while(node && !seen.has(node.id)) { chain.unshift(node);seen.add(node.id);node=all.find(f=>f.id===node.parent); }
+        return chain;
+      }
+      function render() {
+        crumbs.replaceChildren(); folderList.replaceChildren();
+        crumbs.append(button('Mis archivos',()=>{current=null;render();}));
+        for(const f of pathTo(current)) {
+          const sep=document.createElement('span');sep.textContent='›';crumbs.append(sep);
+          crumbs.append(button(f.name,()=>{current=f.id;render();}));
+        }
+        const children = all.filter(f => hasParentFields
+          ? (current===null ? f.parent===null || !ids.has(f.parent) : f.parent===current)
+          : current===null).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+        for(const f of children) {
+          const b=document.createElement('button');b.type='button';b.className='prz-copy-folder';
+          const folderIcon=document.createElement('span');folderIcon.textContent='📁';
+          const name=document.createElement('span');name.className='prz-copy-foldername';name.textContent=f.name;
+          const arrow=document.createElement('span');arrow.className='prz-copy-arrow';arrow.textContent='›';
+          b.append(folderIcon,name,arrow);
+          b.onclick=()=>{current=f.id;render();};
+          folderList.append(b);
+        }
+        if(!children.length) {
+          const empty=document.createElement('div');empty.className='prz-copy-empty';
+          empty.textContent=all.length ? 'No hay más carpetas aquí.' : 'Todavía no tienes carpetas. Puedes copiar a la raíz.';
+          folderList.append(empty);
+        }
+        selected.textContent='Destino: '+(['Mis archivos',...pathTo(current).map(f=>f.name)].join(' / '));
+      }
+      render(); close.focus();
     });
   }
+
   async function execute(item, action) {
     if (busy || !can(item, action)) return;
     try {
@@ -201,15 +202,14 @@
           options.push({value:String(f.id),label:f.nombre + ' (carpeta del propietario)'});
         }
         if (!options.length) return alert('No hay otros destinos autorizados para este archivo. Pide al propietario que comparta otra carpeta con permiso Mover o que autorice Mover directamente sobre el archivo para devolverlo a su raíz.');
-        const id = await moveDialog(item, options);
+        const id = await dialog({title:'Mover documento',description:'El archivo seguirá perteneciendo al propietario. Selecciona un destino autorizado.',options,submitText:'Mover'});
         if (id === null) return;
         url = `/shared/files/${item.id}/move`; body = {destino_id:id === 'root' ? null : Number(id)};
       } else if (action === 'copiar') {
         const data = await request('/destinations');
         const raw = Array.isArray(data) ? data : (data.folders || data.items || data.destinations || []);
-        const ownFolders = raw.filter(f => (f.type === 'folder' || f.type === 'folders' || !f.type)).map(f => ({value:f.id,label:f.name || f.nombre || `Carpeta ${f.id}`}));
-        const options = [{value:'root',label:'Mis archivos (raíz)'},...ownFolders];
-        const dest = await dialog({title:'Copiar a mis archivos',description:'Se creará una copia independiente que será tuya; el original no se modifica.',options,submitText:'Copiar'});
+        const ownFolders = raw.filter(f => f.type === 'folder' || f.type === 'folders' || !f.type);
+        const dest = await copyDestinationDialog(item, ownFolders);
         if (dest === null) return;
         url = `/shared/files/${item.id}/copy`; body = {destino_id: dest === 'root' ? null : Number(dest)};
       } else return;
@@ -225,7 +225,7 @@
   function showMenu(item, trigger) {
     closeMenu();
     const menu = document.createElement('div'); menu.className='prz-shared-menu';
-    [['renombrar','Renombrar'],['mover','Mover'],['copiar','Copiar a Mis archivos']].forEach(([key,text]) => {
+    [['renombrar','Renombrar'],['mover','Mover'],['copiar','Copiar']].forEach(([key,text]) => {
       if (!can(item,key)) return;
       const b = document.createElement('button'); b.type='button'; b.textContent=text;
       b.onclick=()=>{closeMenu();execute(item,key);}; menu.append(b);
@@ -262,164 +262,6 @@
         el.children.length === 0 && el.textContent?.trim().endsWith('· Solo ver'));
       if (label && item.role === 'edit') {
         label.textContent = label.textContent.replace(/Solo ver\s*$/, 'Puede editar');
-      }
-    }
-    attachSharedDrag();
-  }
-
-  // DnD propio del listado compartido. No habilita mover carpetas: exige ruta y
-  // autorización de carpeta que el backend actual no implementa.
-  let dragItem = null;
-  let dragTargets = [];
-  let dragRoot = null;
-  let allowedDestinationIds = new Set();
-  let canDropToRoot = false;
-  let dragRequestVersion = 0;
-  const DRAG_TYPE = 'application/x-prz-shared-file';
-
-  function findSharedRow(item) {
-    // getRow() usa el nombre visible. Los IDs ya vienen del endpoint /shared.
-    return getRow(item);
-  }
-  function clearHover() {
-    document.querySelectorAll('.prz-shared-drop-hover').forEach(el => el.classList.remove('prz-shared-drop-hover'));
-  }
-  function cleanupDrag() {
-    dragRequestVersion++;
-    clearHover();
-    document.querySelectorAll('.prz-shared-dragging,.prz-shared-drop-folder').forEach(el => {
-      el.classList.remove('prz-shared-dragging','prz-shared-drop-folder');
-    });
-    dragRoot?.remove(); dragRoot = null;
-    dragItem = null;
-    allowedDestinationIds = new Set();
-    canDropToRoot = false;
-  }
-  function showDragRoot() {
-    dragRoot?.remove();
-    dragRoot = document.createElement('div');
-    dragRoot.className = 'prz-shared-dragroot';
-    dragRoot.textContent = 'Comprobando permiso para mover a la raíz del propietario…';
-    dragRoot.setAttribute('aria-disabled', 'true');
-    document.body.appendChild(dragRoot);
-    // Evitar que el frontend principal reciba esta acción de drop.
-    dragRoot.addEventListener('dragenter', e => {
-      if (!dragItem) return;
-      e.preventDefault(); e.stopImmediatePropagation();
-      if (canDropToRoot) dragRoot.classList.add('prz-shared-drop-hover');
-    }, true);
-    dragRoot.addEventListener('dragover', e => {
-      if (!dragItem) return;
-      e.preventDefault(); e.stopImmediatePropagation();
-      e.dataTransfer.dropEffect = canDropToRoot ? 'move' : 'none';
-    }, true);
-    dragRoot.addEventListener('dragleave', () => dragRoot?.classList.remove('prz-shared-drop-hover'));
-    dragRoot.addEventListener('drop', e => {
-      if (!dragItem) return;
-      e.preventDefault(); e.stopImmediatePropagation();
-      const item = dragItem;
-      if (!canDropToRoot) { cleanupDrag(); return; }
-      cleanupDrag();
-      commitDragMove(item, null, 'Raíz del propietario');
-    }, true);
-  }
-  function enableDropHighlights() {
-    document.querySelectorAll('.prz-shared-drop-folder').forEach(el => el.classList.remove('prz-shared-drop-folder'));
-    for (const item of currentItems) {
-      if (item.type !== 'folder' || !dragItem) continue;
-      if (!allowedDestinationIds.has(Number(item.id))) continue;
-      if (Number(item.owner_id) !== Number(dragItem.owner_id)) continue;
-      if (Number(item.id) === Number(dragItem.parent)) continue;
-      const row = findSharedRow(item);
-      if (row) row.classList.add('prz-shared-drop-folder');
-    }
-  }
-  async function commitDragMove(item, destinationId, destinationName) {
-    if (busy) return;
-    if (!window.confirm(`¿Mover "${item.name}" a "${destinationName}"?`)) return;
-    busy = true;
-    try {
-      // Laravel verifica propietario y permisos efectivos al realizar el POST.
-      await request(`/shared/files/${item.id}/move`, {
-        method: 'POST', body: JSON.stringify({destino_id: destinationId})
-      });
-      window.location.reload();
-    } catch (error) {
-      alert(error.message || 'No se pudo mover el archivo.');
-    } finally { busy = false; }
-  }
-  function attachSharedDrag() {
-    if (!sharedVisible() || dragItem) return;
-    for (const item of currentItems) {
-      const row = findSharedRow(item);
-      if (!row || row.dataset.przDragBound === '1') continue;
-      row.dataset.przDragBound = '1';
-      if (item.type === 'file' && can(item, 'mover')) {
-        row.draggable = true;
-        row.classList.add('prz-shared-draggable-file');
-        row.title = 'Arrastra este archivo a una carpeta compartida autorizada';
-      }
-      // Se identifica el item al momento de arrastrar, por si el listado cambió.
-      row.addEventListener('dragstart', e => {
-        if (!sharedVisible() || busy) return;
-        const latest = currentItems.find(x => x.type === 'file' && String(x.id) === String(item.id));
-        if (!latest || !can(latest, 'mover') || !row.classList.contains('prz-shared-draggable-file')) {
-          e.preventDefault(); return;
-        }
-        if (e.target.closest('button,input,select,a,textarea')) { e.preventDefault(); return; }
-        e.stopImmediatePropagation();
-        cleanupDrag();
-        dragItem = latest;
-        row.classList.add('prz-shared-dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData(DRAG_TYPE, String(latest.id));
-        e.dataTransfer.setData('text/plain', latest.name || 'Archivo');
-        showDragRoot();
-        const version = ++dragRequestVersion;
-        request('/shared/destinations?archivo_id=' + encodeURIComponent(latest.id))
-          .then(data => {
-            if (version !== dragRequestVersion || !dragItem || Number(dragItem.id) !== Number(latest.id)) return;
-            allowedDestinationIds = new Set((data.folders || []).map(f => Number(f.id)));
-            canDropToRoot = data.root_available === true;
-            if (dragRoot) {
-              dragRoot.textContent = canDropToRoot
-                ? '⇧ Suelta aquí para mover a la raíz del propietario'
-                : 'Raíz no autorizada · Suelta sobre una carpeta permitida';
-              dragRoot.setAttribute('aria-disabled', String(!canDropToRoot));
-            }
-            enableDropHighlights();
-          })
-          .catch(() => {
-            if (dragRoot && version === dragRequestVersion) {
-              dragRoot.textContent = 'No se pudieron comprobar los destinos autorizados';
-            }
-          });
-      }, true);
-      row.addEventListener('dragend', () => cleanupDrag(), true);
-      if (item.type === 'folder') {
-        row.addEventListener('dragover', e => {
-          if (!dragItem || !sharedVisible()) return;
-          e.preventDefault(); e.stopImmediatePropagation();
-          const permitted = allowedDestinationIds.has(Number(item.id))
-            && Number(item.owner_id) === Number(dragItem.owner_id)
-            && Number(item.id) !== Number(dragItem.parent);
-          e.dataTransfer.dropEffect = permitted ? 'move' : 'none';
-          clearHover();
-          if (permitted) row.classList.add('prz-shared-drop-hover');
-        }, true);
-        row.addEventListener('dragleave', e => {
-          if (!row.contains(e.relatedTarget)) row.classList.remove('prz-shared-drop-hover');
-        }, true);
-        row.addEventListener('drop', e => {
-          if (!dragItem || !sharedVisible()) return;
-          e.preventDefault(); e.stopImmediatePropagation();
-          const source = dragItem;
-          const permitted = allowedDestinationIds.has(Number(item.id))
-            && Number(item.owner_id) === Number(source.owner_id)
-            && Number(item.id) !== Number(source.parent);
-          cleanupDrag();
-          if (permitted) commitDragMove(source, Number(item.id), item.name);
-        }, true);
       }
     }
   }
