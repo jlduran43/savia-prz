@@ -7749,6 +7749,9 @@
                     return false;
                 } finally { sharedRealBusy = false; }
             }
+            // Actualizar la vista compartida después de ocultar un elemento.
+            window.przSharedRefresh = () => sharedRealOpen(sharedRealFolder);
+
             // Desde una notificación, buscar únicamente en carpetas que el servidor
             // autoriza a consultar. Nunca abrir URLs ni IDs sin comprobar el listado.
             async function abrirCompartidoDesdeAviso(aviso) {
@@ -8357,6 +8360,8 @@
                         if (can('mover')) actions.push({action: 'mover', label: 'Mover'});
                         if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar a Mis archivos'});
                     }
+                    // Acción de organización personal: disponible también con Solo ver.
+                    actions.push({action: 'hide', label: 'Quitar de Compartidos conmigo'});
                     if (!actions.length) return;
                     selected = {type, id, element: el, item, actions: actions.map(a => a.action)};
                     renderMenu(label, actions, pointer);
@@ -8372,6 +8377,19 @@
                 const action = button.dataset.przSharedAction;
                 if (!actions.includes(action)) return;
                 close();
+                if (action === 'hide') {
+                    ocultarCompartido(type, id).then(async ocultado => {
+                        if (!ocultado) return;
+                        if (typeof window.przSharedRefresh === 'function') {
+                            await window.przSharedRefresh();
+                        } else {
+                            location.reload();
+                        }
+                    }).catch(error => {
+                        alert('No se pudo quitar de Compartidos conmigo: ' + error.message);
+                    });
+                    return;
+                }
                 if (action === 'open' && type === 'folder') {
                     element.querySelector(`[data-shared-open="${id}"]`)?.click();
                 } else if (action === 'view' && type === 'file') {
@@ -8399,38 +8417,24 @@
             window.addEventListener('resize', close);
 
             async function ocultarCompartido(tipo, id) {
-    if (!confirm(
-        '¿Quitar este elemento de Compartidos conmigo?'
-    )) return false;
+                if (!confirm('¿Quitar este elemento de Compartidos conmigo? No se eliminará el original ni se revocarán tus permisos.')) {
+                    return false;
+                }
+                const kind = tipo === 'folder' ? 'folders' : 'files';
+                const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+                const xsrf = cookie ? decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) : '';
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                const headers = { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+                if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
+                else if (csrf) headers['X-CSRF-TOKEN'] = csrf;
 
-    const kind = tipo === 'folder' || tipo === 'folders'
-        ? 'folders'
-        : 'files';
-
-    const csrf = document.querySelector(
-        'meta[name="csrf-token"]'
-    )?.content;
-
-    const respuesta = await fetch(
-        `/drive-prz-v5/shared/${kind}/${id}/hide`,
-        {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrf || ''
+                const respuesta = await fetch(`/drive-prz-v5/shared/${kind}/${id}/hide`, {
+                    method: 'POST', credentials: 'same-origin', headers
+                });
+                const resultado = await respuesta.json().catch(() => ({}));
+                if (!respuesta.ok) throw new Error(resultado.message || `Error HTTP ${respuesta.status}`);
+                return true;
             }
-        }
-    );
-
-    if (!respuesta.ok) {
-        throw new Error(
-            `No se pudo quitar el elemento (${respuesta.status})`
-        );
-    }
-
-    return true;
-}
         })();
     </script>
     <script src="/js/drive-prz-shared-actions.js"></script>
