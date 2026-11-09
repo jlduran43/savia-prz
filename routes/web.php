@@ -582,6 +582,12 @@ Route::middleware(['auth'])
         Route::post('/shared/files/{id}/trash', [\App\Http\Controllers\DrivePrzSharedController::class, 'trash'])
             ->whereNumber('id')
             ->name('drive-prz-v5.shared.files.trash');
+        Route::post('/shared/{kind}/{id}/hide',
+            [\App\Http\Controllers\DrivePrzOcultarCompartidoController::class, 'ocultar']
+        )
+            ->where('kind', 'files|folders')
+            ->whereNumber('id')
+            ->name('drive-prz-v5.shared.hide');
 
         // Mover carpetas o documentos
 

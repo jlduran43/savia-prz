@@ -8397,6 +8397,40 @@
             });
             window.addEventListener('scroll', close, true);
             window.addEventListener('resize', close);
+
+            async function ocultarCompartido(tipo, id) {
+    if (!confirm(
+        '¿Quitar este elemento de Compartidos conmigo?'
+    )) return false;
+
+    const kind = tipo === 'folder' || tipo === 'folders'
+        ? 'folders'
+        : 'files';
+
+    const csrf = document.querySelector(
+        'meta[name="csrf-token"]'
+    )?.content;
+
+    const respuesta = await fetch(
+        `/drive-prz-v5/shared/${kind}/${id}/hide`,
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrf || ''
+            }
+        }
+    );
+
+    if (!respuesta.ok) {
+        throw new Error(
+            `No se pudo quitar el elemento (${respuesta.status})`
+        );
+    }
+
+    return true;
+}
         })();
     </script>
     <script src="/js/drive-prz-shared-actions.js"></script>
