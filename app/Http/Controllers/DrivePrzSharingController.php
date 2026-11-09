@@ -535,55 +535,69 @@ class DrivePrzSharingController extends Controller
             'El propietario ya tiene acceso completo.'
         );
 
-        // El permiso y el aviso deben confirmarse juntos en MySQL.
-        // Si el acceso ya existía, solo actualizamos sus permisos;
-        // no enviamos una segunda notificación de "nuevo compartido".
-        $notificacionCreada = DB::transaction(function () use (
-            $kind,
-            $id,
-            $item,
-            $recipient,
-            $permisos
-        ): bool {
-            $existia = $this->obtenerRegistro(
-                $kind,
-                $id,
-                (int) $recipient->id
-            ) !== null;
+        // Distinguir una concesión nueva, una restauración y una actualización.
+        // Solo se vuelve a notificar si ocurrió una acción efectiva.
+        $resultado = DB::transaction(function () use (
+            $kind, $id, $item, $recipient, $permisos
+        ): array {
+            $userId = (int) $recipient->id;
+            $existente = $this->obtenerRegistro($kind, $id, $userId);
+            $estabaOculto = DB::table('drive_prz_compartidos_ocultos')
+                ->where('usuario_id', $userId)
+                ->where('tipo', $kind)
+                ->where('elemento_id', $id)
+                ->exists();
 
-            $this->guardarPermiso(
-                $kind,
-                $id,
-                (int) $recipient->id,
-                $permisos
+            $cambioPermisos = $existente !== null && (
+                count(array_diff($this->permisosDeRegistro($existente), $permisos)) > 0 ||
+                count(array_diff($permisos, $this->permisosDeRegistro($existente))) > 0
             );
 
-            // Compartir de nuevo hace visible el elemento para el destinatario.
-            $this->restaurarVisibilidad($kind, $id, (int) $recipient->id);
-
-            if ($existia) {
-                return false;
-            }
+            $this->guardarPermiso($kind, $id, $userId, $permisos);
+            $this->restaurarVisibilidad($kind, $id, $userId);
 
             $nombre = $kind === 'files'
                 ? (string) ($item->nombre_original ?: $item->nombre ?: 'Documento')
                 : (string) ($item->nombre ?: 'Carpeta');
 
-            DrivePrzAvisos::documentoCompartido(
-                (int) $recipient->id,
-                (int) $this->actor()->id,
-                $kind,
-                $id,
-                $nombre
-            );
+            // Si estaba oculto, esta nueva acción de compartir lo restaura
+            // y envía el aviso de compartido nuevamente.
+            if ($existente === null || $estabaOculto) {
+                DrivePrzAvisos::documentoCompartido(
+                    $userId, (int) $this->actor()->id, $kind, $id, $nombre
+                );
 
-            return true;
+                return ['notificacion_creada' => true, 'accion' =>
+                    $existente === null ? 'compartido' : 'restaurado'];
+            }
+
+            if ($cambioPermisos) {
+                DrivePrzAvisos::permisosActualizados(
+                    $userId,
+                    (int) $this->actor()->id,
+                    $kind,
+                    $id,
+                    $nombre,
+                    $this->rolCompatible($permisos) === 'edit'
+                        ? 'Puede editar' : 'Solo ver'
+                );
+                return ['notificacion_creada' => true, 'accion' => 'actualizado'];
+            }
+
+            return ['notificacion_creada' => false, 'accion' => 'sin_cambios'];
         });
 
         return response()->json([
             'ok' => true,
             'permisos' => $permisos,
-            'notificacion_creada' => $notificacionCreada,
+            'notificacion_creada' => $resultado['notificacion_creada'],
+            'accion' => $resultado['accion'],
+            'message' => match ($resultado['accion']) {
+                'compartido' => 'Elemento compartido correctamente.',
+                'restaurado' => 'Elemento compartido nuevamente y visible para el destinatario.',
+                'actualizado' => 'Permisos actualizados correctamente.',
+                default => 'El usuario ya tenía acceso con esos permisos.',
+            },
         ]);
     }
 
