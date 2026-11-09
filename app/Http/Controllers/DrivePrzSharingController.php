@@ -358,6 +358,20 @@ class DrivePrzSharingController extends Controller
         });
     }
 
+    /**
+     * Vuelve a mostrar un elemento oculto cuando su propietario lo comparte
+     * nuevamente o modifica realmente sus permisos para el destinatario.
+     * No altera el documento ni el permiso concedido.
+     */
+    private function restaurarVisibilidad(string $kind, int $id, int $userId): void
+    {
+        DB::table('drive_prz_compartidos_ocultos')
+            ->where('usuario_id', $userId)
+            ->where('tipo', $kind)
+            ->where('elemento_id', $id)
+            ->delete();
+    }
+
     public function users(Request $request): JsonResponse
     {
         $this->actor();
@@ -544,6 +558,9 @@ class DrivePrzSharingController extends Controller
                 $permisos
             );
 
+            // Compartir de nuevo hace visible el elemento para el destinatario.
+            $this->restaurarVisibilidad($kind, $id, (int) $recipient->id);
+
             if ($existia) {
                 return false;
             }
@@ -619,6 +636,9 @@ class DrivePrzSharingController extends Controller
                 $userId,
                 $permisos
             );
+
+            // Restaurar solo si los permisos realmente cambiaron.
+            $this->restaurarVisibilidad($kind, $id, $userId);
 
             $nombre = $kind === 'files'
                 ? (string) ($item->nombre_original ?: $item->nombre ?: 'Documento')

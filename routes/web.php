@@ -579,6 +579,9 @@ Route::middleware(['auth'])
             ->where(['kind' => 'files|folders', 'id' => '[0-9]+']);
         Route::post('/shared/{kind}/{id}/trash', [DrivePrzSharedTrashController::class, 'trash'])
             ->where(['kind' => 'files|folders', 'id' => '[0-9]+']);
+        Route::post('/shared/files/{id}/trash', [\App\Http\Controllers\DrivePrzSharedController::class, 'trash'])
+            ->whereNumber('id')
+            ->name('drive-prz-v5.shared.files.trash');
 
         // Mover carpetas o documentos
 
