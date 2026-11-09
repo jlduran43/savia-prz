@@ -4757,7 +4757,11 @@
                         errorBox.textContent = err.message;
                     } finally {
                         busy = false;
-                        if (frame.isConnected && q('przSharePeople')) updateControls();
+                        if (frame.isConnected && q('przSharePeople')) {
+                            renderPermissions();
+                            updateControls();
+                            renderChoices();
+                        }
                     }
                 }, true);
                 q('przSharePeople').addEventListener('change', e => {
