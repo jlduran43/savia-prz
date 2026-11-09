@@ -3751,7 +3751,11 @@
         .prz-context-item.danger { color: #b13d48; }
         .prz-context-item.danger:hover { background: #fff0f0; color: #a52a37; }
         .prz-context-item:disabled { opacity: .42; cursor: not-allowed; }
-    </style>
+    
+        .przShareResend { font-size: 11px; padding: 6px 9px; white-space: nowrap; color: #175fba; border-color: #d8e5f4; }
+        .przShareResend:hover { background: #eef5ff; }
+
+</style>
 
     <style>
         #przApp.drive-config-mode .main> :not(#drivePrzConfigPanel) {
@@ -4482,19 +4486,21 @@
                         return;
                     }
 
-                    // Listo: mostrar confirmación si hubo cambios.
-                    if (
-                        boton?.hasAttribute('data-share-done') &&
-                        cambiosCompartirGuardados > 0
-                    ) {
+                    // Listo no debe cerrar si hay destinatarios pendientes sin guardar.
+                    if (boton?.hasAttribute('data-share-done')) {
+                        if (selectedIds.size > 0) {
+                            e.preventDefault();
+                            e.stopImmediatePropagation();
+                            errorBox.textContent = 'Hay usuarios seleccionados sin compartir. Presiona Agregar antes de finalizar.';
+                            errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            return;
+                        }
                         const total = cambiosCompartirGuardados;
-
+                        // La confirmación aparece DESPUÉS de que el cierre normal quite el modal.
                         setTimeout(() => {
-                            toast(
-                                total === 1
-                                    ? 'Los cambios para compartir se guardaron correctamente.'
-                                    : `Se guardaron correctamente ${total} cambios de permisos.`
-                            );
+                            toast(total > 0
+                                ? (total === 1 ? 'Se guardó correctamente 1 acción de compartir.' : `Se guardaron correctamente ${total} acciones de compartir.`)
+                                : 'No se realizaron cambios. Para reenviar un archivo oculto, usa Reenviar acceso junto al usuario.');
                         }, 0);
                     }
 
@@ -4603,7 +4609,7 @@
                     const owner = info.owner;
                     const permissions = info.people || [];
                     q('przSharePeople').innerHTML = `${owner ? `<div class="person"><span class="avatar">${esc((owner.name || 'U').slice(0, 2).toUpperCase())}</span><div class="personmain"><strong>${esc(owner.name)}</strong><small>Propietario del elemento</small></div><span class="role">Propietario</span></div>` : ''}
-          ${permissions.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0, 2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option><option value="custom" ${p.role === 'custom' ? 'selected' : ''}>Personalizado</option></select>${p.role === 'custom' ? `<div class="prz-saved-flags">${Object.keys(p.permissions || {}).filter(k => p.permissions[k]).map(k => esc(names[k] || k)).join(' · ')}</div>` : ''}<button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
+          ${permissions.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0, 2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option><option value="custom" ${p.role === 'custom' ? 'selected' : ''}>Personalizado</option></select>${p.role === 'custom' ? `<div class="prz-saved-flags">${(Array.isArray(p.permisos) ? p.permisos : Object.keys(p.permissions || {}).filter(k => p.permissions[k])).map(k => esc(names[k] || k)).join(' · ')}</div>` : ''}<button type="button" class="btn przShareResend" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} title="Volver a compartir y restaurar visibilidad">Reenviar acceso</button><button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
                     if (info.inherited?.length) {
                         q('przSharePeople').insertAdjacentHTML('beforeend', `<div class="inherited"><strong>Permisos heredados de carpetas superiores</strong>${info.inherited.map(p => `<div class="person"><strong>${esc(p.name)}</strong><span class="role">${p.role === 'edit' ? 'Puede editar' : (p.role === 'custom' ? 'Personalizado' : 'Solo ver')}</span></div>`).join('')}</div>`);
                     }
@@ -4695,7 +4701,32 @@
                     }
                 });
                 q('przShareApply').addEventListener('click', () => execute(() => apiCompartir(`${base}/everyone`, 'PUT', { enabled: q('przShareEveryone').checked, ...rolePayload(q('przShareEveryoneRole').value, generalFlags) })));
-                q('przSharePeople').addEventListener('click', e => {
+                q('przSharePeople').addEventListener('click', async e => {
+                    const reenviar = e.target.closest('.przShareResend');
+                    if (reenviar) {
+                        if (busy || !canShare()) return;
+                        const persona = (info.people || []).find(p => Number(p.id) === Number(reenviar.dataset.userId));
+                        if (!persona?.email) { errorBox.textContent = 'No se encontró el correo del destinatario.'; return; }
+                        busy = true;
+                        errorBox.textContent = '';
+                        updateControls();
+                        try {
+                            const permisos = Array.isArray(persona.permisos) ? persona.permisos : null;
+                            const payload = permisos?.length
+                                ? { email: persona.email, permisos }
+                                : { email: persona.email, role: persona.role === 'edit' ? 'edit' : 'view' };
+                            const resultado = await apiCompartir(`${base}/people`, 'POST', payload);
+                            if (resultado.accion !== 'sin_cambios') cambiosCompartirGuardados++;
+                            await refresh();
+                            toast(resultado.message || (resultado.accion === 'sin_cambios' ? 'El usuario ya tenía acceso con esos permisos.' : 'Acceso reenviado correctamente.'));
+                        } catch (err) {
+                            errorBox.textContent = err.message;
+                        } finally {
+                            busy = false;
+                            if (frame.querySelector('#przSharePeople')) { renderPermissions(); updateControls(); renderChoices(); }
+                        }
+                        return;
+                    }
                     const b = e.target.closest('.przShareRevoke');
                     if (b) execute(() => apiCompartir(`${base}/people/${b.dataset.userId}`, 'DELETE', {}));
                 });
