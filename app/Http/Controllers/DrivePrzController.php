@@ -119,43 +119,28 @@ class DrivePrzController extends Controller
     }
 
 public function screen()
+{
+    $ruta = resource_path('drive-prz/index.html');
 
-    {
+    abort_unless(
+        is_file($ruta),
+        404,
+        'No se encontró el archivo HTML de Drive PRZ.'
+    );
 
-        $ruta = resource_path('drive-prz/index.html');
-
-        abort_unless(
-
-            is_file($ruta),
-
-            404,
-
-            'No se encontró el archivo HTML de Drive PRZ.'
-
-        );
-
-
-
-        return response(
-
-            file_get_contents($ruta),
-
-            200,
-
-            [
-
-                'Content-Type' => 'text/html; charset=UTF-8',
-
-                'Content-Disposition' => 'inline',
-
-                'X-Content-Type-Options' => 'nosniff',
-
-            ]
-
-        );
-
-    }
-
+    return response(
+        file_get_contents($ruta),
+        200,
+        [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Disposition' => 'inline',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]
+    );
+}
 
 
     public function listing(Request $request)
