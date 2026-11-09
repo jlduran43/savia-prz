@@ -3796,6 +3796,10 @@
             display: none !important;
         }
     </style>
+<style>
+.prz-trash-grant-label { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:#435f7d; white-space:nowrap; }
+.prz-trash-grant-label input { accent-color:#1664bd; }
+</style>
 </head>
 
 <body>
@@ -4609,7 +4613,7 @@
                     const owner = info.owner;
                     const permissions = info.people || [];
                     q('przSharePeople').innerHTML = `${owner ? `<div class="person"><span class="avatar">${esc((owner.name || 'U').slice(0, 2).toUpperCase())}</span><div class="personmain"><strong>${esc(owner.name)}</strong><small>Propietario del elemento</small></div><span class="role">Propietario</span></div>` : ''}
-          ${permissions.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0, 2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option><option value="custom" ${p.role === 'custom' ? 'selected' : ''}>Personalizado</option></select>${p.role === 'custom' ? `<div class="prz-saved-flags">${(Array.isArray(p.permisos) ? p.permisos : Object.keys(p.permissions || {}).filter(k => p.permissions[k])).map(k => esc(names[k] || k)).join(' · ')}</div>` : ''}<button type="button" class="btn przShareResend" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} title="Volver a compartir y restaurar visibilidad">Reenviar acceso</button><button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
+          ${permissions.map(p => `<div class="person"><span class="avatar">${esc((p.name || 'U').slice(0, 2).toUpperCase())}</span><div class="personmain"><strong>${esc(p.name)}</strong><small>${esc(p.email || '')}</small></div><select class="select przSharePersonRole" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'}><option value="view" ${p.role === 'view' ? 'selected' : ''}>Solo ver</option><option value="edit" ${p.role === 'edit' ? 'selected' : ''}>Puede editar</option><option value="custom" ${p.role === 'custom' ? 'selected' : ''}>Personalizado</option></select>${p.role === 'custom' ? `<div class="prz-saved-flags">${(Array.isArray(p.permisos) ? p.permisos : Object.keys(p.permissions || {}).filter(k => p.permissions[k])).map(k => esc(names[k] || k)).join(' · ')}</div>` : ''}<label class="prz-trash-grant-label" title="Autoriza enviar este archivo a la papelera del propietario"><input type="checkbox" class="przShareTrashPermission" data-user-id="${Number(p.id)}" ${Array.isArray(p.permisos) && p.permisos.includes('eliminar') ? 'checked' : ''} ${canOperate() && tipo === 'files' ? '' : 'disabled'}> Mover a papelera</label><button type="button" class="btn przShareResend" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} title="Volver a compartir y restaurar visibilidad">Reenviar acceso</button><button type="button" class="remove przShareRevoke" data-user-id="${Number(p.id)}" ${canOperate() ? '' : 'disabled'} aria-label="Quitar acceso">×</button></div>`).join('') || '<p class="hint">No hay permisos individuales directos.</p>'}`;
                     if (info.inherited?.length) {
                         q('przSharePeople').insertAdjacentHTML('beforeend', `<div class="inherited"><strong>Permisos heredados de carpetas superiores</strong>${info.inherited.map(p => `<div class="person"><strong>${esc(p.name)}</strong><span class="role">${p.role === 'edit' ? 'Puede editar' : (p.role === 'custom' ? 'Personalizado' : 'Solo ver')}</span></div>`).join('')}</div>`);
                     }
@@ -4730,6 +4734,32 @@
                     const b = e.target.closest('.przShareRevoke');
                     if (b) execute(() => apiCompartir(`${base}/people/${b.dataset.userId}`, 'DELETE', {}));
                 });
+                q('przSharePeople').addEventListener('change', async e => {
+                    const checkbox = e.target.closest('.przShareTrashPermission');
+                    if (!checkbox) return;
+                    e.stopImmediatePropagation();
+                    if (!canOperate() || tipo !== 'files') return;
+                    const userId = Number(checkbox.dataset.userId);
+                    const person = (info.people || []).find(p => Number(p.id) === userId);
+                    if (!person) return;
+                    const current = Array.isArray(person.permisos) ? [...person.permisos] :
+                        (person.role === 'edit' ? ['ver','descargar','renombrar','mover','copiar'] : ['ver','descargar']);
+                    const next = current.filter(x => x !== 'eliminar');
+                    if (checkbox.checked) next.push('eliminar');
+                    busy = true; checkbox.disabled = true;
+                    try {
+                        await apiCompartir(`${base}/people/${userId}`, 'PATCH', {permisos: next});
+                        cambiosCompartirGuardados++;
+                        await refresh();
+                        toast(checkbox.checked ? 'Permiso Mover a papelera concedido.' : 'Permiso Mover a papelera retirado.');
+                    } catch (err) {
+                        checkbox.checked = !checkbox.checked;
+                        errorBox.textContent = err.message;
+                    } finally {
+                        busy = false;
+                        if (frame.isConnected && q('przSharePeople')) updateControls();
+                    }
+                }, true);
                 q('przSharePeople').addEventListener('change', e => {
                     const sel = e.target.closest('.przSharePersonRole');
                     if (sel) execute(() => apiCompartir(`${base}/people/${sel.dataset.userId}`, 'PUT', rolePayload(sel.value, sel.value === 'custom' ? (info.people || []).find(p => Number(p.id) === Number(sel.dataset.userId))?.permissions || { view: true, download: true } : null)));
@@ -8390,6 +8420,7 @@
                         if (can('renombrar')) actions.push({action: 'renombrar', label: 'Renombrar'});
                         if (can('mover')) actions.push({action: 'mover', label: 'Mover'});
                         if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar a Mis archivos'});
+                        if (can('eliminar')) actions.push({action: 'trash', label: 'Mover a papelera'});
                     }
                     // Acción de organización personal: disponible también con Solo ver.
                     actions.push({action: 'hide', label: 'Quitar de Compartidos conmigo'});
@@ -8408,6 +8439,26 @@
                 const action = button.dataset.przSharedAction;
                 if (!actions.includes(action)) return;
                 close();
+                if (action === 'trash' && type === 'file') {
+                    if (!confirm(`¿Mover «${item.name || 'este archivo'}» a la papelera del propietario? El archivo no se eliminará definitivamente.`)) return;
+                    (async () => {
+                        const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+                        const xsrf = cookie ? decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) : '';
+                        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                        const headers = {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'};
+                        if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
+                        else if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+                        const res = await fetch(`/drive-prz-v5/shared/files/${id}/trash`, {
+                            method:'POST', credentials:'same-origin', headers
+                        });
+                        const result = await res.json().catch(() => ({}));
+                        if (!res.ok) throw new Error(result.message || `Error HTTP ${res.status}`);
+                        if (typeof window.przSharedRefresh === 'function') await window.przSharedRefresh();
+                        else location.reload();
+                        alert(result.message || 'Archivo movido a papelera.');
+                    })().catch(err => alert('No se pudo mover a papelera: ' + err.message));
+                    return;
+                }
                 if (action === 'hide') {
                     ocultarCompartido(type, id).then(async ocultado => {
                         if (!ocultado) return;
