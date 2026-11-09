@@ -4748,7 +4748,7 @@
                     if (checkbox.checked) next.push('eliminar');
                     busy = true; checkbox.disabled = true;
                     try {
-                        await apiCompartir(`${base}/people/${userId}`, 'PATCH', {permisos: next});
+                        await apiCompartir(`${base}/people/${userId}`, 'PUT', {permisos: next});
                         cambiosCompartirGuardados++;
                         await refresh();
                         toast(checkbox.checked ? 'Permiso Mover a papelera concedido.' : 'Permiso Mover a papelera retirado.');
