@@ -16,6 +16,7 @@ class DrivePrzConfiguracion extends Model
         'marca_agua_angulo',
         'usar_tamano_manual',
         'marca_agua_tamano',
+        'marca_agua_activa',
     ];
 
     protected $casts = [
@@ -23,5 +24,6 @@ class DrivePrzConfiguracion extends Model
         'marca_agua_angulo' => 'integer',
         'usar_tamano_manual' => 'boolean',
         'marca_agua_tamano' => 'integer',
+        'marca_agua_activa' => 'boolean',
     ];
 }

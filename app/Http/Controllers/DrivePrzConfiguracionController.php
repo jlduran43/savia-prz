@@ -12,6 +12,7 @@ class DrivePrzConfiguracionController extends Controller
     private function configuracion(): DrivePrzConfiguracion
     {
         return DrivePrzConfiguracion::query()->firstOrCreate([], [
+            'marca_agua_activa' => false,
             'marca_agua_texto' => 'DRIVE PRZ - SOLO LECTURA',
             'marca_agua_texto_secundario' => '',
             'marca_agua_color' => '#14263D',
@@ -25,6 +26,7 @@ class DrivePrzConfiguracionController extends Controller
     public function mostrar(): JsonResponse
     {
         return response()->json($this->configuracion()->only([
+            'marca_agua_activa',
             'marca_agua_texto',
             'marca_agua_texto_secundario',
             'marca_agua_color',
@@ -38,36 +40,13 @@ class DrivePrzConfiguracionController extends Controller
     public function guardar(Request $request): JsonResponse
     {
         $datos = $request->validate([
+            'marca_agua_activa' => ['required', 'boolean'],
             'marca_agua_texto' => ['required', 'string', 'max:255'],
-
-            'marca_agua_texto_secundario' => [
-                'nullable',
-                'string',
-                'max:500',
-            ],
-
-            'marca_agua_color' => [
-                'required',
-                'regex:/^#[0-9a-fA-F]{6}$/',
-            ],
-
-            'marca_agua_opacidad' => [
-                'required',
-                'integer',
-                'between:1,100',
-            ],
-
-            'marca_agua_angulo' => [
-                'required',
-                'integer',
-                'between:-360,360',
-            ],
-
-            'usar_tamano_manual' => [
-                'required',
-                'boolean',
-            ],
-
+            'marca_agua_texto_secundario' => ['nullable', 'string', 'max:500'],
+            'marca_agua_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'marca_agua_opacidad' => ['required', 'integer', 'between:1,100'],
+            'marca_agua_angulo' => ['required', 'integer', 'between:-360,360'],
+            'usar_tamano_manual' => ['required', 'boolean'],
             'marca_agua_tamano' => [
                 'nullable',
                 'required_if:usar_tamano_manual,true',
@@ -84,7 +63,6 @@ class DrivePrzConfiguracionController extends Controller
             $datos['marca_agua_texto_secundario'] ?? '';
 
         $configuracion = $this->configuracion();
-
         $configuracion->fill($datos);
         $configuracion->save();
 
