@@ -65,12 +65,12 @@ class GenerarVistaPreviaDrivePrz extends Command
             for ($pagina = 0; $pagina < $total; $pagina++) {
                 $imagen = new Imagick();
                 try {
-                    $imagen->setResolution(72, 72);
+                    $imagen->setResolution(150, 150);
                     $imagen->readImage($ruta . '[' . $pagina . ']');
                     $imagen->setImageBackgroundColor('white');
                     $imagen = $imagen->mergeImageLayers(Imagick::LAYERMETHOD_FLATTEN);
                     $imagen->setImageFormat('jpeg');
-                    $imagen->setImageCompressionQuality(78);
+                    $imagen->setImageCompressionQuality(90);
                     $imagen->stripImage();
                     $nombre = sprintf('pagina-%03d.jpg', $pagina + 1);
                     $guardado = $destino->put(
