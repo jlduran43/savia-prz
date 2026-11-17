@@ -4403,10 +4403,9 @@
           ${tipo === 'files' ? `
           <div class="shareblock" id="przExternalSection">
             <label class="field">3. Compartir mediante enlace externo</label>
-            <p class="hint">Permite visualizar el documento sin iniciar sesión. El enlace no vence y estará disponible hasta que sea revocado. Cualquier persona con la URL podrá acceder si el formato lo permite.</p>
+            <p class="hint">Permite visualizar el documento sin iniciar sesión. El enlace es permanente y no tiene fecha de vencimiento. Se reutiliza la misma URL en futuras consultas. Cualquier persona con la URL podrá acceder si el formato lo permite.</p>
             <div class="shareform" style="margin-top:12px">
               <button type="button" class="btn primary" id="przExternalGenerate" disabled>Generar enlace externo</button>
-              <button type="button" class="btn" id="przExternalRevoke" disabled>Revocar enlace</button>
             </div>
             <div id="przExternalResult" class="hidden" style="margin-top:12px">
               <label for="przExternalUrl" class="field">Enlace para compartir</label>
@@ -4761,7 +4760,6 @@
                 if (tipo === 'files') {
                     const enlaceBase = `${API}/enlaces/${encodeURIComponent(id)}`;
                     const btnGenerar = q('przExternalGenerate');
-                    const btnRevocar = q('przExternalRevoke');
                     const btnCopiar = q('przExternalCopy');
                     const estado = q('przExternalStatus');
                     const errorEnlace = q('przExternalError');
@@ -4771,7 +4769,6 @@
                     let ocupadoEnlace = false;
                     const pintarEnlace = () => {
                         btnGenerar.disabled = ocupadoEnlace || !canShare();
-                        btnRevocar.disabled = ocupadoEnlace || !canShare() || !enlaceActivo;
                         btnGenerar.textContent = enlaceActivo ? 'Recuperar enlace' : 'Generar enlace externo';
                     };
                     const consultarEnlace = async () => {
@@ -4803,20 +4800,6 @@
                             enlaceActivo = true;
                             estado.textContent = 'Enlace permanente activo, sin vencimiento. Puedes volver a copiar esta misma URL.';
                             toast(data.nuevo ? 'Enlace permanente generado correctamente.' : 'Se recuperó el enlace existente.');
-                        } catch (e) { errorEnlace.textContent = e.message; }
-                        finally { ocupadoEnlace = false; pintarEnlace(); }
-                    });
-                    btnRevocar.addEventListener('click', async () => {
-                        if (ocupadoEnlace || !canShare() || !enlaceActivo) return;
-                        if (!window.confirm('¿Revocar el enlace externo? Dejará de funcionar inmediatamente.')) return;
-                        ocupadoEnlace = true; errorEnlace.textContent = ''; pintarEnlace();
-                        try {
-                            await apiCompartir(enlaceBase, 'DELETE', {});
-                            enlaceActivo = false;
-                            urlInput.value = '';
-                            resultado.classList.add('hidden');
-                            estado.textContent = 'Enlace revocado. Ya no se puede acceder con esa URL.';
-                            toast('Enlace externo revocado.');
                         } catch (e) { errorEnlace.textContent = e.message; }
                         finally { ocupadoEnlace = false; pintarEnlace(); }
                     });
