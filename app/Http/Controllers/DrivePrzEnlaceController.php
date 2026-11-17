@@ -382,6 +382,12 @@ class DrivePrzEnlaceController extends Controller
 
             ->mimeType($documento->ruta_archivo);
 
+        // Los PDF públicos se muestran en el visor nativo del navegador.
+        // Se conserva la URL pública original y se permite descargar el PDF.
+        if ($mime === 'application/pdf') {
+            return $this->contenido($token);
+        }
+
 
 
 
@@ -780,62 +786,6 @@ class DrivePrzEnlaceController extends Controller
 
 
 
-        // Los enlaces externos no pueden obtener el PDF original.
-
-
-
-
-
-
-
-        abort_if(
-
-
-
-
-
-
-
-            $mime === 'application/pdf',
-
-
-
-
-
-
-
-            403,
-
-
-
-
-
-
-
-            'El PDF original no está disponible en enlaces externos.'
-
-
-
-
-
-
-
-        );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         $permitidos = [
 
 
@@ -1020,7 +970,7 @@ class DrivePrzEnlaceController extends Controller
 
 
 
-                'Content-Security-Policy' => "default-src 'none'; sandbox",
+                'Content-Security-Policy' => $mime === 'application/pdf' ? "default-src 'self'; object-src 'self'" : "default-src 'none'; sandbox",
 
 
 
