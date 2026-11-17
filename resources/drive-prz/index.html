@@ -3706,6 +3706,7 @@
             width: 23px;
             height: 23px;
         }
+
         /* Menú contextual propio de Drive PRZ; no afecta los visores protegidos. */
         .prz-context-menu {
             position: fixed;
@@ -3719,7 +3720,11 @@
             background: #fff;
             box-shadow: 0 14px 36px rgba(19, 40, 64, .2);
         }
-        .prz-context-menu[hidden] { display: none !important; }
+
+        .prz-context-menu[hidden] {
+            display: none !important;
+        }
+
         .prz-context-title {
             padding: 9px 11px;
             margin-bottom: 4px;
@@ -3731,6 +3736,7 @@
             white-space: nowrap;
             text-overflow: ellipsis;
         }
+
         .prz-context-item {
             display: block;
             width: 100%;
@@ -3743,19 +3749,79 @@
             font-weight: 600;
             border-radius: 7px;
         }
-        .prz-context-item:hover:not(:disabled), .prz-context-item:focus-visible {
+
+        .prz-context-item:hover:not(:disabled),
+        .prz-context-item:focus-visible {
             background: #eaf3ff;
             color: #115aa3;
             outline: none;
         }
-        .prz-context-item.danger { color: #b13d48; }
-        .prz-context-item.danger:hover { background: #fff0f0; color: #a52a37; }
-        .prz-context-item:disabled { opacity: .42; cursor: not-allowed; }
-    
-        .przShareResend { font-size: 11px; padding: 6px 9px; white-space: nowrap; color: #175fba; border-color: #d8e5f4; }
-        .przShareResend:hover { background: #eef5ff; }
 
-</style>
+        .prz-context-item.danger {
+            color: #b13d48;
+        }
+
+        .prz-context-item.danger:hover {
+            background: #fff0f0;
+            color: #a52a37;
+        }
+
+        .prz-context-item:disabled {
+            opacity: .42;
+            cursor: not-allowed;
+        }
+
+        .przShareResend {
+            font-size: 11px;
+            padding: 6px 9px;
+            white-space: nowrap;
+            color: #175fba;
+            border-color: #d8e5f4;
+        }
+
+        .przShareResend:hover {
+            background: #eef5ff;
+        }
+
+        .drive-file-name {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            white-space: normal;
+            line-height: 1.5;
+            min-width: 0;
+        }
+
+        /* Drive PRZ: nombres largos legibles en lista, cuadrícula y compartidos */
+        .filetable .namecell { min-width: 0; }
+        .filetable .namecell > div { min-width: 0; flex: 1 1 auto; }
+        .filetable td:nth-child(2) { min-width: 220px; width: 42%; max-width: 520px; }
+        .filetable .filename,
+        .griditems .filename {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            overflow-wrap: anywhere;
+            line-height: 1.45;
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+            text-align: left;
+        }
+        .griditems .filename { max-width: 100%; }
+        @media (max-width: 760px) {
+            .filetable td:nth-child(2) { width: auto; max-width: none; }
+            .filetable .filename { max-width: 100%; }
+        }
+    </style>
 
     <style>
         /* Drive PRZ: ocultar el botón de tres puntos
@@ -3768,10 +3834,20 @@
             display: none !important;
         }
     </style>
-<style>
-.prz-trash-grant-label { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:#435f7d; white-space:nowrap; }
-.prz-trash-grant-label input { accent-color:#1664bd; }
-</style>
+    <style>
+        .prz-trash-grant-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #435f7d;
+            white-space: nowrap;
+        }
+
+        .prz-trash-grant-label input {
+            accent-color: #1664bd;
+        }
+    </style>
 </head>
 
 <body>
@@ -4656,12 +4732,12 @@
                     const person = (info.people || []).find(p => Number(p.id) === userId);
                     if (!person) return;
                     const current = Array.isArray(person.permisos) ? [...person.permisos] :
-                        (person.role === 'edit' ? ['ver','descargar','renombrar','mover','copiar'] : ['ver','descargar']);
+                        (person.role === 'edit' ? ['ver', 'descargar', 'renombrar', 'mover', 'copiar'] : ['ver', 'descargar']);
                     const next = current.filter(x => x !== 'eliminar');
                     if (checkbox.checked) next.push('eliminar');
                     busy = true; checkbox.disabled = true;
                     try {
-                        await apiCompartir(`${base}/people/${userId}`, 'PUT', {permisos: next});
+                        await apiCompartir(`${base}/people/${userId}`, 'PUT', { permisos: next });
                         cambiosCompartirGuardados++;
                         await refresh();
                         toast(checkbox.checked ? 'Permiso Mover a papelera concedido.' : 'Permiso Mover a papelera retirado.');
@@ -5023,10 +5099,10 @@
                                             <div>
                                                 ${carpeta
                             ? `<button class="filename"
-                                                         data-real-folder="${x.id}">
+                                                         data-real-folder="${x.id}" title="${esc(x.name)}">
                                                          ${esc(x.name)}
                                                        </button>`
-                            : `<span class="filename">
+                            : `<span class="filename" title="${esc(x.name)}">
                                                          ${esc(x.name)}
                                                        </span>`}
                                             </div>
@@ -5329,8 +5405,10 @@
                         if (!cookie) throw new Error('Sesión no disponible. Recarga la página.');
                         const response = await fetch(`${API}/${tipo}/${encodeURIComponent(id)}/rename`, {
                             method: 'PATCH', credentials: 'same-origin',
-                            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json',
-                                'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) },
+                            headers: {
+                                'Accept': 'application/json', 'Content-Type': 'application/json',
+                                'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length))
+                            },
                             body: JSON.stringify({ nombre: nuevoNombre })
                         });
                         const data = await response.json().catch(() => ({}));
@@ -5746,7 +5824,7 @@
                 const a = items(), counts = a.filter(x => kind(x) === 'file').length;
                 $('sectionCounter').textContent = a.length + ' elementos'; $('footCounter').textContent = `${a.length} elementos · ${counts} archivos · Usuario: ${user(state.user).name}`;
                 if (!a.length) { $('filesArea').innerHTML = `<div class="empty">${glyph('folder')}<strong>${state.search ? 'No se encontraron resultados' : 'Esta carpeta está vacía'}</strong><p>${state.section === 'shared' ? 'Todavía no han compartido elementos contigo.' : 'Puedes crear una subcarpeta o subir archivos usando los botones superiores.'}</p>${canCreate() && !state.search ? '<div class="emptyaction"><button class="btn" data-act="newhere">＋ Nueva carpeta</button><button class="btn" data-act="bulkhere">Crear estructura</button><button class="btn monthshortcut" data-act="monthshere">📅 Crear meses</button><button class="btn primary" data-act="uploadhere">⇧ Subir archivos aquí</button><button class="btn" data-act="folderhere">Subir carpeta completa</button></div>' : ''}</div>`; return }
-                if (state.layout === 'grid') $('filesArea').innerHTML = `<div class="griditems">${a.map(x => `<article class="tile ${selection.has(x.id) ? 'selected-row' : ''}" data-row-id="${x.id}" draggable="${pickable(x)}"><div class="tiletop">${pickable(x) ? `<input type="checkbox" class="tilecheck rowcheck" data-pick="${x.id}" aria-label="Seleccionar ${esc(x.name)}" ${selection.has(x.id) ? 'checked' : ''}>` : ''}${icon(x)}<button class="dots" data-act="more" data-id="${x.id}">${glyph('dots')}</button></div><button class="filename" data-act="${kind(x) === 'folder' ? 'open' : 'view'}" data-id="${x.id}">${esc(x.name)}</button><span class="filemeta">${esc(type(x))} · ${size(x.size)}</span><div class="tilefoot">${actions(x)}</div></article>`).join('')}</div>`;
+                if (state.layout === 'grid') $('filesArea').innerHTML = `<div class="griditems">${a.map(x => `<article class="tile ${selection.has(x.id) ? 'selected-row' : ''}" data-row-id="${x.id}" draggable="${pickable(x)}"><div class="tiletop">${pickable(x) ? `<input type="checkbox" class="tilecheck rowcheck" data-pick="${x.id}" aria-label="Seleccionar ${esc(x.name)}" ${selection.has(x.id) ? 'checked' : ''}>` : ''}${icon(x)}<button class="dots" data-act="more" data-id="${x.id}">${glyph('dots')}</button></div><button class="filename" data-act="${kind(x) === 'folder' ? 'open' : 'view'}" data-id="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button><span class="filemeta">${esc(type(x))} · ${size(x.size)}</span><div class="tilefoot">${actions(x)}</div></article>`).join('')}</div>`;
                 else $('filesArea').innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th class="selcol"><input id="selectAll" type="checkbox" class="checkall" aria-label="Seleccionar todos los elementos que puedo editar" ${a.filter(pickable).length && a.filter(pickable).every(x => selection.has(x.id)) ? 'checked' : ''}></th><th>Nombre</th><th class="kind">Tipo</th><th class="size">Tamaño</th><th class="date">Modificado</th><th class="actcol">Acciones</th></tr></thead><tbody>${a.map(x => `<tr draggable="${pickable(x)}" data-row-id="${x.id}" class="${kind(x) === 'folder' ? 'folder-row' : ''} ${selection.has(x.id) ? 'selected-row' : ''}"><td class="selcol">${pickable(x) ? `<input class="rowcheck" type="checkbox" data-pick="${x.id}" aria-label="Seleccionar ${esc(x.name)}" ${selection.has(x.id) ? 'checked' : ''}>` : ''}</td><td>${fileName(x)}</td><td><span class="typepill">${esc(type(x))}</span></td><td>${size(x.size)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${actions(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
             }
             function showImportNotice(msg, id) {
@@ -7689,9 +7767,9 @@
                 const area = document.getElementById('filesArea');
                 if (!items.length) { area.innerHTML = `<div class="empty">${glyph('folder')}<strong>${q ? 'No se encontraron resultados' : 'No hay elementos compartidos'}</strong><p>Los archivos y carpetas que te compartan aparecerán aquí.</p></div>`; return; }
                 if (realLayout === 'grid') {
-                    area.innerHTML = `<div class="griditems">${items.map(x => `<article class="tile" data-shared-item="${x.type}:${x.id}"><div class="tiletop">${icono(x)}</div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<span class="filemeta">${x.type === 'folder' ? 'Carpeta' : 'Archivo'} · Compartido por ${esc(x.owner || 'Otro usuario')}</span><div class="tilefoot">${oper(x)}</div></article>`).join('')}</div>`;
+                    area.innerHTML = `<div class="griditems">${items.map(x => `<article class="tile" data-shared-item="${x.type}:${x.id}"><div class="tiletop">${icono(x)}</div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button>` : `<strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong>`}<span class="filemeta">${x.type === 'folder' ? 'Carpeta' : 'Archivo'} · Compartido por ${esc(x.owner || 'Otro usuario')}</span><div class="tilefoot">${oper(x)}</div></article>`).join('')}</div>`;
                 } else {
-                    area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr data-shared-item="${x.type}:${x.id}"><td></td><td><div class="namecell">${icono(x)}<div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}">${esc(x.name)}</button>` : `<strong class="filename">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner || 'Otro usuario')} · ${x.role === 'edit' ? 'Puede editar' : 'Solo ver'}</div></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size || 0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
+                    area.innerHTML = `<div class="tablewrap"><table class="filetable"><thead><tr><th><input type="checkbox" disabled aria-label="Selección no disponible"></th><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Modificado</th><th>Acciones</th></tr></thead><tbody>${items.map(x => `<tr data-shared-item="${x.type}:${x.id}"><td></td><td><div class="namecell">${icono(x)}<div>${x.type === 'folder' ? `<button type="button" class="filename" data-shared-open="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button>` : `<strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong>`}<div class="filemeta">Compartido por ${esc(x.owner || 'Otro usuario')} · ${x.role === 'edit' ? 'Puede editar' : 'Solo ver'}</div></div></div></td><td><span class="typepill">${x.type === 'folder' ? 'Carpeta' : esc(x.name.split('.').pop().toUpperCase())}</span></td><td>${x.type === 'folder' ? '—' : size(x.size || 0)}</td><td>${formatDate(x.modified)}</td><td><div class="actions">${oper(x)}</div></td></tr>`).join('')}</tbody></table></div>`;
                 }
             }
             async function sharedRealOpen(folderId = null) {
@@ -8229,7 +8307,7 @@
                 const id = Number(rawId);
                 const label = el.querySelector('.filename')?.textContent?.trim() ||
                     (type === 'folder' ? 'Carpeta compartida' : 'Archivo compartido');
-                const pointer = {clientX: event.clientX, clientY: event.clientY};
+                const pointer = { clientX: event.clientX, clientY: event.clientY };
                 try {
                     const url = new URL('/drive-prz-v5/shared', location.origin);
                     if (window.przSharedCurrentFolder != null) {
@@ -8237,7 +8315,7 @@
                     }
                     const response = await fetch(url, {
                         credentials: 'same-origin', cache: 'no-store',
-                        headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const data = await response.json();
@@ -8250,19 +8328,19 @@
                     const can = action => permissions.includes(action);
                     const actions = [];
                     if (type === 'folder') {
-                        if (can('ver')) actions.push({action: 'open', label: 'Abrir carpeta'});
+                        if (can('ver')) actions.push({ action: 'open', label: 'Abrir carpeta' });
                     } else {
-                        if (can('ver')) actions.push({action: 'view', label: 'Ver archivo'});
-                        if (can('descargar')) actions.push({action: 'download', label: 'Descargar'});
-                        if (can('renombrar')) actions.push({action: 'renombrar', label: 'Renombrar'});
-                        if (can('mover')) actions.push({action: 'mover', label: 'Mover'});
-                        if (can('copiar')) actions.push({action: 'copiar', label: 'Copiar a Mis archivos'});
-                        if (can('eliminar')) actions.push({action: 'trash', label: 'Mover a papelera'});
+                        if (can('ver')) actions.push({ action: 'view', label: 'Ver archivo' });
+                        if (can('descargar')) actions.push({ action: 'download', label: 'Descargar' });
+                        if (can('renombrar')) actions.push({ action: 'renombrar', label: 'Renombrar' });
+                        if (can('mover')) actions.push({ action: 'mover', label: 'Mover' });
+                        if (can('copiar')) actions.push({ action: 'copiar', label: 'Copiar a Mis archivos' });
+                        if (can('eliminar')) actions.push({ action: 'trash', label: 'Mover a papelera' });
                     }
                     // Acción de organización personal: disponible también con Solo ver.
-                    actions.push({action: 'hide', label: 'Quitar de Compartidos conmigo'});
+                    actions.push({ action: 'hide', label: 'Quitar de Compartidos conmigo' });
                     if (!actions.length) return;
-                    selected = {type, id, element: el, item, actions: actions.map(a => a.action)};
+                    selected = { type, id, element: el, item, actions: actions.map(a => a.action) };
                     renderMenu(label, actions, pointer);
                 } catch (error) {
                     console.warn('Drive PRZ: no se pudo consultar el permiso actualizado.', error);
@@ -8272,7 +8350,7 @@
             menu.addEventListener('click', event => {
                 const button = event.target.closest('[data-prz-shared-action]');
                 if (!button || !selected) return;
-                const {type, id, element, item, actions} = selected;
+                const { type, id, element, item, actions } = selected;
                 const action = button.dataset.przSharedAction;
                 if (!actions.includes(action)) return;
                 close();
@@ -8282,11 +8360,11 @@
                         const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
                         const xsrf = cookie ? decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) : '';
                         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                        const headers = {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'};
+                        const headers = { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
                         if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
                         else if (csrf) headers['X-CSRF-TOKEN'] = csrf;
                         const res = await fetch(`/drive-prz-v5/shared/files/${id}/trash`, {
-                            method:'POST', credentials:'same-origin', headers
+                            method: 'POST', credentials: 'same-origin', headers
                         });
                         const result = await res.json().catch(() => ({}));
                         if (!res.ok) throw new Error(result.message || `Error HTTP ${res.status}`);
