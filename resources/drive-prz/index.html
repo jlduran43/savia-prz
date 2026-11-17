@@ -4824,7 +4824,6 @@
                     }
                     if (tipo === 'files') {
                         q('przExternalGenerate').disabled = !canShare();
-                        q('przExternalRevoke').disabled = !canShare() || !enlaceActivo;
                     }
                     if (canShare()) renderChoices();
                 } catch (e) {
