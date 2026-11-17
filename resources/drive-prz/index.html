@@ -4403,7 +4403,7 @@
           ${tipo === 'files' ? `
           <div class="shareblock" id="przExternalSection">
             <label class="field">3. Compartir mediante enlace externo</label>
-            <p class="hint">Permite acceder al documento sin iniciar sesión durante 7 días. Cualquier persona que tenga el enlace podrá verlo si su formato lo permite.</p>
+            <p class="hint">Permite visualizar el documento sin iniciar sesión. El enlace no vence y estará disponible hasta que sea revocado. Cualquier persona con la URL podrá acceder si el formato lo permite.</p>
             <div class="shareform" style="margin-top:12px">
               <button type="button" class="btn primary" id="przExternalGenerate" disabled>Generar enlace externo</button>
               <button type="button" class="btn" id="przExternalRevoke" disabled>Revocar enlace</button>
@@ -4769,20 +4769,23 @@
                     const urlInput = q('przExternalUrl');
                     let enlaceActivo = false;
                     let ocupadoEnlace = false;
-                    const fechaEnlace = valor => valor ? new Date(valor.replace(' ', 'T')).toLocaleString('es-CL') : '';
                     const pintarEnlace = () => {
                         btnGenerar.disabled = ocupadoEnlace || !canShare();
                         btnRevocar.disabled = ocupadoEnlace || !canShare() || !enlaceActivo;
-                        btnGenerar.textContent = enlaceActivo ? 'Generar nuevo enlace' : 'Generar enlace externo';
+                        btnGenerar.textContent = enlaceActivo ? 'Recuperar enlace' : 'Generar enlace externo';
                     };
                     const consultarEnlace = async () => {
                         try {
                             const data = await apiCompartir(enlaceBase);
                             if (!q('przExternalSection')) return;
                             enlaceActivo = !!data.activo;
-                            estado.textContent = enlaceActivo
-                                ? `Existe un enlace activo. Vence: ${fechaEnlace(data.expira_at)}. Para obtener una nueva URL debes generar otro enlace.`
-                                : 'No hay enlaces externos activos.';
+                            urlInput.value = data.url || '';
+                            resultado.classList.toggle('hidden', !data.url);
+                            estado.textContent = data.url
+                                ? 'Enlace permanente activo. Puedes copiar esta misma URL cuando quieras.'
+                                : enlaceActivo
+                                    ? 'Existe un enlace antiguo activo, pero no es posible recuperar su URL original. Puedes generar otro enlace permanente sin invalidar el anterior.'
+                                    : 'No hay enlaces externos activos.';
                         } catch (e) {
                             estado.textContent = 'No fue posible consultar el enlace externo.';
                             errorEnlace.textContent = e.message;
@@ -4798,8 +4801,8 @@
                             urlInput.value = data.url;
                             resultado.classList.remove('hidden');
                             enlaceActivo = true;
-                            estado.textContent = 'Enlace creado. Cópialo ahora: por seguridad no se puede recuperar después de cerrar esta ventana. Vence en 7 días.';
-                            toast('Enlace externo generado correctamente.');
+                            estado.textContent = 'Enlace permanente activo, sin vencimiento. Puedes volver a copiar esta misma URL.';
+                            toast(data.nuevo ? 'Enlace permanente generado correctamente.' : 'Se recuperó el enlace existente.');
                         } catch (e) { errorEnlace.textContent = e.message; }
                         finally { ocupadoEnlace = false; pintarEnlace(); }
                     });
@@ -4838,7 +4841,7 @@
                     }
                     if (tipo === 'files') {
                         q('przExternalGenerate').disabled = !canShare();
-                        q('przExternalRevoke').disabled = !canShare() || !q('przExternalStatus').textContent.startsWith('Existe un enlace activo');
+                        q('przExternalRevoke').disabled = !canShare() || !enlaceActivo;
                     }
                     if (canShare()) renderChoices();
                 } catch (e) {
@@ -5492,6 +5495,44 @@
                 document.body.appendChild(menu);
 
                 let current = null;
+                let copiedItem = null;
+                let pasteDestination = null;
+                let pasting = false;
+                const canPaste = () => !!copiedItem && !pasting;
+                const copyItem = item => {
+                    copiedItem = { type: item.type, id: Number(item.id), name: item.name };
+                    toast(`Copiado: ${item.name}. Abre la carpeta de destino y selecciona Pegar.`);
+                };
+                const pasteItem = async destination => {
+                    if (!canPaste()) return;
+                    pasting = true;
+                    const item = copiedItem;
+                    try {
+                        const xsrfCookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+                        const xsrf = xsrfCookie ? decodeURIComponent(xsrfCookie.slice('XSRF-TOKEN='.length)) : '';
+                        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                        if (!xsrf && !csrf) throw new Error('Sesión no disponible. Recarga la página.');
+                        const headers = {
+                            'Accept': 'application/json', 'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        };
+                        if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
+                        else headers['X-CSRF-TOKEN'] = csrf;
+                        const response = await fetch(`${API}/clipboard/paste`, {
+                            method: 'POST', credentials: 'same-origin', headers,
+                            body: JSON.stringify({ tipo: item.type, id: item.id, carpeta_destino_id: destination })
+                        });
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || `HTTP ${response.status}`));
+                        }
+                        await mostrarArchivosReales(carpetaRealActual);
+                        toast(data.message || `Copia creada: ${item.name}`);
+                    } catch (error) {
+                        console.error('Drive PRZ: error al pegar', error);
+                        alert('No se pudo pegar: ' + error.message);
+                    } finally { pasting = false; }
+                };
                 let pressTimer = null;
                 let pressPoint = null;
                 const hide = () => {
@@ -5509,6 +5550,7 @@
                 const show = (item, x, y) => {
                     hide();
                     current = item;
+                    pasteDestination = null;
                     const folder = item.type === 'folder';
                     const available = [
                         { id: 'open', label: folder ? 'Abrir carpeta' : 'Ver archivo' },
@@ -5517,6 +5559,8 @@
                         ...(folder ? [{ id: 'color', label: 'Cambiar color' }] : []),
                         { id: 'rename', label: 'Cambiar nombre' },
                         { id: 'move', label: 'Mover a otra carpeta' },
+                        { id: 'copy', label: 'Copiar · Ctrl+C' },
+                        { id: 'paste', label: 'Pegar aquí · Ctrl+V', disabled: !canPaste() },
                         { id: 'trash', label: 'Mover a papelera', destructive: true },
                         { id: 'star', label: '☆ Destacar', disabled: true }
                     ];
@@ -5531,23 +5575,43 @@
                     menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`;
                     menu.querySelector('[data-prz-context-action]')?.focus({ preventScroll: true });
                 };
+                const showEmpty = (x, y, destination = carpetaRealActual) => {
+                    hide();
+                    pasteDestination = destination;
+                    menu.innerHTML = `<div class="prz-context-title">${destination === null ? 'Mis archivos' : 'Carpeta actual'}</div>` +
+                        `<button type="button" class="prz-context-item" data-prz-context-action="paste" ${canPaste() ? '' : 'disabled'}>Pegar aquí · Ctrl+V</button>`;
+                    menu.hidden = false;
+                    menu.style.left = '0px'; menu.style.top = '0px';
+                    const bounds = menu.getBoundingClientRect();
+                    menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - bounds.width - 8))}px`;
+                    menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - bounds.height - 8))}px`;
+                };
                 area.addEventListener('contextmenu', e => {
                     if (window.drivePrzLaravelActivo !== true) return;
                     const item = identify(e.target);
-                    if (!item) { hide(); return; }
+                    if (!item) {
+                        if (e.target.closest('button, a, input, select, textarea, [contenteditable], .actions, .toolbar')) { hide(); return; }
+                        e.preventDefault(); e.stopPropagation();
+                        showEmpty(e.clientX, e.clientY); return;
+                    }
                     e.preventDefault();
                     e.stopPropagation();
                     show(item, e.clientX, e.clientY);
                 });
                 menu.addEventListener('click', e => {
                     const button = e.target.closest('[data-prz-context-action]');
-                    if (!button || button.disabled || !current) return;
-                    const { id, name } = current;
-                    const folder = current.type === 'folder';
+                    if (!button || button.disabled) return;
+                    const selectedItem = current;
+                    const destination = pasteDestination;
+                    if (!selectedItem && button.dataset.przContextAction !== 'paste') return;
+                    const { id, name } = selectedItem || {};
+                    const folder = selectedItem?.type === 'folder';
                     const type = folder ? 'folders' : 'files';
                     const action = button.dataset.przContextAction;
-                    const bytes = current.size || 0;
+                    const bytes = selectedItem?.size || 0;
                     hide();
+                    if (action === 'copy') return copyItem(selectedItem);
+                    if (action === 'paste') return pasteItem(destination !== null ? destination : carpetaRealActual);
                     if (action === 'open') {
                         if (folder) mostrarArchivosReales(Number(id));
                         else verArchivoLaravel(Number(id), name, Number(bytes));
@@ -5581,7 +5645,19 @@
                 ['pointerup', 'pointercancel'].forEach(type => document.addEventListener(type, () => {
                     clearTimeout(pressTimer); pressTimer = null;
                 }, true));
-                document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+                document.addEventListener('keydown', e => {
+                    if (e.key === 'Escape') { hide(); return; }
+                    if (window.drivePrzLaravelActivo !== true || !e.ctrlKey || e.altKey || e.shiftKey) return;
+                    if (document.querySelector('#modalMount:not(:empty) .modal')) return;
+                    const target = e.target;
+                    if (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                    const key = e.key.toLowerCase();
+                    if (key === 'c' && realSelection.size === 1) {
+                        e.preventDefault(); copyItem([...realSelection.values()][0]);
+                    } else if (key === 'v' && canPaste()) {
+                        e.preventDefault(); pasteItem(carpetaRealActual);
+                    }
+                });
                 window.addEventListener('scroll', hide, true);
                 window.addEventListener('resize', hide);
                 area.addEventListener('click', hide);
