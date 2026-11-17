@@ -71,6 +71,7 @@ use App\Http\Controllers\DrivePrzRenameController;
 
 
 use App\Http\Controllers\DrivePrzSharedTrashController;
+use App\Http\Controllers\DrivePrzClipboardController;
 
 
 
@@ -81,7 +82,6 @@ Route::get('/admin/compras/formulario-contenido', function () {
         'filament.pages.formulario-requerimiento-compra-contenido'
 
     );
-
 })
 
     ->middleware('auth')
@@ -117,7 +117,6 @@ Route::get('/exportar-registros', function () {
         $nombreArchivo
 
     );
-
 });
 
 
@@ -157,7 +156,6 @@ Route::get('/prueba-session/guardar', function () {
     session(['prueba_session' => 'FUNCIONA']);
 
     return 'Sesión guardada. Ahora entra a /prueba-session/leer';
-
 });
 
 
@@ -171,7 +169,6 @@ Route::get('/prueba-session/leer', function () {
         'session_id' => session()->getId(),
 
     ];
-
 });
 
 
@@ -199,7 +196,6 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
     if (!$disco->exists($documento->ruta_archivo)) {
 
         abort(404, 'El archivo no existe en el servidor.');
-
     }
 
     return $disco->download(
@@ -209,7 +205,6 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
         $documento->nombre_original
 
     );
-
 })
 
     ->middleware('auth')
@@ -235,7 +230,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
     if (!$disco->exists($documento->ruta_archivo)) {
 
         abort(404, 'El documento no existe.');
-
     }
 
     $ruta = $disco->path($documento->ruta_archivo);
@@ -285,7 +279,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'",
 
         ]);
-
     }
 
 
@@ -295,7 +288,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
     if (!in_array($extension, ['doc', 'docx', 'xls', 'xlsx'], true)) {
 
         abort(415, 'Este tipo de archivo no admite vista previa.');
-
     }
 
 
@@ -307,7 +299,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
     if ($temporal === false) {
 
         abort(500, 'No fue posible preparar la vista previa.');
-
     }
 
     try {
@@ -333,7 +324,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             $writer = WordIOFactory::createWriter($word, 'HTML');
 
             $writer->save($temporal);
-
         } else {
 
 
@@ -361,13 +351,10 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
                 $writer->setPreCalculateFormulas(false);
 
                 $writer->save($temporal);
-
             } finally {
 
                 $excel->disconnectWorksheets();
-
             }
-
         }
 
         $html = file_get_contents($temporal);
@@ -379,9 +366,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
                 'No fue posible leer la vista previa.'
 
             );
-
         }
-
     } catch (\Throwable $e) {
 
         report($e);
@@ -393,15 +378,12 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
             'No fue posible generar la vista previa de este documento.'
 
         );
-
     } finally {
 
         if (file_exists($temporal)) {
 
             unlink($temporal);
-
         }
-
     }
 
 
@@ -423,7 +405,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
         "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; object-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
 
     ]);
-
 })
 
     ->middleware('auth')
@@ -469,7 +450,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
         'xls' => 'application/vnd.ms-excel',
 
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-
     };
 
     $response = response()->file(
@@ -499,7 +479,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
     );
 
     return $response;
-
 })
 
     ->middleware(['auth', 'signed', 'throttle:20,1'])
@@ -603,6 +582,12 @@ Route::middleware(['auth'])
             'ensureFolder'
 
         ])->name('ensure-folder');
+
+        // Copiar y pegar archivos y carpetas
+        Route::post('/clipboard/paste', [
+            DrivePrzClipboardController::class,
+            'paste'
+        ])->name('clipboard.paste');
 
 
 
@@ -742,15 +727,16 @@ Route::middleware(['auth'])
 
         // Ocultar un elemento compartido solo para el usuario destinatario.
 
-        Route::post('/shared/{kind}/{id}/hide',
+        Route::post(
+            '/shared/{kind}/{id}/hide',
 
             [\App\Http\Controllers\DrivePrzOcultarCompartidoController::class, 'ocultar']
 
         )->where('kind', 'files|folders')
 
-         ->whereNumber('id')
+            ->whereNumber('id')
 
-         ->name('shared.hide');
+            ->name('shared.hide');
 
 
 
@@ -760,13 +746,14 @@ Route::middleware(['auth'])
 
         // Requiere el permiso expreso "eliminar" en el backend.
 
-        Route::post('/shared/files/{id}/trash',
+        Route::post(
+            '/shared/files/{id}/trash',
 
             [DrivePrzSharedTrashController::class, 'moveToTrash']
 
         )->whereNumber('id')
 
-         ->name('shared.files.trash');
+            ->name('shared.files.trash');
 
 
 
@@ -837,7 +824,6 @@ Route::middleware(['auth'])
                 'message' => 'Sesión cerrada correctamente.'
 
             ]);
-
         })->name('logout');
 
         Route::get('/sharing/users', [DrivePrzSharingController::class, 'users'])->name('sharing.users');
@@ -871,7 +857,6 @@ Route::middleware(['auth'])
                     ->whereNumber('id')
 
                     ->name('leer');
-
             });
 
 
@@ -891,7 +876,6 @@ Route::middleware(['auth'])
             ->whereNumber('id')
 
             ->name('renombrar');
-
     });
 
 
@@ -905,7 +889,6 @@ Route::middleware(['auth'])
             resource_path('drive-prz/index.html')
 
         );
-
     })
 
     ->name('drive-prz.index');
@@ -945,7 +928,6 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
             ->implode(''),
 
     ]);
-
 });
 
 
@@ -971,7 +953,6 @@ Route::middleware('auth')->group(function () {
         'estado'
 
     ])->name('drive-prz.enlaces.estado');
-
 });
 
 
@@ -1063,5 +1044,4 @@ Route::middleware('auth')->group(function () {
     Route::put('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'guardar'])
 
         ->name('drive-prz-v5.configuracion.guardar');
-
 });

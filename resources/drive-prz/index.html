@@ -3797,9 +3797,21 @@
         }
 
         /* Drive PRZ: nombres largos legibles en lista, cuadrícula y compartidos */
-        .filetable .namecell { min-width: 0; }
-        .filetable .namecell > div { min-width: 0; flex: 1 1 auto; }
-        .filetable td:nth-child(2) { min-width: 220px; width: 42%; max-width: 520px; }
+        .filetable .namecell {
+            min-width: 0;
+        }
+
+        .filetable .namecell>div {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .filetable td:nth-child(2) {
+            min-width: 220px;
+            width: 42%;
+            max-width: 520px;
+        }
+
         .filetable .filename,
         .griditems .filename {
             display: -webkit-box;
@@ -3816,10 +3828,20 @@
             width: 100%;
             text-align: left;
         }
-        .griditems .filename { max-width: 100%; }
+
+        .griditems .filename {
+            max-width: 100%;
+        }
+
         @media (max-width: 760px) {
-            .filetable td:nth-child(2) { width: auto; max-width: none; }
-            .filetable .filename { max-width: 100%; }
+            .filetable td:nth-child(2) {
+                width: auto;
+                max-width: none;
+            }
+
+            .filetable .filename {
+                max-width: 100%;
+            }
         }
     </style>
 
@@ -5593,7 +5615,13 @@
                     const bytes = selectedItem?.size || 0;
                     hide();
                     if (action === 'copy') return copyItem(selectedItem);
-                    if (action === 'paste') return pasteItem(destination !== null ? destination : carpetaRealActual);
+                    if (action === 'paste') {
+                        const destino = destination !== null
+                            ? destination
+                            : (folder ? Number(id) : carpetaRealActual);
+
+                        return pasteItem(destino);
+                    }
                     if (action === 'open') {
                         if (folder) mostrarArchivosReales(Number(id));
                         else verArchivoLaravel(Number(id), name, Number(bytes));
