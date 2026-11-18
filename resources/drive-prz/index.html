@@ -415,7 +415,7 @@
         .toolbar {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             padding: 0 25px 18px;
             gap: 12px;
             flex-wrap: wrap
@@ -4268,6 +4268,9 @@
                         <button id="trashClearSelection" type="button">Quitar selección</button>
                     </div>
                     
+                    <div class="toolbar">
+                        <!-- Se conserva el campo interno para compatibilidad con los filtros existentes. -->
+                        <input type="hidden" id="searchInput" value="">
                         <div class="tools"><select id="typeFilter" class="select" aria-label="Filtrar por tipo">
                                 <option value="all">Todos los tipos</option>
                                 <option value="folder">Carpetas</option>
