@@ -3433,6 +3433,27 @@
             font-size: 13px
         }
 
+        .prz-notif-actions {
+            padding: 9px 12px;
+            border-bottom: 1px solid #e8edf3;
+            background: #fff;
+        }
+
+        .prz-notif-read-all {
+            width: 100%;
+            border: 1px solid #cbdff4;
+            background: #f4f9ff;
+            color: #155ea4;
+            border-radius: 8px;
+            padding: 9px 11px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .prz-notif-read-all:hover:not(:disabled) { background: #e5f2ff; }
+        .prz-notif-read-all:disabled { opacity: .5; cursor: not-allowed; }
+
         .prz-notif-body {
             padding: 4px
         }
@@ -4107,6 +4128,11 @@
                     <div class="prz-notif-menu" id="przNotifMenu" hidden>
                         <div class="prz-notif-header"><strong>Notificaciones</strong><span id="przNotifLabel">Sin leer:
                                 0</span></div>
+                        <div class="prz-notif-actions">
+                            <button type="button" id="przNotifReadAll" class="prz-notif-read-all" disabled>
+                                ✓ Marcar todas como leídas
+                            </button>
+                        </div>
                         <div class="prz-notif-body" id="przNotifBody">
                             <div class="prz-notif-status">Consultando avisos...</div>
                         </div>
@@ -8370,11 +8396,13 @@
                 const etiqueta = document.getElementById('przNotifLabel');
                 const cuerpo = document.getElementById('przNotifBody');
                 const wrap = document.getElementById('przNotifWrap');
-                if (!boton || !menu || !contador || !cuerpo) return;
+                const marcarTodas = document.getElementById('przNotifReadAll');
+                if (!boton || !menu || !contador || !cuerpo || !marcarTodas) return;
                 const endpoint = '/drive-prz-v5/notificaciones';
                 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
                 let avisos = [];
                 let consultando = false;
+                let marcandoTodas = false;
                 async function actualizarNotificaciones() {
                     if (consultando) return;
                     consultando = true;
@@ -8387,6 +8415,7 @@
                         contador.hidden = total === 0;
                         contador.textContent = total > 99 ? '99+' : String(total);
                         etiqueta.textContent = 'Sin leer: ' + total;
+                        marcarTodas.disabled = total === 0 || marcandoTodas;
                         if (!avisos.length) {
                             cuerpo.innerHTML = '<div class="prz-notif-status">No tienes notificaciones.</div>';
                         } else {
@@ -8401,6 +8430,36 @@
                         if (!menu.hidden) cuerpo.innerHTML = '<div class="prz-notif-status">No fue posible cargar las notificaciones.</div>';
                     } finally { consultando = false; }
                 }
+                marcarTodas.addEventListener('click', async e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (marcandoTodas || marcarTodas.disabled) return;
+                    marcandoTodas = true;
+                    marcarTodas.disabled = true;
+                    marcarTodas.textContent = 'Marcando notificaciones...';
+                    try {
+                        const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
+                        if (!cookie) throw new Error('No se encontró el token de sesión. Recarga la página.');
+                        const res = await fetch(`${endpoint}/leer-todas`, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                Accept: 'application/json',
+                                'X-XSRF-TOKEN': decodeURIComponent(cookie.slice('XSRF-TOKEN='.length))
+                            }
+                        });
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        const resultado = await res.json();
+                        if (!resultado.ok) throw new Error(resultado.message || 'No se pudieron marcar las notificaciones.');
+                    } catch (error) {
+                        console.error('Drive PRZ: error al marcar todas las notificaciones', error);
+                        alert('No se pudieron marcar todas las notificaciones: ' + error.message);
+                    } finally {
+                        marcandoTodas = false;
+                        marcarTodas.textContent = '✓ Marcar todas como leídas';
+                        await actualizarNotificaciones();
+                    }
+                });
                 boton.addEventListener('click', async e => {
                     e.preventDefault(); e.stopPropagation();
                     menu.hidden = !menu.hidden;

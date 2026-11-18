@@ -10,7 +10,6 @@ class DrivePrzNotificacionController extends Controller
 {
     private const TABLA = 'drive_prz_notificaciones';
 
-    // Obtener las notificaciones del usuario conectado.
     public function index(Request $request): JsonResponse
     {
         $usuarioId = (int) $request->user()->id;
@@ -19,15 +18,9 @@ class DrivePrzNotificacionController extends Controller
             ->join('users as u', 'u.id', '=', 'n.remitente_id')
             ->where('n.usuario_id', $usuarioId)
             ->select(
-                'n.id',
-                'n.tipo',
-                'n.elemento_tipo',
-                'n.elemento_id',
-                'n.elemento_nombre',
-                'n.mensaje',
-                'n.leida_at',
-                'n.created_at',
-                'u.name as remitente_nombre'
+                'n.id', 'n.tipo', 'n.elemento_tipo', 'n.elemento_id',
+                'n.elemento_nombre', 'n.mensaje', 'n.leida_at',
+                'n.created_at', 'u.name as remitente_nombre'
             )
             ->orderByDesc('n.created_at')
             ->limit(30)
@@ -45,20 +38,13 @@ class DrivePrzNotificacionController extends Controller
         ]);
     }
 
-    // Marcar una notificación como leída.
-    public function marcarLeida(
-        Request $request,
-        int $id
-    ): JsonResponse {
+    public function marcarLeida(Request $request, int $id): JsonResponse
+    {
         $usuarioId = (int) $request->user()->id;
-
         $actualizados = DB::table(self::TABLA)
             ->where('id', $id)
             ->where('usuario_id', $usuarioId)
-            ->update([
-                'leida_at' => now(),
-                'updated_at' => now(),
-            ]);
+            ->update(['leida_at' => now(), 'updated_at' => now()]);
 
         if (!$actualizados) {
             return response()->json([
@@ -70,6 +56,26 @@ class DrivePrzNotificacionController extends Controller
         return response()->json([
             'ok' => true,
             'message' => 'Notificación marcada como leída.',
+        ]);
+    }
+
+    // Marca TODAS las pendientes del usuario autenticado, no solo las últimas 30.
+    public function marcarTodasLeidas(Request $request): JsonResponse
+    {
+        $usuarioId = (int) $request->user()->id;
+        $actualizados = DB::table(self::TABLA)
+            ->where('usuario_id', $usuarioId)
+            ->whereNull('leida_at')
+            ->update([
+                'leida_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Todas las notificaciones fueron marcadas como leídas.',
+            'actualizadas' => $actualizados,
+            'sin_leer' => 0,
         ]);
     }
 }

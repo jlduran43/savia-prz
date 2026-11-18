@@ -656,6 +656,11 @@ Route::middleware(['auth'])
             ->name('restore');
 
 
+        Route::post(
+            '/notificaciones/leer-todas',
+            [DrivePrzNotificacionController::class, 'marcarTodasLeidas']
+        );
+
 
         // Eliminar definitivamente
 
