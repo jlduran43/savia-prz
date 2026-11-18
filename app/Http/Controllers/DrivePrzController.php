@@ -617,7 +617,9 @@ public function screen()
 
 
 
-        $lines = preg_split('/**\r\n**|**\r**|**\n**/', $d['estructura']);
+        
+$lines = preg_split('/\r\n|\r|\n/', $d['estructura']);
+
 
 
 
