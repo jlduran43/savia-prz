@@ -3913,6 +3913,34 @@
                 max-width: 100%;
             }
         }
+    
+        /* Enlace público: URL completa en varias líneas, sin desplazamiento horizontal. */
+        .prz-external-link-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            flex-wrap: wrap;
+        }
+        .prz-external-url {
+            flex: 1 1 320px;
+            min-width: 0;
+            min-height: 76px;
+            height: 76px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+            word-break: break-all;
+            white-space: pre-wrap;
+            overflow: hidden;
+            resize: none;
+            font-family: inherit;
+        }
+        .prz-external-link-box #przExternalCopy {
+            flex-shrink: 0;
+        }
+        @media (max-width: 560px) {
+            .prz-external-url { flex-basis: 100%; }
+        }
+
     </style>
 
     <style>
@@ -4505,12 +4533,12 @@
             <label class="field">3. Compartir mediante enlace externo</label>
             <p class="hint">Permite visualizar el documento sin iniciar sesión. El enlace es permanente y no tiene fecha de vencimiento. Se reutiliza la misma URL en futuras consultas. Cualquier persona con la URL podrá acceder si el formato lo permite.</p>
             <div class="shareform" style="margin-top:12px">
-              <button type="button" class="btn primary" id="przExternalGenerate" disabled>Generar enlace externo</button>
+              <button type="button" class="btn primary" id="przExternalGenerate" disabled>Obtener enlace</button>
             </div>
             <div id="przExternalResult" class="hidden" style="margin-top:12px">
               <label for="przExternalUrl" class="field">Enlace para compartir</label>
-              <div class="shareform">
-                <input type="text" id="przExternalUrl" class="textinput" readonly aria-label="URL externa generada">
+              <div class="prz-external-link-box">
+                <textarea id="przExternalUrl" class="textinput prz-external-url" rows="2" readonly aria-label="URL externa generada"></textarea>
                 <button type="button" class="btn" id="przExternalCopy">Copiar enlace</button>
               </div>
             </div>
@@ -4867,16 +4895,21 @@
                     const urlInput = q('przExternalUrl');
                     let enlaceActivo = false;
                     let ocupadoEnlace = false;
+                    const mostrarUrlCompleta = (url) => {
+                        urlInput.value = url || '';
+                        urlInput.style.height = 'auto';
+                        urlInput.style.height = Math.max(76, urlInput.scrollHeight + 2) + 'px';
+                    };
                     const pintarEnlace = () => {
                         btnGenerar.disabled = ocupadoEnlace || !canShare();
-                        btnGenerar.textContent = enlaceActivo ? 'Recuperar enlace' : 'Generar enlace externo';
+                        btnGenerar.textContent = 'Obtener enlace';
                     };
                     const consultarEnlace = async () => {
                         try {
                             const data = await apiCompartir(enlaceBase);
                             if (!q('przExternalSection')) return;
                             enlaceActivo = !!data.activo;
-                            urlInput.value = data.url || '';
+                            mostrarUrlCompleta(data.url);
                             resultado.classList.toggle('hidden', !data.url);
                             estado.textContent = data.url
                                 ? 'Enlace permanente activo. Puedes copiar esta misma URL cuando quieras.'
@@ -4895,7 +4928,7 @@
                         try {
                             const data = await apiCompartir(enlaceBase, 'POST', {});
                             if (!data.url || !data.url.startsWith('https://')) throw new Error('El servidor no devolvió una URL HTTPS válida.');
-                            urlInput.value = data.url;
+                            mostrarUrlCompleta(data.url);
                             resultado.classList.remove('hidden');
                             enlaceActivo = true;
                             estado.textContent = 'Enlace permanente activo, sin vencimiento. Puedes volver a copiar esta misma URL.';
