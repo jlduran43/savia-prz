@@ -1718,6 +1718,19 @@
             color: #e0a425
         }
 
+
+        /* Árbol expandible del selector de destino (movimientos reales). */
+        .prz-tree-row { display:flex; align-items:center; min-width:0; }
+        .prz-tree-row .folderoption { flex:1; min-width:0; width:auto; }
+        .prz-tree-toggle { display:inline-flex; align-items:center; justify-content:center;
+            width:25px; height:33px; flex:0 0 25px; border:0; border-radius:6px;
+            color:#617b95; background:transparent; padding:0; }
+        .prz-tree-toggle:hover:not(:disabled) { background:#e8f3ff; color:#155e9a; }
+        .prz-tree-toggle svg { width:15px; height:15px; transition:transform .15s ease; }
+        .prz-tree-toggle[aria-expanded="false"] svg { transform:rotate(-90deg); }
+        .prz-tree-spacer { width:25px; flex:0 0 25px; }
+        .prz-tree-children[hidden] { display:none !important; }
+
         .folderoption .treeinfo {
             margin-left: auto;
             color: #9aaabd;
@@ -5220,6 +5233,33 @@
                 updateRealSelection();
             }
 
+
+            // Árbol plegable solo visual: no cambia el destino elegido ni los permisos.
+            function przNodoDestino(cid, nombre, nivel, hijosHTML, claseOpcion, deshabilitado = false) {
+                const tieneHijos = Boolean(hijosHTML);
+                const control = tieneHijos
+                    ? `<button type="button" class="prz-tree-toggle" aria-expanded="true" aria-label="Contraer ${esc(nombre)}" title="Expandir / contraer subcarpetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`
+                    : '<span class="prz-tree-spacer" aria-hidden="true"></span>';
+                return `<div class="prz-tree-node"><div class="prz-tree-row" style="padding-left:${Math.min(nivel,30)*19}px">
+                    ${control}<button type="button" class="folderoption ${claseOpcion}" data-destino="${cid}" ${deshabilitado ? 'disabled' : ''}>
+                    ${glyph('folder')} <span>${esc(nombre)}</span></button></div>
+                    ${tieneHijos ? `<div class="prz-tree-children">${hijosHTML}</div>` : ''}</div>`;
+            }
+            function przActivarArbolDestino(mount) {
+                mount.querySelectorAll('.prz-tree-toggle').forEach(boton => {
+                    boton.addEventListener('click', () => {
+                        const nodo = boton.closest('.prz-tree-node');
+                        const hijos = nodo?.querySelector(':scope > .prz-tree-children');
+                        if (!hijos) return;
+                        const expandir = boton.getAttribute('aria-expanded') !== 'true';
+                        hijos.hidden = !expandir;
+                        boton.setAttribute('aria-expanded', String(expandir));
+                        const nombre = nodo.querySelector(':scope > .prz-tree-row .folderoption span')?.textContent || 'carpeta';
+                        boton.setAttribute('aria-label', `${expandir ? 'Contraer' : 'Expandir'} ${nombre}`);
+                    });
+                });
+            }
+
             // Mover varios elementos reales reutilizando los endpoints existentes.
             async function abrirMoverSeleccionadosLaravel() {
                 const seleccion = [...realSelection.values()];
@@ -5258,19 +5298,20 @@
                     return hijos(id).map(c => {
                         const cid = Number(c.id); if (seen.has(cid)) return '';
                         const next = new Set(seen); next.add(cid);
-                        return `<button type="button" class="folderoption real-bulk-dest" data-destino="${cid}" style="padding-left:${12 + level * 19}px" ${esPropiaODebajo(cid) ? 'disabled' : ''}>${glyph('folder')} <span>${esc(c.nombre)}</span></button>` + tree(cid, level + 1, next);
+                        return przNodoDestino(cid, c.nombre, level + 1, tree(cid, level + 1, next), 'real-bulk-dest', esPropiaODebajo(cid));
                     }).join('');
                 };
                 let destino = origen;
                 modal('Mover a otra carpeta',
                     `<p class="hint">Vas a mover <strong>${seleccion.length} elemento(s)</strong>. Selecciona una carpeta de destino:</p>
-          <div class="folderpicker" style="max-height:360px">
-            <button type="button" class="folderoption real-bulk-dest" data-destino="root">${glyph('folder')} <span>Mis archivos</span></button>${tree()}
+          <div class="folderpicker prz-move-tree" style="max-height:360px">
+            ${przNodoDestino('root', 'Mis archivos', 0, tree(), 'real-bulk-dest')}
           </div>
           <div class="moveproof"><strong>Destino elegido:</strong> <span id="realBulkPath"></span><div class="smallmuted">Los permisos heredados pueden cambiar al mover archivos.</div></div>
           <p id="realBulkError" class="hint" style="color:#b33c46" role="alert"></p>`,
                     `<button type="button" class="btn primary" id="realBulkConfirm">Mover aquí</button>`, true);
                 const mount = document.getElementById('modalMount');
+                przActivarArbolDestino(mount);
                 const boton = mount.querySelector('#realBulkConfirm');
                 const error = mount.querySelector('#realBulkError');
                 const actualizar = () => {
@@ -5365,10 +5406,8 @@
                         const cid = Number(c.id);
                         if (vistos.has(cid)) return '';
                         const nuevas = new Set(vistos); nuevas.add(cid);
-                        return `<button type="button" class="folderoption prz-move-option" data-destino="${cid}"
-               style="padding-left:${12 + profundidad * 19}px" ${esDescendiente(cid) ? 'disabled' : ''}>
-                 ${glyph('folder')} <span>${esc(c.nombre)}</span>
-               </button>` + opciones(cid, profundidad + 1, nuevas);
+                        return przNodoDestino(cid, c.nombre, profundidad + 1,
+                            opciones(cid, profundidad + 1, nuevas), 'prz-move-option', esDescendiente(cid));
                     }).join('');
                 };
 
@@ -5376,10 +5415,7 @@
                 modal('Mover a otra carpeta',
                     `<p class="hint">Vas a mover <strong>${esc(nombre)}</strong>. Selecciona una carpeta de destino:</p>
            <div class="folderpicker prz-move-tree" style="max-height:360px">
-             <button class="folderoption prz-move-option" type="button" data-destino="root">
-               ${glyph('folder')} <span>Mis archivos</span>
-             </button>
-             ${opciones()}
+             ${przNodoDestino('root', 'Mis archivos', 0, opciones(), 'prz-move-option')}
            </div>
            <div class="moveproof"><strong>Destino elegido:</strong> <span id="przMoveDestination"></span>
            <div class="smallmuted">Los permisos heredados pueden cambiar al mover archivos a otra carpeta.</div></div>
@@ -5387,6 +5423,7 @@
                     `<button type="button" class="btn primary" id="przMoveConfirm">Mover aquí</button>`, true);
 
                 const mount = document.getElementById('modalMount');
+                przActivarArbolDestino(mount);
                 const confirmar = mount.querySelector('#przMoveConfirm');
                 const errorBox = mount.querySelector('#przMoveError');
                 const actualizar = () => {
