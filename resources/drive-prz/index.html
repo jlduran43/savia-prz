@@ -450,6 +450,25 @@
             color: #a0aebe
         }
 
+
+        /* Buscador principal: junto al título Documentos. */
+        .heading-search {
+            margin-top: 14px;
+            width: min(390px, 100%);
+            max-width: 100%;
+            flex: none;
+            background: #fff;
+        }
+        .heading-search input {
+            width: 100%;
+        }
+        .heading-search input::-webkit-search-cancel-button {
+            cursor: pointer;
+        }
+        @media (max-width: 760px) {
+            .heading-search { width: 100%; }
+        }
+
         .tools {
             display: flex;
             align-items: center;
@@ -4207,6 +4226,10 @@
                     <div>
                         <h1 id="sectionTitle">Documentos</h1>
                         <p id="sectionSubtitle">Gestiona y organiza los archivos de tu equipo.</p>
+                        <div class="heading-search searchwrap" role="search">
+                            <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                            <input type="search" id="searchInput" placeholder="Buscar archivos o carpetas..." aria-label="Buscar archivos o carpetas" autocomplete="off">
+                        </div>
                     </div>
                     <div class="headingactions" id="createButtons"><button type="button" class="btn"
                             id="newFolder"><svg>
@@ -4269,8 +4292,6 @@
                     </div>
                     
                     <div class="toolbar">
-                        <!-- Se conserva el campo interno para compatibilidad con los filtros existentes. -->
-                        <input type="hidden" id="searchInput" value="">
                         <div class="tools"><select id="typeFilter" class="select" aria-label="Filtrar por tipo">
                                 <option value="all">Todos los tipos</option>
                                 <option value="folder">Carpetas</option>
