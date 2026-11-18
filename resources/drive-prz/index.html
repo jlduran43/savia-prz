@@ -5211,11 +5211,34 @@
             }
 
             function dibujarArchivosReales(elementos = realRenderedItems) {
+                // Conservamos los datos originales obtenidos de Laravel para poder
+                // volver a mostrarlos al limpiar la búsqueda, sin otra consulta.
                 realRenderedItems = elementos;
+                const entrada = document.getElementById('searchInput');
+                const consulta = (entrada?.value || '').trim().toLocaleLowerCase('es');
+                const tipo = document.getElementById('typeFilter')?.value || 'all';
+                const orden = document.getElementById('sortBy')?.value || 'name';
+                elementos = elementos.filter(item => {
+                    const nombre = String(item.name || '').toLocaleLowerCase('es');
+                    const extension = item.type === 'folder' ? 'folder' : nombre.split('.').pop();
+                    const coincideTipo = tipo === 'all' || extension === tipo ||
+                        (tipo === 'png' && ['png', 'jpg', 'jpeg', 'webp'].includes(extension)) ||
+                        (tipo === 'xlsx' && ['xlsx', 'xls', 'csv'].includes(extension)) ||
+                        (tipo === 'docx' && ['docx', 'doc', 'txt'].includes(extension));
+                    return coincideTipo && nombre.includes(consulta);
+                });
+                elementos.sort((a, b) => orden === 'recent'
+                    ? new Date(b.modified || 0) - new Date(a.modified || 0)
+                    : orden === 'size'
+                        ? (Number(b.size) || 0) - (Number(a.size) || 0)
+                        : String(a.name).localeCompare(String(b.name), 'es'));
+                realVisible = elementos;
+                document.getElementById('sectionCounter').textContent = `${elementos.length} elementos`;
+                document.getElementById('footCounter').textContent = `${elementos.length} elementos visibles · SAVIA PRZ`;
                 document.getElementById('listBtn').classList.toggle('on', realLayout === 'list');
                 document.getElementById('gridBtn').classList.toggle('on', realLayout === 'grid');
                 if (!elementos.length) {
-                    document.getElementById('filesArea').innerHTML = `<div class="empty">${glyph('folder')}<strong>Esta carpeta está vacía</strong><p>No existen documentos en esta ubicación.</p></div>`;
+                    document.getElementById('filesArea').innerHTML = `<div class="empty">${glyph('folder')}<strong>${consulta || tipo !== 'all' ? 'No se encontraron resultados' : 'Esta carpeta está vacía'}</strong><p>${consulta || tipo !== 'all' ? 'Prueba con otro nombre o cambia el filtro de tipo.' : 'No existen documentos en esta ubicación.'}</p></div>`;
                     return;
                 }
                 if (realLayout === 'grid') {
@@ -8047,6 +8070,18 @@
                 if (trashRealActive) renderTrashReal();
                 else if (sharedRealActive) sharedRealRender();
                 else dibujarArchivosReales();
+            });
+
+            // Búsqueda/filtros sobre Mis archivos REAL (Laravel/MySQL).
+            // En captura se evita que la vista del prototipo reemplace los resultados.
+            ['searchInput', 'typeFilter', 'sortBy'].forEach(id => {
+                const control = document.getElementById(id);
+                control.addEventListener(id === 'searchInput' ? 'input' : 'change', event => {
+                    if (sharedRealActive || trashRealActive || !window.drivePrzLaravelActivo) return;
+                    event.stopImmediatePropagation();
+                    realSelection.clear();
+                    dibujarArchivosReales();
+                }, true);
             });
 
             // COMPARTIDOS REALES: exclusivamente desde MySQL, nunca datos del prototipo.
