@@ -7234,6 +7234,11 @@
                 const mesNombre = n => String(n).padStart(2, '0') + '. ' + nombresMes[n - 1];
                 // Cada carpeta puede tener su propio conjunto de meses. Todavía no guarda nada.
                 const mesesPorRuta = new Map();
+                const DESTINO_ACTUAL_MESES = "__prz_destino_actual__";
+                const PREFIJO_EXISTENTE = "__prz_existente__:";
+                const carpetasExistentes = new Map();
+                let destinosCargados = false;
+                const esDestinoExistente = ruta => ruta.startsWith(PREFIJO_EXISTENTE);
                 const casillasMeses = nombresMes.map((_, i) => `<label class="monthitem" data-bulk-mes="${i + 1}">
                     <input class="prz-bulk-monthcheck" type="checkbox" value="${i + 1}" aria-label="${esc(mesNombre(i + 1))}">
                     <span class="monthname">${esc(mesNombre(i + 1))}</span></label>`).join('');
@@ -7249,10 +7254,10 @@
           <kbd>Proyectos / Informes / 2026</kbd>.</p>
           <section class="prz-bulk-months" aria-label="Agregar carpetas mensuales">
             <div class="prz-bulk-months-heading"><strong>📅 Agregar meses a una carpeta</strong>
-              <span class="smallmuted">Opcional · como en «Crear meses»</span></div>
+              <span class="smallmuted">Elige la carpeta actual, una carpeta existente o una nueva de tu lista.</span></div>
             <label class="field" for="przBulkMonthDestination">Carpeta donde crear los meses</label>
             <select id="przBulkMonthDestination" class="textinput" disabled>
-              <option value="">Primero escribe una carpeta arriba</option>
+              <option value="__prz_destino_actual__">Carpeta actual</option>
             </select>
             <div class="monthquick" role="group" aria-label="Seleccionar meses">
               <strong>Seleccionar:</strong>
@@ -7263,10 +7268,10 @@
             </div>
             <div class="monthgrid">${casillasMeses}</div>
             <div class="prz-bulk-months-actions">
-              <button type="button" class="btn" id="przAgregarMesesEstructura" disabled>Agregar meses a la vista previa</button>
+              <button type="button" class="btn" id="przAgregarMesesEstructura" disabled>Actualizar meses en vista previa</button>
               <button type="button" class="btn" id="przQuitarMesesEstructura" disabled>Quitar meses agregados</button>
             </div>
-            <p id="przBulkMonthsInfo" class="smallmuted" role="status">Selecciona una carpeta y los meses para agregar.</p>
+            <p id="przBulkMonthsInfo" class="smallmuted" role="status">Los meses seleccionados se agregan automáticamente a la vista previa.</p>
           </section>
           <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
           <span>Revisa el árbol antes de confirmar.</span></div>
@@ -7284,6 +7289,12 @@
                 const mesesMarcados = () => checks.filter(c => c.checked).map(c => Number(c.value));
                 let rutasFinales = [], erroresActuales = [], ocupado = false;
 
+                function etiquetaDestinoMeses(ruta) {
+                    if (ruta === DESTINO_ACTUAL_MESES) return destino;
+                    if (esDestinoExistente(ruta)) return carpetasExistentes.get(ruta)?.ruta || 'Carpeta existente';
+                    return ruta.replaceAll('/', ' / ');
+                }
+
                 function actualizarMesesUI() {
                     const ruta = destinoSelect.value;
                     const elegidos = mesesPorRuta.get(ruta) || new Set();
@@ -7291,79 +7302,98 @@
                         c.checked = elegidos.has(Number(c.value));
                         c.closest('.monthitem').classList.toggle('chosen', c.checked);
                     });
-                    quitar.disabled = ocupado || !ruta || !mesesPorRuta.has(ruta);
-                    agregar.disabled = ocupado || !ruta || !mesesMarcados().length;
-                    info.textContent = !ruta ? 'Primero escribe una carpeta en la lista.'
-                        : `${elegidos.size} mes(es) preparado(s) para «${ruta}». Pulsa «Agregar meses a la vista previa» después de elegir.`;
+                    quitar.disabled = ocupado || !mesesPorRuta.has(ruta);
+                    agregar.disabled = ocupado || !checks.some(c => c.checked);
+                    info.textContent = `${elegidos.size} mes(es) seleccionados para «${etiquetaDestinoMeses(ruta)}». Los cambios se reflejan automáticamente en la vista previa.`;
                 }
 
                 function actualizar() {
                     const resultado = analizarEstructuraReal(campo.value);
                     const rutasBase = resultado.rutas;
-                    const rutaAnterior = destinoSelect.value;
-                    // No permitir que se guarden meses en rutas que ya no existen en el texto.
+                    const rutaAnterior = destinoSelect.value || DESTINO_ACTUAL_MESES;
                     for (const ruta of [...mesesPorRuta.keys()]) {
-                        if (!rutasBase.includes(ruta)) mesesPorRuta.delete(ruta);
+                        if (ruta !== DESTINO_ACTUAL_MESES && !esDestinoExistente(ruta) && !rutasBase.includes(ruta)) mesesPorRuta.delete(ruta);
                     }
                     destinoSelect.replaceChildren();
-                    const placeholder = document.createElement('option');
-                    placeholder.value = '';
-                    placeholder.textContent = rutasBase.length ? 'Selecciona una carpeta...' : 'Primero escribe una carpeta arriba';
-                    destinoSelect.appendChild(placeholder);
+                    const actual = document.createElement('option');
+                    actual.value = DESTINO_ACTUAL_MESES;
+                    actual.textContent = `Carpeta actual: ${destino}`;
+                    destinoSelect.appendChild(actual);
+                    for (const [clave, carpeta] of carpetasExistentes) {
+                        const option = document.createElement('option');
+                        option.value = clave;
+                        option.textContent = `Existente: ${carpeta.ruta}`;
+                        destinoSelect.appendChild(option);
+                    }
                     for (const ruta of rutasBase) {
                         const option = document.createElement('option');
                         option.value = ruta;
                         option.textContent = ruta.replaceAll('/', ' / ');
                         destinoSelect.appendChild(option);
                     }
-                    destinoSelect.disabled = ocupado || !rutasBase.length || resultado.errores.length > 0;
-                    destinoSelect.value = rutasBase.includes(rutaAnterior) ? rutaAnterior : '';
+                    destinoSelect.disabled = ocupado || resultado.errores.length > 0;
+                    destinoSelect.value = rutaAnterior === DESTINO_ACTUAL_MESES || carpetasExistentes.has(rutaAnterior) || rutasBase.includes(rutaAnterior)
+                        ? rutaAnterior : DESTINO_ACTUAL_MESES;
                     const rutas = new Set(rutasBase);
+                    const rutasMensuales = new Set();
+                    let cantidadMesesExistentes = 0;
                     for (const [padre, meses] of mesesPorRuta) {
-                        for (const mes of meses) rutas.add(`${padre}/${mesNombre(mes)}`);
+                        if (esDestinoExistente(padre)) {
+                            cantidadMesesExistentes += meses.size;
+                            continue;
+                        }
+                        for (const mes of meses) {
+                            const ruta = padre === DESTINO_ACTUAL_MESES ? mesNombre(mes) : `${padre}/${mesNombre(mes)}`;
+                            rutas.add(ruta);
+                            rutasMensuales.add(ruta);
+                        }
                     }
                     rutasFinales = [...rutas];
                     erroresActuales = [...resultado.errores];
-                    if (rutasFinales.length > 100) erroresActuales.push('Máximo 100 carpetas por operación (incluyendo meses).');
-                    $('przOutlineCountReal').textContent = `${rutasFinales.length} carpeta${rutasFinales.length === 1 ? '' : 's'}`;
+                    if (rutasFinales.length + cantidadMesesExistentes > 100) erroresActuales.push('Máximo 100 carpetas por operación (incluyendo meses).');
+                    $('przOutlineCountReal').textContent = `${rutasFinales.length + cantidadMesesExistentes} carpeta${rutasFinales.length + cantidadMesesExistentes === 1 ? '' : 's'}`;
                     errores.hidden = !erroresActuales.length;
                     errores.textContent = erroresActuales.join(' | ');
-                    guardar.disabled = ocupado || !rutasFinales.length || !!erroresActuales.length;
+                    guardar.disabled = ocupado || (!rutasFinales.length && !cantidadMesesExistentes) || !!erroresActuales.length;
                     const arbol = rutasFinales.map(ruta => {
                         const partes = ruta.split('/');
-                        const mesAuto = !rutasBase.includes(ruta);
+                        const mesAuto = rutasMensuales.has(ruta);
                         return `<li style="padding-left:${(partes.length - 1) * 14}px"><span class="outlineicon">${mesAuto ? '📅' : '📁'}</span>${esc(partes.at(-1))}${mesAuto ? ' <span class="outlineexists">mes agregado</span>' : ''}</li>`;
                     });
+                    for (const [padre, meses] of mesesPorRuta) {
+                        if (!esDestinoExistente(padre)) continue;
+                        const carpeta = carpetasExistentes.get(padre);
+                        if (!carpeta) continue;
+                        arbol.push(`<li><strong>📁 ${esc(carpeta.ruta)}</strong> <span class="outlineexists">(existente)</span></li>`);
+                        for (const mes of meses) arbol.push(`<li style="padding-left:20px">📅 ${esc(mesNombre(mes))} <span class="outlineexists">mes agregado</span></li>`);
+                    }
                     preview.innerHTML = arbol.length ? `<ul>${arbol.join('')}</ul>` : '<span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span>';
                     actualizarMesesUI();
                 }
+
+                function aplicarMesesSeleccionados() {
+                    const ruta = destinoSelect.value;
+                    if (!ruta) return;
+                    const seleccion = mesesMarcados();
+                    if (seleccion.length) mesesPorRuta.set(ruta, new Set(seleccion));
+                    else mesesPorRuta.delete(ruta);
+                    actualizar();
+                }
+
                 campo.addEventListener('input', actualizar);
                 destinoSelect.addEventListener('change', actualizarMesesUI);
-                checks.forEach(c => c.addEventListener('change', () => {
-                    c.closest('.monthitem').classList.toggle('chosen', c.checked);
-                    agregar.disabled = ocupado || !destinoSelect.value || !mesesMarcados().length;
-                }));
+                checks.forEach(c => c.addEventListener('change', aplicarMesesSeleccionados));
                 $('modalMount').querySelectorAll('[data-bulk-preset]').forEach(b => b.addEventListener('click', () => {
                     const tipo = b.dataset.bulkPreset;
                     checks.forEach(c => {
                         const n = Number(c.value);
                         c.checked = tipo === 'all' || (tipo === 'first' && n <= 6) || (tipo === 'last' && n >= 7);
-                        c.closest('.monthitem').classList.toggle('chosen', c.checked);
                     });
-                    agregar.disabled = ocupado || !destinoSelect.value || !mesesMarcados().length;
+                    aplicarMesesSeleccionados();
                 }));
-                agregar.addEventListener('click', () => {
-                    const ruta = destinoSelect.value;
-                    if (!ruta) return;
-                    const seleccion = mesesMarcados();
-                    if (!seleccion.length) return;
-                    mesesPorRuta.set(ruta, new Set(seleccion));
-                    actualizar();
-                    info.textContent = `${seleccion.length} meses añadidos a la vista previa de «${ruta}».`;
-                });
+                agregar.addEventListener('click', aplicarMesesSeleccionados);
                 quitar.addEventListener('click', () => {
-                    const ruta = destinoSelect.value;
-                    mesesPorRuta.delete(ruta);
+                    mesesPorRuta.delete(destinoSelect.value);
                     actualizar();
                 });
                 $('przEjemploReal').addEventListener('click', () => {
@@ -7373,26 +7403,49 @@
                 });
                 guardar.addEventListener('click', async () => {
                     actualizar();
-                    if (!rutasFinales.length || erroresActuales.length || ocupado) return;
+                    if ((!rutasFinales.length && ![...mesesPorRuta.keys()].some(esDestinoExistente)) || erroresActuales.length || ocupado) return;
                     ocupado = true;
                     guardar.disabled = true; guardar.textContent = 'Creando...';
                     agregar.disabled = true; quitar.disabled = true;
                     try {
                         const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
                         if (!cookie) throw new Error('Falta token de seguridad. Recarga la página.');
-                        const respuesta = await fetch(ENDPOINTS.estructuras, {
-                            method: 'POST', credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/json', 'Accept': 'application/json',
-                                'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))
-                            },
-                            body: JSON.stringify({ carpeta_padre_id: carpetaRealActual, estructura: rutasFinales.join('\n') })
-                        });
-                        const datos = await respuesta.json().catch(() => ({}));
-                        if (!respuesta.ok) throw new Error(datos.message || (datos.errors ? Object.values(datos.errors).flat().join(', ') : `HTTP ${respuesta.status}`));
+                        let creadas = 0;
+                        // Primero se crean los meses en carpetas existentes, usando el endpoint que
+                        // comprueba los meses ya presentes. Nunca se recrea la carpeta padre.
+                        for (const [clave, meses] of mesesPorRuta) {
+                            if (!esDestinoExistente(clave) || !meses.size) continue;
+                            const carpeta = carpetasExistentes.get(clave);
+                            if (!carpeta) throw new Error('No se encontró la carpeta de destino. Reabre el formulario.');
+                            const respuestaMeses = await fetch(ENDPOINTS.meses, {
+                                method: 'POST', credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json', 'Accept': 'application/json',
+                                    'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))
+                                },
+                                body: JSON.stringify({ carpeta_padre_id: carpeta.id, meses: [...meses].sort((a,b) => a-b) })
+                            });
+                            const datosMeses = await respuestaMeses.json().catch(() => ({}));
+                            if (!respuestaMeses.ok) throw new Error(`En «${carpeta.ruta}»: ` +
+                                (datosMeses.message || (datosMeses.errors ? Object.values(datosMeses.errors).flat().join(', ') : `HTTP ${respuestaMeses.status}`)));
+                            creadas += Number(datosMeses.created ?? 0);
+                        }
+                        if (rutasFinales.length) {
+                            const respuesta = await fetch(ENDPOINTS.estructuras, {
+                                method: 'POST', credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json', 'Accept': 'application/json',
+                                    'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))
+                                },
+                                body: JSON.stringify({ carpeta_padre_id: carpetaRealActual, estructura: rutasFinales.join('\n') })
+                            });
+                            const datos = await respuesta.json().catch(() => ({}));
+                            if (!respuesta.ok) throw new Error(datos.message || (datos.errors ? Object.values(datos.errors).flat().join(', ') : `HTTP ${respuesta.status}`));
+                            creadas += Number(datos.created ?? 0);
+                        }
                         close();
                         await mostrarArchivosReales(carpetaRealActual);
-                        toast(`${datos.created ?? 0} carpetas creadas correctamente.`);
+                        toast(`${creadas} carpetas creadas correctamente.`);
                     } catch (e) {
                         errores.hidden = false; errores.textContent = e.message;
                     } finally {
@@ -7401,6 +7454,41 @@
                     }
                 });
                 actualizar();
+                // Carga de carpetas existentes (incluidas las anidadas). Se limita a las
+                // carpetas propias que devuelve el endpoint de destinos autorizado.
+                (async () => {
+                    try {
+                        const respuesta = await fetch(ENDPOINTS.destinos, {
+                            credentials: 'same-origin', headers: { Accept: 'application/json' }
+                        });
+                        if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
+                        const datos = await respuesta.json();
+                        const folders = datos.folders || [];
+                        const mapa = new Map(folders.map(c => [Number(c.id), c]));
+                        const ruta = id => {
+                            const nombres = [], vistos = new Set();
+                            let actual = id;
+                            while (actual !== null && mapa.has(actual) && !vistos.has(actual)) {
+                                vistos.add(actual);
+                                const c = mapa.get(actual);
+                                nombres.unshift(c.nombre);
+                                actual = c.carpeta_padre_id == null ? null : Number(c.carpeta_padre_id);
+                            }
+                            return 'Mis archivos / ' + nombres.join(' / ');
+                        };
+                        for (const c of folders) {
+                            const id = Number(c.id);
+                            if (!Number.isSafeInteger(id) || id <= 0 || id === carpetaRealActual) continue;
+                            carpetasExistentes.set(PREFIJO_EXISTENTE + id, { id, ruta: ruta(id) });
+                        }
+                        destinosCargados = true;
+                        if (campo.isConnected) actualizar();
+                    } catch (e) {
+                        if (campo.isConnected) {
+                            info.textContent = 'No se pudo cargar la lista de carpetas existentes. Puedes usar la carpeta actual o las nuevas de la lista.';
+                        }
+                    }
+                })();
                 campo.focus();
             }
 
