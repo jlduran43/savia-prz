@@ -2229,6 +2229,61 @@
         .prz-bulk-months #przBulkMonthsInfo { display:block; margin-top:9px; }
         @media(max-width:600px) { .prz-bulk-months .monthgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
+
+        /* Creación masiva PRZ: editor a la izquierda y árbol de vista previa a la derecha. */
+        .modal.prz-bulk-dialog {
+            width: min(1160px, calc(100vw - 32px));
+            max-height: min(94dvh, 950px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .prz-bulk-dialog .modalheader,
+        .prz-bulk-dialog .modalfoot { flex: 0 0 auto; background: #fff; }
+        .prz-bulk-dialog .modalbody { min-height: 0; overflow-y: auto; }
+        .prz-bulk-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+            gap: 22px;
+            align-items: start;
+        }
+        .prz-bulk-editor,
+        .prz-bulk-preview-panel { min-width: 0; }
+        .prz-bulk-editor .outlineinput { min-height: 220px; width: 100%; }
+        .prz-bulk-editor .prz-bulk-months { margin-bottom: 0; }
+        .prz-bulk-preview-panel {
+            border: 1px solid #dce8f4;
+            background: #f8fbff;
+            border-radius: 12px;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+        }
+        .prz-bulk-preview-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: #244764;
+        }
+        .prz-bulk-preview-panel .outlinestat { margin: 14px 0; }
+        .prz-bulk-preview-panel .outlinepreview {
+            min-height: 370px;
+            max-height: min(60dvh, 590px);
+            background: #fff;
+        }
+        @media (max-width: 850px) {
+            .prz-bulk-layout { grid-template-columns: minmax(0, 1fr); }
+            .prz-bulk-preview-panel { position: static; }
+            .prz-bulk-preview-panel .outlinepreview { min-height: 180px; max-height: 300px; }
+        }
+        @media (max-width: 480px) {
+            .modal.prz-bulk-dialog { width: calc(100vw - 16px); }
+            .prz-bulk-dialog .modalbody { padding: 14px; }
+            .prz-bulk-layout { gap: 15px; }
+        }
+
         .outlineexamples {
             display: flex;
             align-items: center;
@@ -7245,6 +7300,8 @@
                 modal('Crear varias carpetas y subcarpetas', `
           <div class="notice">Se crearán dentro de <strong>${esc(destino)}</strong>.
           Primero revisa la vista previa; nada se crea hasta que pulses “Crear carpetas”.</div>
+          <div class="prz-bulk-layout">
+            <div class="prz-bulk-editor">
           <div class="outlineexamples"><label class="field" for="przOutlineReal">Escribe o pega tu lista</label>
           <button type="button" id="przEjemploReal">Insertar ejemplo</button></div>
           <textarea class="textinput outlineinput" id="przOutlineReal" spellcheck="false"
@@ -7273,12 +7330,18 @@
             </div>
             <p id="przBulkMonthsInfo" class="smallmuted" role="status">Los meses seleccionados se agregan automáticamente a la vista previa.</p>
           </section>
+            </div>
+            <aside class="prz-bulk-preview-panel" aria-label="Vista previa de carpetas">
+              <div class="prz-bulk-preview-heading"><strong>📁 Vista previa de carpetas</strong><span class="smallmuted">Se actualiza automáticamente</span></div>
           <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
           <span>Revisa el árbol antes de confirmar.</span></div>
           <div id="przOutlinePreviewReal" class="outlinepreview" aria-live="polite">
           <span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div>
           <div id="przOutlineErrorReal" class="outlineerror" role="alert" hidden></div>
+            </aside>
+          </div>
         `, `<button type="button" class="btn primary" id="przGuardarEstructuraReal" disabled>Crear carpetas</button>`, true);
+                $('modalMount').querySelector('.modal.large')?.classList.add('prz-bulk-dialog');
                 const campo = $('przOutlineReal'), preview = $('przOutlinePreviewReal');
                 const errores = $('przOutlineErrorReal'), guardar = $('przGuardarEstructuraReal');
                 const destinoSelect = $('przBulkMonthDestination');
