@@ -2230,6 +2230,25 @@
         @media(max-width:600px) { .prz-bulk-months .monthgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 
+        /* Menú desplegable de meses: cerrado al abrir el modal. */
+        .prz-bulk-months-collapsible { padding: 0; overflow: hidden; }
+        .prz-bulk-months-collapsible > summary {
+            display: flex; align-items: center; gap: 12px;
+            margin: 0; padding: 15px 16px; cursor: pointer;
+            list-style: none; user-select: none;
+        }
+        .prz-bulk-months-collapsible > summary::-webkit-details-marker { display: none; }
+        .prz-bulk-months-collapsible > summary:hover { background: #edf5ff; }
+        .prz-bulk-months-collapsible > summary:focus-visible { outline: 2px solid #1664bd; outline-offset: -3px; }
+        .prz-bulk-expand-label { margin-left: auto; color: #4778a5; font-size: 12px; font-weight: 650; white-space: nowrap; }
+        .prz-bulk-chevron { font-size: 23px; line-height: 1; color: #4778a5; transition: transform .2s ease; }
+        .prz-bulk-months-collapsible[open] .prz-bulk-chevron { transform: rotate(180deg); }
+        .prz-bulk-months-collapsible[open] .prz-bulk-expand-label { font-size: 0; }
+        .prz-bulk-months-collapsible[open] .prz-bulk-expand-label::after { content: 'Ocultar opciones'; font-size: 12px; }
+        .prz-bulk-months-content { padding: 0 16px 16px; border-top: 1px solid #e0eaf5; }
+        .prz-bulk-months-description { margin: 13px 0 15px; }
+        @media (max-width: 600px) { .prz-bulk-expand-label { font-size: 11px; } }
+
         /* Creación masiva PRZ: editor a la izquierda y árbol de vista previa a la derecha. */
         .modal.prz-bulk-dialog {
             width: min(1160px, calc(100vw - 32px));
@@ -7309,9 +7328,11 @@
           <p class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta usa
           <kbd>2 espacios</kbd> o <kbd>Tab</kbd> al inicio; también puedes escribir
           <kbd>Proyectos / Informes / 2026</kbd>.</p>
-          <section class="prz-bulk-months" aria-label="Agregar carpetas mensuales">
-            <div class="prz-bulk-months-heading"><strong>📅 Agregar meses a una carpeta</strong>
-              <span class="smallmuted">Elige la carpeta actual, una carpeta existente o una nueva de tu lista.</span></div>
+          <details class="prz-bulk-months prz-bulk-months-collapsible">
+            <summary class="prz-bulk-months-heading"><strong>📅 Agregar meses a una carpeta</strong>
+              <span class="prz-bulk-expand-label">Mostrar opciones</span><span class="prz-bulk-chevron" aria-hidden="true">⌄</span></summary>
+            <div class="prz-bulk-months-content">
+              <p class="smallmuted prz-bulk-months-description">Elige la carpeta actual, una carpeta existente o una nueva de tu lista.</p>
             <label class="field" for="przBulkMonthDestination">Carpeta donde crear los meses</label>
             <select id="przBulkMonthDestination" class="textinput" disabled>
               <option value="__prz_destino_actual__">Carpeta actual</option>
@@ -7329,7 +7350,8 @@
               <button type="button" class="btn" id="przQuitarMesesEstructura" disabled>Quitar meses agregados</button>
             </div>
             <p id="przBulkMonthsInfo" class="smallmuted" role="status">Los meses seleccionados se agregan automáticamente a la vista previa.</p>
-          </section>
+            </div>
+          </details>
             </div>
             <aside class="prz-bulk-preview-panel" aria-label="Vista previa de carpetas">
               <div class="prz-bulk-preview-heading"><strong>📁 Vista previa de carpetas</strong><span class="smallmuted">Se actualiza automáticamente</span></div>
