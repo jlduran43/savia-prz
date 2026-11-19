@@ -7342,12 +7342,12 @@
               <button type="button" class="monthpreset" data-bulk-preset="all">Los 12 meses</button>
               <button type="button" class="monthpreset" data-bulk-preset="first">Enero–junio</button>
               <button type="button" class="monthpreset" data-bulk-preset="last">Julio–diciembre</button>
-              <button type="button" class="monthpreset" data-bulk-preset="none">Ninguno</button>
+              <button type="button" class="monthpreset" data-bulk-preset="none" title="Quita todos los meses agregados de la vista previa, incluso en otras carpetas">Ninguno</button>
             </div>
             <div class="monthgrid">${casillasMeses}</div>
             <div class="prz-bulk-months-actions">
               <button type="button" class="btn" id="przAgregarMesesEstructura" disabled>Actualizar meses en vista previa</button>
-              <button type="button" class="btn" id="przQuitarMesesEstructura" disabled>Quitar meses agregados</button>
+              <button type="button" class="btn" id="przQuitarMesesEstructura" disabled>Quitar meses de esta carpeta</button>
             </div>
             <p id="przBulkMonthsInfo" class="smallmuted" role="status">Los meses seleccionados se agregan automáticamente a la vista previa.</p>
             </div>
@@ -7389,7 +7389,8 @@
                     });
                     quitar.disabled = ocupado || !mesesPorRuta.has(ruta);
                     agregar.disabled = ocupado || !checks.some(c => c.checked);
-                    info.textContent = `${elegidos.size} mes(es) seleccionados para «${etiquetaDestinoMeses(ruta)}». Los cambios se reflejan automáticamente en la vista previa.`;
+                    const totalMeses = [...mesesPorRuta.values()].reduce((total, grupo) => total + grupo.size, 0);
+                    info.textContent = `${elegidos.size} mes(es) en «${etiquetaDestinoMeses(ruta)}» · ${totalMeses} en total. «Ninguno» limpia todos los meses añadidos a la vista previa, sin borrar carpetas existentes.`;
                 }
 
                 function actualizar() {
@@ -7470,6 +7471,14 @@
                 checks.forEach(c => c.addEventListener('change', aplicarMesesSeleccionados));
                 $('modalMount').querySelectorAll('[data-bulk-preset]').forEach(b => b.addEventListener('click', () => {
                     const tipo = b.dataset.bulkPreset;
+                    if (tipo === 'none') {
+                        // Los meses de distintos destinos también pueden estar en la vista previa.
+                        // "Ninguno" debe quitarlos todos, no solo los del destino seleccionado.
+                        mesesPorRuta.clear();
+                        checks.forEach(c => { c.checked = false; });
+                        actualizar();
+                        return;
+                    }
                     checks.forEach(c => {
                         const n = Number(c.value);
                         c.checked = tipo === 'all' || (tipo === 'first' && n <= 6) || (tipo === 'last' && n >= 7);
