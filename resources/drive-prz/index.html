@@ -2216,6 +2216,19 @@
             margin: 0 0 12px
         }
 
+
+        /* Crear estructura: selección opcional de meses por carpeta. */
+        .prz-bulk-months { margin: 18px 0 12px; padding: 14px; border: 1px solid #dce8f4;
+            background: #f8fbff; border-radius: 10px; }
+        .prz-bulk-months-heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:9px; margin-bottom:12px; color:#244764; }
+        .prz-bulk-months .monthquick { margin: 13px 0 10px; }
+        .prz-bulk-months .monthgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .prz-bulk-months .monthitem { padding: 9px 8px; }
+        .prz-bulk-months-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+        .prz-bulk-months #przAgregarMesesEstructura { border-color:#a9d0f6; color:#155f9d; }
+        .prz-bulk-months #przBulkMonthsInfo { display:block; margin-top:9px; }
+        @media(max-width:600px) { .prz-bulk-months .monthgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
         .outlineexamples {
             display: flex;
             align-items: center;
@@ -7216,6 +7229,14 @@
                 const destino = rutaRealActual.length
                     ? 'Mis archivos / ' + rutaRealActual.map(x => x.name).join(' / ')
                     : 'Mis archivos';
+                const nombresMes = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                const mesNombre = n => String(n).padStart(2, '0') + '. ' + nombresMes[n - 1];
+                // Cada carpeta puede tener su propio conjunto de meses. Todavía no guarda nada.
+                const mesesPorRuta = new Map();
+                const casillasMeses = nombresMes.map((_, i) => `<label class="monthitem" data-bulk-mes="${i + 1}">
+                    <input class="prz-bulk-monthcheck" type="checkbox" value="${i + 1}" aria-label="${esc(mesNombre(i + 1))}">
+                    <span class="monthname">${esc(mesNombre(i + 1))}</span></label>`).join('');
                 modal('Crear varias carpetas y subcarpetas', `
           <div class="notice">Se crearán dentro de <strong>${esc(destino)}</strong>.
           Primero revisa la vista previa; nada se crea hasta que pulses “Crear carpetas”.</div>
@@ -7226,35 +7247,136 @@
           <p class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta usa
           <kbd>2 espacios</kbd> o <kbd>Tab</kbd> al inicio; también puedes escribir
           <kbd>Proyectos / Informes / 2026</kbd>.</p>
+          <section class="prz-bulk-months" aria-label="Agregar carpetas mensuales">
+            <div class="prz-bulk-months-heading"><strong>📅 Agregar meses a una carpeta</strong>
+              <span class="smallmuted">Opcional · como en «Crear meses»</span></div>
+            <label class="field" for="przBulkMonthDestination">Carpeta donde crear los meses</label>
+            <select id="przBulkMonthDestination" class="textinput" disabled>
+              <option value="">Primero escribe una carpeta arriba</option>
+            </select>
+            <div class="monthquick" role="group" aria-label="Seleccionar meses">
+              <strong>Seleccionar:</strong>
+              <button type="button" class="monthpreset" data-bulk-preset="all">Los 12 meses</button>
+              <button type="button" class="monthpreset" data-bulk-preset="first">Enero–junio</button>
+              <button type="button" class="monthpreset" data-bulk-preset="last">Julio–diciembre</button>
+              <button type="button" class="monthpreset" data-bulk-preset="none">Ninguno</button>
+            </div>
+            <div class="monthgrid">${casillasMeses}</div>
+            <div class="prz-bulk-months-actions">
+              <button type="button" class="btn" id="przAgregarMesesEstructura" disabled>Agregar meses a la vista previa</button>
+              <button type="button" class="btn" id="przQuitarMesesEstructura" disabled>Quitar meses agregados</button>
+            </div>
+            <p id="przBulkMonthsInfo" class="smallmuted" role="status">Selecciona una carpeta y los meses para agregar.</p>
+          </section>
           <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
           <span>Revisa el árbol antes de confirmar.</span></div>
           <div id="przOutlinePreviewReal" class="outlinepreview" aria-live="polite">
           <span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div>
           <div id="przOutlineErrorReal" class="outlineerror" role="alert" hidden></div>
         `, `<button type="button" class="btn primary" id="przGuardarEstructuraReal" disabled>Crear carpetas</button>`, true);
-                const campo = $('przOutlineReal'), preview = $('przOutlinePreviewReal'), errores = $('przOutlineErrorReal'), guardar = $('przGuardarEstructuraReal');
-                const actualizar = () => {
+                const campo = $('przOutlineReal'), preview = $('przOutlinePreviewReal');
+                const errores = $('przOutlineErrorReal'), guardar = $('przGuardarEstructuraReal');
+                const destinoSelect = $('przBulkMonthDestination');
+                const checks = [...$('modalMount').querySelectorAll('[data-bulk-mes] input')];
+                const agregar = $('przAgregarMesesEstructura');
+                const quitar = $('przQuitarMesesEstructura');
+                const info = $('przBulkMonthsInfo');
+                const mesesMarcados = () => checks.filter(c => c.checked).map(c => Number(c.value));
+                let rutasFinales = [], erroresActuales = [], ocupado = false;
+
+                function actualizarMesesUI() {
+                    const ruta = destinoSelect.value;
+                    const elegidos = mesesPorRuta.get(ruta) || new Set();
+                    checks.forEach(c => {
+                        c.checked = elegidos.has(Number(c.value));
+                        c.closest('.monthitem').classList.toggle('chosen', c.checked);
+                    });
+                    quitar.disabled = ocupado || !ruta || !mesesPorRuta.has(ruta);
+                    agregar.disabled = ocupado || !ruta || !mesesMarcados().length;
+                    info.textContent = !ruta ? 'Primero escribe una carpeta en la lista.'
+                        : `${elegidos.size} mes(es) preparado(s) para «${ruta}». Pulsa «Agregar meses a la vista previa» después de elegir.`;
+                }
+
+                function actualizar() {
                     const resultado = analizarEstructuraReal(campo.value);
-                    $('przOutlineCountReal').textContent = `${resultado.rutas.length} carpeta${resultado.rutas.length === 1 ? '' : 's'}`;
-                    errores.hidden = !resultado.errores.length;
-                    errores.textContent = resultado.errores.join(' | ');
-                    guardar.disabled = !resultado.rutas.length || !!resultado.errores.length;
-                    const arbol = [];
-                    for (const ruta of resultado.rutas) {
-                        const partes = ruta.split('/');
-                        arbol.push(`<li style="padding-left:${(partes.length - 1) * 14}px"><span class="outlineicon">📁</span>${esc(partes.at(-1))}</li>`);
+                    const rutasBase = resultado.rutas;
+                    const rutaAnterior = destinoSelect.value;
+                    // No permitir que se guarden meses en rutas que ya no existen en el texto.
+                    for (const ruta of [...mesesPorRuta.keys()]) {
+                        if (!rutasBase.includes(ruta)) mesesPorRuta.delete(ruta);
                     }
+                    destinoSelect.replaceChildren();
+                    const placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.textContent = rutasBase.length ? 'Selecciona una carpeta...' : 'Primero escribe una carpeta arriba';
+                    destinoSelect.appendChild(placeholder);
+                    for (const ruta of rutasBase) {
+                        const option = document.createElement('option');
+                        option.value = ruta;
+                        option.textContent = ruta.replaceAll('/', ' / ');
+                        destinoSelect.appendChild(option);
+                    }
+                    destinoSelect.disabled = ocupado || !rutasBase.length || resultado.errores.length > 0;
+                    destinoSelect.value = rutasBase.includes(rutaAnterior) ? rutaAnterior : '';
+                    const rutas = new Set(rutasBase);
+                    for (const [padre, meses] of mesesPorRuta) {
+                        for (const mes of meses) rutas.add(`${padre}/${mesNombre(mes)}`);
+                    }
+                    rutasFinales = [...rutas];
+                    erroresActuales = [...resultado.errores];
+                    if (rutasFinales.length > 100) erroresActuales.push('Máximo 100 carpetas por operación (incluyendo meses).');
+                    $('przOutlineCountReal').textContent = `${rutasFinales.length} carpeta${rutasFinales.length === 1 ? '' : 's'}`;
+                    errores.hidden = !erroresActuales.length;
+                    errores.textContent = erroresActuales.join(' | ');
+                    guardar.disabled = ocupado || !rutasFinales.length || !!erroresActuales.length;
+                    const arbol = rutasFinales.map(ruta => {
+                        const partes = ruta.split('/');
+                        const mesAuto = !rutasBase.includes(ruta);
+                        return `<li style="padding-left:${(partes.length - 1) * 14}px"><span class="outlineicon">${mesAuto ? '📅' : '📁'}</span>${esc(partes.at(-1))}${mesAuto ? ' <span class="outlineexists">mes agregado</span>' : ''}</li>`;
+                    });
                     preview.innerHTML = arbol.length ? `<ul>${arbol.join('')}</ul>` : '<span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span>';
-                };
+                    actualizarMesesUI();
+                }
                 campo.addEventListener('input', actualizar);
+                destinoSelect.addEventListener('change', actualizarMesesUI);
+                checks.forEach(c => c.addEventListener('change', () => {
+                    c.closest('.monthitem').classList.toggle('chosen', c.checked);
+                    agregar.disabled = ocupado || !destinoSelect.value || !mesesMarcados().length;
+                }));
+                $('modalMount').querySelectorAll('[data-bulk-preset]').forEach(b => b.addEventListener('click', () => {
+                    const tipo = b.dataset.bulkPreset;
+                    checks.forEach(c => {
+                        const n = Number(c.value);
+                        c.checked = tipo === 'all' || (tipo === 'first' && n <= 6) || (tipo === 'last' && n >= 7);
+                        c.closest('.monthitem').classList.toggle('chosen', c.checked);
+                    });
+                    agregar.disabled = ocupado || !destinoSelect.value || !mesesMarcados().length;
+                }));
+                agregar.addEventListener('click', () => {
+                    const ruta = destinoSelect.value;
+                    if (!ruta) return;
+                    const seleccion = mesesMarcados();
+                    if (!seleccion.length) return;
+                    mesesPorRuta.set(ruta, new Set(seleccion));
+                    actualizar();
+                    info.textContent = `${seleccion.length} meses añadidos a la vista previa de «${ruta}».`;
+                });
+                quitar.addEventListener('click', () => {
+                    const ruta = destinoSelect.value;
+                    mesesPorRuta.delete(ruta);
+                    actualizar();
+                });
                 $('przEjemploReal').addEventListener('click', () => {
                     campo.value = 'Personal\n  Contratos\n    2026\n    2027\nProyectos\n  Informes'.replace(/\\n/g, '\n');
+                    mesesPorRuta.clear();
                     actualizar(); campo.focus();
                 });
                 guardar.addEventListener('click', async () => {
-                    const resultado = analizarEstructuraReal(campo.value);
-                    if (!resultado.rutas.length || resultado.errores.length) { actualizar(); return; }
+                    actualizar();
+                    if (!rutasFinales.length || erroresActuales.length || ocupado) return;
+                    ocupado = true;
                     guardar.disabled = true; guardar.textContent = 'Creando...';
+                    agregar.disabled = true; quitar.disabled = true;
                     try {
                         const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
                         if (!cookie) throw new Error('Falta token de seguridad. Recarga la página.');
@@ -7264,7 +7386,7 @@
                                 'Content-Type': 'application/json', 'Accept': 'application/json',
                                 'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))
                             },
-                            body: JSON.stringify({ carpeta_padre_id: carpetaRealActual, estructura: resultado.rutas.join('\n') })
+                            body: JSON.stringify({ carpeta_padre_id: carpetaRealActual, estructura: rutasFinales.join('\n') })
                         });
                         const datos = await respuesta.json().catch(() => ({}));
                         if (!respuesta.ok) throw new Error(datos.message || (datos.errors ? Object.values(datos.errors).flat().join(', ') : `HTTP ${respuesta.status}`));
@@ -7274,9 +7396,11 @@
                     } catch (e) {
                         errores.hidden = false; errores.textContent = e.message;
                     } finally {
-                        if (guardar.isConnected) { guardar.disabled = false; guardar.textContent = 'Crear carpetas'; }
+                        ocupado = false;
+                        if (guardar.isConnected) { guardar.textContent = 'Crear carpetas'; actualizar(); }
                     }
                 });
+                actualizar();
                 campo.focus();
             }
 
