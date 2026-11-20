@@ -1204,7 +1204,7 @@ function przERPAfterRender(rows){
 <button type="button" data-dtab="docs">▣ Documentación <span id="przCountDocs"></span></button>
 </nav>
 <section id="przPersonal3Ficha" class="przPersonal3Ficha" aria-label="Ficha integral y estado de transparencia"></section><div id="przDossierSummary" class="przDossierSummary" aria-live="polite"></div>
-<form id="dirEditForm"><div class="przDossierPanel" data-dpanel="general"><div id="przGeneralAlerts"></div><div class="dirEditorFields"><label>Primer apellido<input name="apellido1" required maxlength="100"></label><label>Segundo apellido<input name="apellido2" maxlength="100"></label><label class="full">Nombres<input name="nombres" required maxlength="180"></label><label class="full">Modalidad de contratación confirmada por PRZ<select name="modalidadInstitucional"><option value="">Por verificar (se muestran antecedentes disponibles)</option><option value="ct">Código del Trabajo</option><option value="hon">Honorarios</option><option value="ambas">Ambas modalidades (distintos vínculos o períodos)</option><option value="ninguna">Sin vínculo contractual confirmado</option></select><small class="przMissingLabel">La presencia de una boleta SII no acredita por sí sola un contrato. Esta elección no incorpora automáticamente personas a las planillas CPLT.</small></label><label>RUT (solo control interno; no se exporta)<input name="rut" placeholder="12.345.678-9" maxlength="16" autocomplete="off"></label>
+<form id="dirEditForm"><div class="przDossierPanel" data-dpanel="general"><div id="przGeneralAlerts"></div><div class="dirEditorFields"><div class="full" id="przSaviaUserPicker" style="padding:15px 18px;border:1px solid #d4e1f0;border-radius:12px;background:#f5f9ff;margin-bottom:12px"><label for="przSaviaUserSelect" style="display:block;font-weight:700;margin-bottom:7px">Seleccionar usuario registrado en SAVIA PRZ</label><select id="przSaviaUserSelect" style="width:100%;padding:11px;border:1px solid #c5d5e8;border-radius:9px;background:#fff"><option value="">Selecciona un usuario para autocompletar...</option></select><small id="przSaviaUserStatus" style="display:block;margin-top:7px;color:#50647b">Este selector consulta MySQL. Solo completa nombres y apellidos; todavía no guarda la ficha en MySQL.</small></div><label>Primer apellido<input name="apellido1" required maxlength="100"></label><label>Segundo apellido<input name="apellido2" maxlength="100"></label><label class="full">Nombres<input name="nombres" required maxlength="180"></label><label class="full">Modalidad de contratación confirmada por PRZ<select name="modalidadInstitucional"><option value="">Por verificar (se muestran antecedentes disponibles)</option><option value="ct">Código del Trabajo</option><option value="hon">Honorarios</option><option value="ambas">Ambas modalidades (distintos vínculos o períodos)</option><option value="ninguna">Sin vínculo contractual confirmado</option></select><small class="przMissingLabel">La presencia de una boleta SII no acredita por sí sola un contrato. Esta elección no incorpora automáticamente personas a las planillas CPLT.</small></label><label>RUT (solo control interno; no se exporta)<input name="rut" placeholder="12.345.678-9" maxlength="16" autocomplete="off"></label>
 <label>Área de desempeño<select name="area"><option value="">Por determinar</option><option value="PRZ general">PRZ general</option><option value="Administración">Administración</option><option value="Operaciones">Operaciones</option><option value="Museo">Museo</option><option value="Marketing">Marketing</option><option value="Otra">Otra / por revisar</option></select></label>
 <label>Fecha de nacimiento (uso interno)<input type="date" name="fechaNacimiento" aria-label="Fecha de nacimiento"></label><label>Correo institucional (uso interno)<input type="email" name="correo" maxlength="180" autocomplete="off"></label>
 <label>Teléfono de contacto institucional<input type="tel" name="telefono" maxlength="45" autocomplete="off"></label>
@@ -3280,7 +3280,7 @@ $('dirBody').addEventListener('click',e=>{const button=e.target.closest('button[
 function directoryEditOpen(id){const p=directoryProfiles.find(p=>p.id===id);if(!p)return;currentEditorId=p.id;
  const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'])f.elements.namedItem(k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
  $('dirEditorTitle').textContent='Ficha · '+[p.apellido1,p.apellido2,p.nombres].filter(Boolean).join(' ');
- $('dirEditForm').dataset.newRecord='false';
+ $('dirEditForm').dataset.newRecord='false';document.getElementById('przSaviaUserPicker').hidden=true;
  $('dirHonorHistory').hidden=true;$('dirHonorHistory').textContent='';
  $('dirSiiIdentity').hidden=true;$('dirSiiIdentity').textContent='';
  $('dirSiiHistory').hidden=true;$('dirSiiHistory').open=false;
@@ -3291,13 +3291,51 @@ function directoryEditOpen(id){const p=directoryProfiles.find(p=>p.id===id);if(!
  $('dirEditorOverlay').hidden=false;document.body.classList.add('przProfileOpen');window.scrollTo(0,0);przOpenDossier(p);przProfileHeroRender(p);przCristianFuncionesRender(p);przPatricioFuncionesRender(p);przLorenzoFuncionesRender(p);przFranciscoFuncionesRender(p);przDiegoFuncionesRender(p);przScarlettFuncionesRender(p);przCarlaFuncionesRender(p);przVivianaFuncionesRender(p);przMendyFuncionesRender(p);przDavidTerrenoFuncionesRender(p);przElvisTurnoFuncionesRender(p);przDanielFuentesFuncionesRender(p);f.elements.namedItem('formacion').focus();}
 function directoryNewOpen(){
  currentEditorId=null;
- const form=$('dirEditForm');form.reset();form.dataset.newRecord='true';
+ const form=$('dirEditForm');form.reset();form.dataset.newRecord='true';document.getElementById('przSaviaUserPicker').hidden=false;
  $('dirEditorTitle').textContent='Nueva persona · Directorio PRZ';przFranciscoFuncionesRender(null);
  $('dirHonorHistory').hidden=true;$('dirHonorHistory').textContent='';$('dirSiiIdentity').hidden=true;$('dirSiiIdentity').textContent='';$('dirSiiHistory').hidden=true;$('dirSiiHistory').open=false;$('dirSiiHistoryBody').innerHTML='';$('dirHistoryAlerts').hidden=true;$('dirHistoryAlerts').innerHTML='';$('dirHistoryPanel').hidden=true;$('dirHistoryPanel').open=false;
  $('dirHistoryBody').innerHTML='';$('przDossierSummary').hidden=true;
  $('dirEditorOverlay').hidden=false;document.body.classList.add('przProfileOpen');window.scrollTo(0,0);const np=directoryNewProfile();przOpenDossier(np);przProfileHeroRender(np);przCristianFuncionesRender(null);przPatricioFuncionesRender(null);przLorenzoFuncionesRender(null);przFranciscoFuncionesRender(null);przDiegoFuncionesRender(null);przScarlettFuncionesRender(null);przCarlaFuncionesRender(null);przVivianaFuncionesRender(null);przMendyFuncionesRender(null);przDavidTerrenoFuncionesRender(null);przElvisTurnoFuncionesRender(null);przDanielFuentesFuncionesRender(null);
- form.elements.namedItem('apellido1').focus();
+  przLoadSaviaUsers();
+  form.elements.namedItem('apellido1').focus();
 }
+
+ // Integración inicial: lectura de usuarios SAVIA PRZ desde Laravel (sin modificar el guardado local).
+ let przSaviaUsers=[];
+ async function przLoadSaviaUsers(){
+  const sel=document.getElementById('przSaviaUserSelect'),status=document.getElementById('przSaviaUserStatus');
+  if(!sel)return;
+  sel.replaceChildren(new Option('Cargando usuarios de SAVIA PRZ…',''));
+  sel.disabled=true;
+  try{
+   const response=await fetch('/rrhh/usuarios',{credentials:'same-origin',headers:{'Accept':'application/json'},cache:'no-store'});
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   const users=await response.json();
+   if(!Array.isArray(users))throw new Error('Formato inesperado');
+   przSaviaUsers=users;
+   sel.replaceChildren(new Option('Selecciona un usuario para autocompletar…',''));
+   for(const u of users){
+    const label=[u.apellido,u.nombre].filter(Boolean).join(', ');
+    sel.add(new Option(label||('Usuario '+u.id),String(u.id)));
+   }
+   status.textContent=users.length+' usuarios activos disponibles. Verifica cómo están registrados los apellidos antes de guardar.';
+  }catch(err){
+   console.warn('No se pudo cargar usuarios SAVIA:',err);
+   sel.replaceChildren(new Option('No se pudo cargar la lista de usuarios',''));
+   status.textContent='Error de consulta. Comprueba la ruta /rrhh/usuarios y los permisos ADMIN.';
+  }finally{sel.disabled=false;}
+ }
+ document.getElementById('przSaviaUserSelect')?.addEventListener('change',function(){
+  const u=przSaviaUsers.find(u=>String(u.id)===this.value);
+  if(!u)return;
+  const f=document.getElementById('dirEditForm');
+  // No se adivina el segundo apellido: la tabla usuarios actual expone un único campo apellido.
+  f.elements.namedItem('nombres').value=String(u.nombre||'');
+  f.elements.namedItem('apellido1').value=String(u.apellido||'');
+  f.elements.namedItem('apellido2').value='';
+  document.getElementById('przSaviaUserStatus').textContent='Datos cargados. Revisa primer y segundo apellido: SAVIA guarda actualmente el apellido en un solo campo. La ficha todavía se guarda localmente.';
+ });
+
 $('directoryAddPerson').addEventListener('click',directoryNewOpen);
 function directoryEditClose(){$('dirEditorOverlay').hidden=true;document.body.classList.remove('przProfileOpen');currentEditorId=null;}
 $('dirCancel').addEventListener('click',directoryEditClose);$('przBackToDirectory').addEventListener('click',directoryEditClose);

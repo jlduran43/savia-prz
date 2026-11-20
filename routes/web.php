@@ -1058,3 +1058,16 @@ Route::middleware(['auth'])
         'screen'
     ])
     ->name('rrhh.directorio');
+
+Route::middleware('auth')->get('/rrhh/usuarios', function () {
+    abort_unless(auth()->user()?->rol === 'ADMIN', 403);
+
+    return response()->json(
+        DB::table('usuarios')
+            ->where('activo', 1)
+            ->select('id', 'nombre', 'apellido')
+            ->orderBy('apellido')
+            ->orderBy('nombre')
+            ->get()
+    );
+});
