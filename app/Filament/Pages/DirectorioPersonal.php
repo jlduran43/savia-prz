@@ -23,6 +23,6 @@ class DirectorioPersonal extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->rol === 'ADMIN';
+        return auth()->check();
     }
 }
