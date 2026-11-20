@@ -8,17 +8,25 @@ class RrhhDirectorioController extends Controller
 {
     public function screen(): Response
     {
-        // El HTML contiene datos del personal. Ajustar esta política cuando
-        // se implemente un rol RRHH o permisos específicos.
-        abort_unless(auth()->user()?->rol === 'ADMIN', 403);
+        // La ruta exige que el usuario haya iniciado sesión.
+        // Temporalmente no restringimos por rol.
 
         $path = resource_path('rrhh/index.html');
-        abort_unless(is_file($path), 404);
 
-        return response(file_get_contents($path), 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-            'Cache-Control' => 'no-store, private',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        abort_unless(
+            is_file($path),
+            404,
+            'No se encontró el archivo HTML del Directorio Personal.'
+        );
+
+        return response(
+            file_get_contents($path),
+            200,
+            [
+                'Content-Type' => 'text/html; charset=UTF-8',
+                'Cache-Control' => 'no-store, private',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
+        );
     }
 }
