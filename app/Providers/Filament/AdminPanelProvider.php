@@ -32,6 +32,7 @@ use App\Filament\Pages\FormularioRequerimientoCompra;
 use App\Filament\Pages\CajaChica;
 use App\Filament\Pages\Auth\EditProfile;
 use Filament\Support\Assets\Css;
+use App\Filament\Pages\DirectorioPersonal;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -157,6 +158,23 @@ class AdminPanelProvider extends PanelProvider
                         ]
                         : []
                     ),
+
+                    // CUARTO: RECURSOS HUMANOS
+                    NavigationGroup::make()
+                        ->label('RRHH')
+                        ->icon('heroicon-o-users')
+                        ->items([
+
+                            NavigationItem::make('Directorio personal')
+                                ->icon('heroicon-o-identification')
+                                ->url(fn(): string => DirectorioPersonal::getUrl())
+                                ->isActiveWhen(
+                                    fn(): bool => request()->routeIs(
+                                        'filament.admin.pages.directorio-personal'
+                                    )
+                                ),
+
+                        ]),
 
 
                 ]);
