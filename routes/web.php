@@ -72,6 +72,7 @@ use App\Http\Controllers\DrivePrzRenameController;
 
 use App\Http\Controllers\DrivePrzSharedTrashController;
 use App\Http\Controllers\DrivePrzClipboardController;
+use App\Http\Controllers\RrhhDirectorioController;
 
 
 
@@ -1049,4 +1050,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'guardar'])
 
         ->name('drive-prz-v5.configuracion.guardar');
+    
+    Route::get('/rrhh/directorio', [
+        RrhhDirectorioController::class,
+        'screen'
+    ])
+    ->name('rrhh.directorio');
 });
