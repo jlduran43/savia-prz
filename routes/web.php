@@ -1050,8 +1050,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/drive-prz-v5/configuracion', [DrivePrzConfiguracionController::class, 'guardar'])
 
         ->name('drive-prz-v5.configuracion.guardar');
-    
-    Route::get('/rrhh/directorio/contenido', [RrhhDirectorioController::class, 'screen'])
-    ->name('rrhh.directorio');
-
 });
+
+Route::middleware(['auth'])
+    ->get('/rrhh/directorio', [
+        RrhhDirectorioController::class,
+        'screen'
+    ])
+    ->name('rrhh.directorio');
