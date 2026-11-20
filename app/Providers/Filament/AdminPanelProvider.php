@@ -31,10 +31,7 @@ use App\Filament\Resources\Users\UserResource;
 use App\Filament\Pages\FormularioRequerimientoCompra;
 use App\Filament\Pages\CajaChica;
 use App\Filament\Pages\Auth\EditProfile;
-use App\Filament\Resources\DocumentoCarpetas\DocumentoCarpetaResource;
-use App\Filament\Resources\Documentos\DocumentoResource;
 use Filament\Support\Assets\Css;
-use App\Filament\Pages\ExploradorDocumentos;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -119,22 +116,6 @@ class AdminPanelProvider extends PanelProvider
                                 ->isActiveWhen(
                                     fn(): bool => request()->routeIs(
                                         'filament.admin.pages.caja-chica'
-                                    )
-                                ),
-
-                        ]),
-
-                    // SEGUNDO: ARCHIVOS
-                    NavigationGroup::make()
-                        ->label('Archivos')
-                        ->icon('heroicon-o-folder')
-                        ->items([
-
-                            NavigationItem::make('Explorador de archivos')
-                                ->url(fn(): string => ExploradorDocumentos::getUrl())
-                                ->isActiveWhen(
-                                    fn(): bool => request()->routeIs(
-                                        'filament.admin.pages.archivos'
                                     )
                                 ),
 
