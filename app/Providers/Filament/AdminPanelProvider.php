@@ -166,7 +166,6 @@ class AdminPanelProvider extends PanelProvider
                         ->items([
 
                             NavigationItem::make('Directorio personal')
-                                ->icon('heroicon-o-identification')
                                 ->url(fn(): string => DirectorioPersonal::getUrl())
                                 ->isActiveWhen(
                                     fn(): bool => request()->routeIs(
@@ -175,7 +174,6 @@ class AdminPanelProvider extends PanelProvider
                                 ),
 
                         ]),
-
 
                 ]);
             })
