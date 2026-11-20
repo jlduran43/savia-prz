@@ -1,22 +1,20 @@
+
 <x-filament-panels::page>
-
-    <div class="rounded-xl border border-gray-200
-                bg-white p-6 shadow-sm">
-
-        <h2 class="text-2xl font-bold">
-            Directorio personal
-        </h2>
-
-        <p class="mt-3 text-gray-600">
-            Bienvenido al directorio de personal
-            del Parque Museo Pedro del Río Zañartu.
-        </p>
-
-        <p class="mt-2 text-gray-500">
-            Aquí podrás consultar y gestionar
-            la información del personal.
-        </p>
-
+    <div style="
+        width: 100%;
+        height: calc(100vh - 190px);
+        min-height: 650px;
+    ">
+        <iframe
+            src="{{ route('rrhh.directorio') }}"
+            title="Sistema de Personal PRZ"
+            style="
+                width: 100%;
+                height: 100%;
+                border: none;
+                border-radius: 12px;
+                background: white;
+            "
+        ></iframe>
     </div>
-
 </x-filament-panels::page>
