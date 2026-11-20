@@ -1051,9 +1051,7 @@ Route::middleware('auth')->group(function () {
 
         ->name('drive-prz-v5.configuracion.guardar');
     
-    Route::get('/rrhh/directorio', [
-        RrhhDirectorioController::class,
-        'screen'
-    ])
+    Route::get('/rrhh/directorio/contenido', [RrhhDirectorioController::class, 'screen'])
     ->name('rrhh.directorio');
+
 });
