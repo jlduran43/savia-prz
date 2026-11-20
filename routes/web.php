@@ -73,6 +73,7 @@ use App\Http\Controllers\DrivePrzRenameController;
 use App\Http\Controllers\DrivePrzSharedTrashController;
 use App\Http\Controllers\DrivePrzClipboardController;
 use App\Http\Controllers\RrhhDirectorioController;
+use Illuminate\Support\Facades\DB;
 
 
 
@@ -1060,14 +1061,14 @@ Route::middleware(['auth'])
     ->name('rrhh.directorio');
 
 Route::middleware('auth')->get('/rrhh/usuarios', function () {
-    abort_unless(auth()->user()?->rol === 'ADMIN', 403);
 
     return response()->json(
         DB::table('usuarios')
             ->where('activo', 1)
-            ->select('id', 'nombre', 'apellido')
+            ->select('id', 'nombre', 'apellido', 'rut')
             ->orderBy('apellido')
             ->orderBy('nombre')
             ->get()
     );
+
 });
