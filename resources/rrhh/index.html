@@ -1058,7 +1058,83 @@ function przERPAfterRender(rows){
  #cpltTable.cpltTable tbody td,.hScroll .hTable tbody td{height:auto!important;white-space:normal!important;overflow-wrap:anywhere!important;}
  #cpltTable.cpltTable tr,.hScroll .hTable tr{break-inside:avoid;page-break-inside:avoid;}
 }
-</style></head><body><div class="wrap"><div class="top"><div class="logo"><div class="mark">PRZ</div><div><h1>Sistema de personal y transparencia</h1><div class="muted">PRZ · Personal, honorarios y directorio institucional</div></div></div><div class="tag">2 plantillas oficiales CPLT · 1 directorio maestro compartido</div></div>
+</style>
+
+<!-- Alineación de controles del Directorio Personal -->
+<style id="przDirectorioAlineacion">
+
+#directorySection .dirTools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 16px;
+}
+
+/* Buscador */
+#directorySection .dirTools .przSearchField {
+    order: 0;
+    flex: 1.5 1 260px;
+    min-width: 220px;
+    height: 48px;
+    margin: 0;
+    align-self: flex-end;
+}
+
+/* Selectores */
+#directorySection .dirTools .przSelectLabel {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1 1 180px;
+    min-width: 180px;
+    gap: 6px;
+    margin: 0;
+}
+
+#directorySection .dirTools .przSelectLabel select {
+    width: 100%;
+    height: 48px;
+    margin: 0;
+}
+
+/* Botones */
+#directorySection .dirTools #directoryAddPerson,
+#directorySection .dirTools #dirBackup,
+#directorySection .dirTools #dirRestore {
+    height: 48px;
+    margin: 0;
+    padding: 0 16px;
+    white-space: nowrap;
+    align-self: flex-end;
+}
+
+/* Orden de los botones */
+#directorySection .dirTools #directoryAddPerson {
+    order: 2;
+}
+
+#directorySection .dirTools #dirBackup {
+    order: 3;
+}
+
+#directorySection .dirTools #dirRestore {
+    order: 4;
+}
+
+/* Adaptación a pantallas pequeñas */
+@media (max-width: 768px) {
+    #directorySection .dirTools .przSearchField,
+    #directorySection .dirTools .przSelectLabel {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+}
+
+</style>
+
+</head><body><div class="wrap"><div class="top"><div class="logo"><div class="mark">PRZ</div><div><h1>Sistema de personal y transparencia</h1><div class="muted">PRZ · Personal, honorarios y directorio institucional</div></div></div><div class="tag">2 plantillas oficiales CPLT · 1 directorio maestro compartido</div></div>
 <div id="przRescateInfo" role="status" style="background:#fff7e8;border:1px solid #e9ce9a;border-radius:12px;padding:13px 17px;margin:8px 0 16px;color:#5d4523;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between"><div><strong>PRZ Personal · recuperación operativa 05-11-2026.</strong> Directorio y generadores CPLT recuperados. Se conservaron referencias documentales, pero esta versión no incorpora los PDF y otros archivos adjuntos de 423 MB. Para no perder cambios, descarga un respaldo de datos al finalizar cada sesión.</div><button type="button" id="przRescateBackup" style="padding:10px 14px;border:1px solid #bb8d44;border-radius:8px;background:#fff;font-weight:700;color:#4e3a20;cursor:pointer;white-space:nowrap">Descargar respaldo JSON</button></div>
 <nav class="modalityNav przMainNav" aria-label="Secciones del sistema">
 <button type="button" id="modeCT" class="modalityBtn active" aria-pressed="true" aria-controls="ctPanel" aria-label="Ir al módulo Código del Trabajo"><span class="navSymbol" aria-hidden="true">01</span><span class="navContent"><strong>Código del Trabajo</strong><small>Carga ERP · 36 columnas CPLT</small></span></button>
