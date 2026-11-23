@@ -1860,7 +1860,7 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 
 
 
-        'iniciales' => collect(preg_split('/**\s**+/u', $nombre))
+        'iniciales' => collect(preg_split('/\s+/u', $nombre))
 
 
 

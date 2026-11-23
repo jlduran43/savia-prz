@@ -5771,6 +5771,7 @@
                     `<div class="namecell"><span class="fileico ${carpeta ? 'folder' : 'other'}">${glyph(carpeta ? 'folder' : 'file')}</span><strong>${esc(nombre)}</strong></div>
            <div class="optiongrid">
              ${carpeta ? `<button type="button" class="btn" data-option-real-open="${id}">Abrir carpeta</button>` : `<button type="button" class="btn" data-option-real-preview="${id}">Ver archivo</button>`}
+             ${!carpeta && /\.pdf$/i.test(nombre || '') ? `<button type="button" class="btn" data-option-real-censurar="${id}">◼ Censurar PDF</button>` : ''}
              <button type="button" class="btn" data-option-real-share="${id}">Administrar permisos</button>
              ${carpeta ? `<button type="button" class="btn" data-option-real-color="${id}">Cambiar color</button>` : ''}
              <button type="button" class="btn" data-option-real-rename="${id}">Cambiar nombre</button>
@@ -5788,6 +5789,9 @@
                 on('[data-option-real-move]', () => abrirMoverLaravel(id, tipo, nombre));
                 on('[data-option-real-rename]', () => abrirRenombrarLaravel(id, tipo, nombre));
                 on('[data-option-real-preview]', () => { close(); verArchivoLaravel(id, nombre, realVisible.find(x => x.id === id && x.type === 'file')?.size || 0) });
+                on('[data-option-real-censurar]', () => {
+                    window.location.href = `/drive-prz-v5/files/${encodeURIComponent(id)}/censurador?name=${encodeURIComponent(nombre)}`;
+                });
             }
 
             function confirmarPapeleraLaravel(elementos) {
