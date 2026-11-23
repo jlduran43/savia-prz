@@ -1060,15 +1060,21 @@ Route::middleware(['auth'])
     ])
     ->name('rrhh.directorio');
 
-Route::middleware('auth')->get('/rrhh/usuarios', function () {
+Route::get('/rrhh/usuarios', function () {
+    $usuarios = DB::table('users')
+        ->select('id', 'name', 'apellido', 'email')
+        ->orderBy('name')
+        ->get()
+        ->map(function ($usuario) {
+            return [
+                'id' => $usuario->id,
+                'name' => trim(
+                    ($usuario->name ?? '') . ' ' .
+                    ($usuario->apellido ?? '')
+                ),
+                'email' => $usuario->email,
+            ];
+        });
 
-    return response()->json(
-        DB::table('usuarios')
-            ->where('activo', 1)
-            ->select('id', 'nombre', 'apellido', 'rut')
-            ->orderBy('apellido')
-            ->orderBy('nombre')
-            ->get()
-    );
-
-});
+    return response()->json($usuarios);
+})->middleware('auth');
