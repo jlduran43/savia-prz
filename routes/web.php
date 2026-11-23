@@ -1069,7 +1069,8 @@ Route::get('/rrhh/usuarios', function () {
             'apellido',
             'apellido_paterno',
             'apellido_materno',
-            'email'
+            'email',
+            'rut'
         )
         ->where('activo', 1)
         ->orderBy('name')
@@ -1083,6 +1084,7 @@ Route::get('/rrhh/usuarios', function () {
                 'apellido_paterno' => $usuario->apellido_paterno,
                 'apellido_materno' => $usuario->apellido_materno,
                 'email' => $usuario->email,
+                'rut' => $usuario->rut,
             ];
 
         });

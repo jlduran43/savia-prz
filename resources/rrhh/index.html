@@ -3400,6 +3400,16 @@ document.getElementById('przSaviaUserSelect')
         // Apellido materno
         f.elements.namedItem('apellido2').value =
             String(u.apellido_materno || '');
+          
+        // Autocompletar RUT desde SAVIA PRZ
+        const rutInput = f.elements.namedItem('rut');
+
+        if (rutInput) {
+            rutInput.value = String(u.rut || '');
+            rutInput.dispatchEvent(new Event('input', {
+            bubbles: true
+          }));
+        }
 
         // Mensaje de confirmación
         document.getElementById('przSaviaUserStatus').textContent =
