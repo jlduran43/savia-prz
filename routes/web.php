@@ -1061,20 +1061,27 @@ Route::middleware(['auth'])
     ->name('rrhh.directorio');
 
 Route::get('/rrhh/usuarios', function () {
+
     $usuarios = DB::table('users')
         ->select('id', 'name', 'apellido', 'email')
+        ->where('activo', 1)
         ->orderBy('name')
         ->get()
         ->map(function ($usuario) {
+
+            $nombreCompleto = trim(
+                ($usuario->name ?? '') . ' ' .
+                ($usuario->apellido ?? '')
+            );
+
             return [
                 'id' => $usuario->id,
-                'name' => trim(
-                    ($usuario->name ?? '') . ' ' .
-                    ($usuario->apellido ?? '')
-                ),
+                'name' => $nombreCompleto,
+                'nombre_completo' => $nombreCompleto,
                 'email' => $usuario->email,
             ];
         });
 
     return response()->json($usuarios);
+
 })->middleware('auth');

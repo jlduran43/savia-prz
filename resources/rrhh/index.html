@@ -3302,40 +3302,111 @@ function directoryNewOpen(){
 
  // Integración inicial: lectura de usuarios SAVIA PRZ desde Laravel (sin modificar el guardado local).
  let przSaviaUsers=[];
- async function przLoadSaviaUsers(){
-  const sel=document.getElementById('przSaviaUserSelect'),status=document.getElementById('przSaviaUserStatus');
-  if(!sel)return;
-  sel.replaceChildren(new Option('Cargando usuarios de SAVIA PRZ…',''));
-  sel.disabled=true;
-  try{
-   const response=await fetch('/rrhh/usuarios',{credentials:'same-origin',headers:{'Accept':'application/json'},cache:'no-store'});
-   if(!response.ok)throw new Error('HTTP '+response.status);
-   const users=await response.json();
-   if(!Array.isArray(users))throw new Error('Formato inesperado');
-   przSaviaUsers=users;
-   sel.replaceChildren(new Option('Selecciona un usuario para autocompletar…',''));
-   for(const u of users){
-    const label=[u.apellido,u.nombre].filter(Boolean).join(', ');
-    sel.add(new Option(label||('Usuario '+u.id),String(u.id)));
-   }
-   status.textContent=users.length+' usuarios activos disponibles. Verifica cómo están registrados los apellidos antes de guardar.';
-  }catch(err){
-   console.warn('No se pudo cargar usuarios SAVIA:',err);
-   sel.replaceChildren(new Option('No se pudo cargar la lista de usuarios',''));
-   status.textContent='Error de consulta. Comprueba la ruta /rrhh/usuarios y los permisos ADMIN.';
-  }finally{sel.disabled=false;}
- }
- document.getElementById('przSaviaUserSelect')?.addEventListener('change',function(){
-  const u=przSaviaUsers.find(u=>String(u.id)===this.value);
-  if(!u)return;
-  const f=document.getElementById('dirEditForm');
-  // No se adivina el segundo apellido: la tabla usuarios actual expone un único campo apellido.
-  f.elements.namedItem('nombres').value=String(u.nombre||'');
-  f.elements.namedItem('apellido1').value=String(u.apellido||'');
-  f.elements.namedItem('apellido2').value='';
-  document.getElementById('przSaviaUserStatus').textContent='Datos cargados. Revisa primer y segundo apellido: SAVIA guarda actualmente el apellido en un solo campo. La ficha todavía se guarda localmente.';
- });
+ async function przLoadSaviaUsers() {
+    const sel = document.getElementById('przSaviaUserSelect');
+    const status = document.getElementById('przSaviaUserStatus');
 
+    if (!sel) return;
+
+    sel.replaceChildren(new Option('Cargando usuarios de SAVIA PRZ…', ''));
+    sel.disabled = true;
+
+    try {
+        const response = await fetch('/rrhh/usuarios', {
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json'
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+
+        const users = await response.json();
+
+        if (!Array.isArray(users)) {
+            throw new Error('Formato inesperado');
+        }
+
+        przSaviaUsers = users;
+
+        sel.replaceChildren(
+            new Option('Selecciona un usuario para autocompletar…', '')
+        );
+
+        for (const u of users) {
+
+            const nombreCompleto = String(
+                u.nombre_completo ||
+                u.name ||
+                [u.nombre, u.apellido].filter(Boolean).join(' ') ||
+                ''
+            ).trim();
+
+            sel.add(
+                new Option(
+                    nombreCompleto || ('Usuario ' + u.id),
+                    String(u.id)
+                )
+            );
+        }
+
+        if (status) {
+            status.textContent =
+                users.length + ' usuarios activos disponibles.';
+        }
+
+    } catch (err) {
+
+        console.warn('No se pudo cargar usuarios SAVIA:', err);
+
+        sel.replaceChildren(
+            new Option('No se pudo cargar la lista de usuarios', '')
+        );
+
+        if (status) {
+            status.textContent =
+                'Error al consultar los usuarios de SAVIA PRZ.';
+        }
+
+    } finally {
+        sel.disabled = false;
+    }
+}
+
+// Autocompletar datos del usuario seleccionado desde SAVIA PRZ
+document.getElementById('przSaviaUserSelect')
+    ?.addEventListener('change', function () {
+
+        const u = przSaviaUsers.find(
+            u => String(u.id) === this.value
+        );
+
+        if (!u) return;
+
+        const f = document.getElementById('dirEditForm');
+
+        if (!f) return;
+
+        // Nombres
+        f.elements.namedItem('nombres').value =
+            String(u.nombre || u.name || '');
+
+        // Apellido paterno
+        f.elements.namedItem('apellido1').value =
+            String(u.apellido_paterno || u.apellido || '');
+
+        // Apellido materno
+        f.elements.namedItem('apellido2').value =
+            String(u.apellido_materno || '');
+
+        // Mensaje de confirmación
+        document.getElementById('przSaviaUserStatus').textContent =
+            'Datos cargados desde SAVIA PRZ. Verifica los apellidos antes de guardar.';
+    });
+    
 $('directoryAddPerson').addEventListener('click',directoryNewOpen);
 function directoryEditClose(){$('dirEditorOverlay').hidden=true;document.body.classList.remove('przProfileOpen');currentEditorId=null;}
 $('dirCancel').addEventListener('click',directoryEditClose);$('przBackToDirectory').addEventListener('click',directoryEditClose);
