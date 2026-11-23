@@ -246,12 +246,24 @@ class DrivePrzSharingController extends Controller
         );
     }
 
+
     private function person(User $user): array
     {
+        // Obtener los apellidos separados.
+        $apellidos = trim(
+            ($user->apellido_paterno ?? '') . ' ' .
+                ($user->apellido_materno ?? '')
+        );
+
+        // Compatibilidad con registros antiguos.
+        if ($apellidos === '') {
+            $apellidos = $user->apellido ?? '';
+        }
+
+        // Construir el nombre completo.
         $name = trim(
-            ($user->nombre ?? $user->name ?? '') .
-                ' ' .
-                ($user->apellido ?? '')
+            ($user->nombre ?? $user->name ?? '') . ' ' .
+                $apellidos
         );
 
         return [
@@ -538,7 +550,11 @@ class DrivePrzSharingController extends Controller
         // Distinguir una concesión nueva, una restauración y una actualización.
         // Solo se vuelve a notificar si ocurrió una acción efectiva.
         $resultado = DB::transaction(function () use (
-            $kind, $id, $item, $recipient, $permisos
+            $kind,
+            $id,
+            $item,
+            $recipient,
+            $permisos
         ): array {
             $userId = (int) $recipient->id;
             $existente = $this->obtenerRegistro($kind, $id, $userId);
@@ -564,11 +580,15 @@ class DrivePrzSharingController extends Controller
             // y envía el aviso de compartido nuevamente.
             if ($existente === null || $estabaOculto) {
                 DrivePrzAvisos::documentoCompartido(
-                    $userId, (int) $this->actor()->id, $kind, $id, $nombre
+                    $userId,
+                    (int) $this->actor()->id,
+                    $kind,
+                    $id,
+                    $nombre
                 );
 
                 return ['notificacion_creada' => true, 'accion' =>
-                    $existente === null ? 'compartido' : 'restaurado'];
+                $existente === null ? 'compartido' : 'restaurado'];
             }
 
             if ($cambioPermisos) {

@@ -102,15 +102,44 @@ class DrivePrzSharedController extends Controller
     {
         $file = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->firstOrFail();
         abort_unless((int) $file->subido_por !== (int) auth()->id(), 403, 'Utiliza Mis archivos.');
-        abort_unless(in_array($permission, $this->effectiveFilePermissions($file), true),
-            403, 'No tienes permiso para realizar esta acción.');
+        abort_unless(
+            in_array($permission, $this->effectiveFilePermissions($file), true),
+            403,
+            'No tienes permiso para realizar esta acción.'
+        );
         return $file;
     }
 
+
     private function ownerName(int $uid): string
     {
-        $user = DB::table('users')->where('id', $uid)->first();
-        return trim(($user->nombre ?? $user->name ?? '') . ' ' . ($user->apellido ?? '')) ?: 'Otro usuario';
+        $user = DB::table('users')
+            ->where('id', $uid)
+            ->first();
+
+        if (! $user) {
+            return 'Otro usuario';
+        }
+
+        // Utilizar los nuevos campos de apellidos.
+        $apellidos = trim(
+            ($user->apellido_paterno ?? '') . ' ' .
+                ($user->apellido_materno ?? '')
+        );
+
+        // Compatibilidad con registros antiguos.
+        if ($apellidos === '') {
+            $apellidos = $user->apellido ?? '';
+        }
+
+        $nombreCompleto = trim(
+            ($user->nombre ?? $user->name ?? '') . ' ' .
+                $apellidos
+        );
+
+        return $nombreCompleto !== ''
+            ? $nombreCompleto
+            : 'Otro usuario';
     }
 
     private function fileData(object $file): array
@@ -167,8 +196,11 @@ class DrivePrzSharedController extends Controller
         $items = [];
         $trail = [];
         if ($parent !== null) {
-            abort_unless(in_array('ver', $this->folderPermissions($parent), true), 403,
-                'No tienes acceso a esta carpeta.');
+            abort_unless(
+                in_array('ver', $this->folderPermissions($parent), true),
+                403,
+                'No tienes acceso a esta carpeta.'
+            );
             $cursor = $parent;
             $seen = [];
             while ($cursor && !isset($seen[$cursor])) {
@@ -202,17 +234,21 @@ class DrivePrzSharedController extends Controller
                 $id = (int) $grant->elemento_id;
                 if (in_array($type, array_map('strtolower', $this->types('folders')), true)) {
                     $folder = DB::table('documento_carpetas')->where('id', $id)->whereNull('deleted_at')->first();
-                    if ($folder && (int) $folder->creado_por !== $uid && !$this->isHidden('folders', $id) && !isset($found['folder:'.$id])
-                        && in_array('ver', $this->folderPermissions($id), true)) {
+                    if (
+                        $folder && (int) $folder->creado_por !== $uid && !$this->isHidden('folders', $id) && !isset($found['folder:' . $id])
+                        && in_array('ver', $this->folderPermissions($id), true)
+                    ) {
                         $items[] = $this->folderData($folder);
-                        $found['folder:'.$id] = true;
+                        $found['folder:' . $id] = true;
                     }
                 } elseif (in_array($type, array_map('strtolower', $this->types('files')), true)) {
                     $file = DB::table('documentos')->where('id', $id)->whereNull('deleted_at')->first();
-                    if ($file && (int) $file->subido_por !== $uid && !$this->isHidden('files', $id) && !isset($found['file:'.$id])
-                        && in_array('ver', $this->effectiveFilePermissions($file), true)) {
+                    if (
+                        $file && (int) $file->subido_por !== $uid && !$this->isHidden('files', $id) && !isset($found['file:' . $id])
+                        && in_array('ver', $this->effectiveFilePermissions($file), true)
+                    ) {
                         $items[] = $this->fileData($file);
-                        $found['file:'.$id] = true;
+                        $found['file:' . $id] = true;
                     }
                 }
             }
@@ -234,8 +270,11 @@ class DrivePrzSharedController extends Controller
         $disk = Storage::disk('documentos_privados');
         abort_unless($disk->exists($file->ruta_archivo), 404);
         $mime = $disk->mimeType($file->ruta_archivo);
-        abort_unless(in_array($mime, ['application/pdf', 'image/png', 'image/jpeg'], true),
-            415, 'Formato sin vista previa; descárgalo.');
+        abort_unless(
+            in_array($mime, ['application/pdf', 'image/png', 'image/jpeg'], true),
+            415,
+            'Formato sin vista previa; descárgalo.'
+        );
         return response()->file($disk->path($file->ruta_archivo), [
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline',
@@ -248,7 +287,8 @@ class DrivePrzSharedController extends Controller
         $data = $request->validate(['nombre' => ['required', 'string', 'max:120']]);
         $file = $this->accessibleFile($id, 'renombrar');
         DB::table('documentos')->where('id', $file->id)->whereNull('deleted_at')->update([
-            'nombre_original' => trim($data['nombre']), 'updated_at' => now(),
+            'nombre_original' => trim($data['nombre']),
+            'updated_at' => now(),
         ]);
         return response()->json(['ok' => true]);
     }
@@ -262,12 +302,19 @@ class DrivePrzSharedController extends Controller
         abort_unless($dest, 403, 'El destino debe pertenecer al propietario del documento.');
         $this->assertFolderTreeValid((int) $dest->id);
         // La carpeta de destino debe conceder al destinatario permiso de mover.
-        abort_unless(in_array('mover', $this->folderPermissions((int) $dest->id), true),
-            403, 'No tienes permiso para mover documentos a esta carpeta.');
-        abort_if((int) $file->carpeta_id === (int) $dest->id, 422,
-            'El documento ya está en esta carpeta.');
+        abort_unless(
+            in_array('mover', $this->folderPermissions((int) $dest->id), true),
+            403,
+            'No tienes permiso para mover documentos a esta carpeta.'
+        );
+        abort_if(
+            (int) $file->carpeta_id === (int) $dest->id,
+            422,
+            'El documento ya está en esta carpeta.'
+        );
         DB::table('documentos')->where('id', $file->id)->whereNull('deleted_at')->update([
-            'carpeta_id' => $dest->id, 'updated_at' => now(),
+            'carpeta_id' => $dest->id,
+            'updated_at' => now(),
         ]);
         return response()->json(['ok' => true]);
     }
@@ -276,7 +323,7 @@ class DrivePrzSharedController extends Controller
     {
         $folders = DB::table('documento_carpetas')->whereNull('deleted_at')
             ->orderBy('nombre')->get(['id', 'nombre', 'carpeta_padre_id', 'creado_por'])
-            ->filter(fn ($folder) => in_array('mover', $this->folderPermissions((int) $folder->id), true))
+            ->filter(fn($folder) => in_array('mover', $this->folderPermissions((int) $folder->id), true))
             ->values();
         return response()->json(['folders' => $folders]);
     }

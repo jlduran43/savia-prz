@@ -179,12 +179,18 @@ class EditProfile extends BaseEditProfile
                 ->options(
                     fn() => User::query()
                         ->where('activo', true)
-                        ->whereKeyNot(auth()->id())
+                        ->whereKeyNot(auth()->user()?->getAuthIdentifier())
                         ->orderBy('name')
                         ->get()
-                        ->mapWithKeys(fn($user) => [
+                        ->mapWithKeys(fn(User $user) => [
                             $user->id => trim(
-                                $user->name . ' ' . $user->apellido
+                                $user->name . ' ' .
+                                    (
+                                        trim(
+                                            ($user->apellido_paterno ?? '') . ' ' .
+                                                ($user->apellido_materno ?? '')
+                                        ) ?: ($user->apellido ?? '')
+                                    )
                             ),
                         ])
                         ->all()

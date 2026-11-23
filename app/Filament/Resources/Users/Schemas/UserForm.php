@@ -23,9 +23,15 @@ class UserForm
                     ->label('Nombres')
                     ->required(),
 
-                TextInput::make('apellido')
-                    ->label('Apellidos')
-                    ->required(),
+                TextInput::make('apellido_paterno')
+                    ->label('Apellido paterno')
+                    ->required()
+                    ->maxLength(100),
+
+                TextInput::make('apellido_materno')
+                    ->label('Apellido materno')
+                    ->required()
+                    ->maxLength(100),
 
                 TextInput::make('rut')
                     ->label('RUT')
@@ -287,7 +293,13 @@ class UserForm
                             ->get()
                             ->mapWithKeys(fn($user) => [
                                 $user->id => trim(
-                                    $user->name . ' ' . ($user->apellido ?? '')
+                                    $user->name . ' ' .
+                                        (
+                                            trim(
+                                                ($user->apellido_paterno ?? '') . ' ' .
+                                                    ($user->apellido_materno ?? '')
+                                            ) ?: ($user->apellido ?? '')
+                                        )
                                 ),
                             ])
                             ->all();

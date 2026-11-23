@@ -15,7 +15,8 @@ class User extends Authenticatable implements FilamentUser
 
     protected $fillable = [
         'name',
-        'apellido',
+        'apellido_paterno',
+        'apellido_materno',
         'rut',
         'email',
         'password',
@@ -95,5 +96,20 @@ class User extends Authenticatable implements FilamentUser
             'user_id',
             'documento_id'
         )->withTimestamps();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if (
+                filled($user->apellido_paterno) &&
+                filled($user->apellido_materno)
+            ) {
+                $user->apellido = trim(
+                    $user->apellido_paterno . ' ' .
+                        $user->apellido_materno
+                );
+            }
+        });
     }
 }
