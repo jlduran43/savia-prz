@@ -24,8 +24,13 @@ class UsersTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('apellido')
-                    ->label('Apellido')
+                TextColumn::make('apellido_paterno')
+                    ->label('Apellido paterno')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('apellido_materno')
+                    ->label('Apellido materno')
                     ->searchable()
                     ->sortable(),
 
