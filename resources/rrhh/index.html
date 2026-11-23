@@ -3338,20 +3338,19 @@ function directoryNewOpen(){
 
         for (const u of users) {
 
-            const nombreCompleto = String(
-                u.nombre_completo ||
-                u.name ||
-                [u.nombre, u.apellido].filter(Boolean).join(' ') ||
-                ''
-            ).trim();
+    const label = [
+        u.nombre || u.name,
+        u.apellido_paterno,
+        u.apellido_materno
+    ].filter(Boolean).join(' ');
 
-            sel.add(
-                new Option(
-                    nombreCompleto || ('Usuario ' + u.id),
-                    String(u.id)
-                )
-            );
-        }
+    sel.add(
+        new Option(
+            label || ('Usuario ' + u.id),
+            String(u.id)
+        )
+    );
+}
 
         if (status) {
             status.textContent =
@@ -3406,7 +3405,7 @@ document.getElementById('przSaviaUserSelect')
         document.getElementById('przSaviaUserStatus').textContent =
             'Datos cargados desde SAVIA PRZ. Verifica los apellidos antes de guardar.';
     });
-    
+
 $('directoryAddPerson').addEventListener('click',directoryNewOpen);
 function directoryEditClose(){$('dirEditorOverlay').hidden=true;document.body.classList.remove('przProfileOpen');currentEditorId=null;}
 $('dirCancel').addEventListener('click',directoryEditClose);$('przBackToDirectory').addEventListener('click',directoryEditClose);

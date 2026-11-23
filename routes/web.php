@@ -1063,23 +1063,28 @@ Route::middleware(['auth'])
 Route::get('/rrhh/usuarios', function () {
 
     $usuarios = DB::table('users')
-        ->select('id', 'name', 'apellido', 'email')
+        ->select(
+            'id',
+            'name',
+            'apellido',
+            'apellido_paterno',
+            'apellido_materno',
+            'email'
+        )
         ->where('activo', 1)
         ->orderBy('name')
         ->get()
         ->map(function ($usuario) {
 
-            $nombreCompleto = trim(
-                ($usuario->name ?? '') . ' ' .
-                ($usuario->apellido ?? '')
-            );
-
             return [
                 'id' => $usuario->id,
-                'name' => $nombreCompleto,
-                'nombre_completo' => $nombreCompleto,
+                'nombre' => $usuario->name,
+                'apellido' => $usuario->apellido,
+                'apellido_paterno' => $usuario->apellido_paterno,
+                'apellido_materno' => $usuario->apellido_materno,
                 'email' => $usuario->email,
             ];
+
         });
 
     return response()->json($usuarios);
