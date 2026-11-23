@@ -4134,6 +4134,10 @@
         .prz-trash-grant-label input {
             accent-color: #1664bd;
         }
+        /* Botón independiente del censurador en Acciones. */
+        .prz-censor-action { display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+        .prz-censor-action svg { width:17px; height:17px; }
+        .prz-censor-action:hover { color:#176B45; border-color:#86c6a0; background:#f0faf3; }
     </style>
 </head>
 
@@ -4211,6 +4215,10 @@
             </symbol>
             <symbol id="i-refresh" viewBox="0 0 24 24">
                 <path d="M20 8a8 8 0 1 0 1 5M20 3v5h-5" />
+            </symbol>
+            <symbol id="i-censor" viewBox="0 0 24 24">
+                <path d="M4 17.5V20h2.5L18.8 7.7l-2.5-2.5L4 17.5Z" />
+                <path d="m14.9 6.6 2.5 2.5M4 4h7M4 9h5M10 20h10" />
             </symbol>
             <symbol id="i-image" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -5336,7 +5344,7 @@
                         const icono = carpeta ? 'folder' : ['png', 'jpg', 'jpeg', 'webp'].includes(ext) ? 'image' : 'file';
                         const acciones = carpeta
                             ? `<button type="button" class="action" data-real-folder="${x.id}">Abrir</button>`
-                            : `<button type="button" class="action" data-real-preview="${x.id}" data-preview-name="${esc(x.name)}" data-preview-size="${Number(x.size) || 0}">Ver</button><a class="action" href="/drive-prz-v5/files/${x.id}/download">Descargar</a>`;
+                            : `<button type="button" class="action" data-real-preview="${x.id}" data-preview-name="${esc(x.name)}" data-preview-size="${Number(x.size) || 0}">Ver</button><a class="action" href="/drive-prz-v5/files/${x.id}/download">Descargar</a>${ext === 'pdf' ? `<button type="button" class="action prz-censor-action" data-real-censurar="${x.id}" title="Censurar PDF" aria-label="Censurar PDF: ${esc(x.name)}">${glyph('censor')} Censurar</button>` : ''}`;
                         return `<article class="tile" draggable="true" data-real-drag="${realKey(x)}" data-real-tile="${realKey(x)}">
               <div class="tiletop"><input type="checkbox" class="rowcheck" data-real-check="${realKey(x)}" aria-label="Seleccionar ${esc(x.name)}"> <span class="fileico ${categoria}"${estiloCarpetaReal(x)}>${glyph(icono)}</span></div>
               ${carpeta ? `<button class="filename" data-real-folder="${x.id}" title="${esc(x.name)}">${esc(x.name)}</button>` : `<strong class="filename" title="${esc(x.name)}">${esc(x.name)}</strong>`}
@@ -5400,7 +5408,8 @@
                                    <a class="action"
                                       href="/drive-prz-v5/files/${x.id}/download">
                                       Descargar
-                                   </a>`;
+                                   </a>
+                                   ${extension === 'pdf' ? `<button type="button" class="action prz-censor-action" data-real-censurar="${x.id}" title="Censurar PDF" aria-label="Censurar PDF: ${esc(x.name)}">${glyph('censor')} Censurar</button>` : ''}`;
 
                     return `
                                 <tr draggable="true" data-real-drag="${realKey(x)}">
@@ -6076,6 +6085,19 @@
                     `${extension === 'pdf' ? `<a class="btn" href="${ruta}" target="_blank" rel="noopener noreferrer">Abrir en otra pestaña</a>` : ''}<a class="btn primary" href="${descarga}" download>Descargar</a>`, true);
                 if (extension === 'pdf') optimizarVistaPreviaPdf();
             }
+
+            // Censurador: botón visible junto a las acciones del PDF.
+            document.getElementById('filesArea').addEventListener('click', event => {
+                const boton = event.target.closest('[data-real-censurar]');
+                if (!boton) return;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                const id = Number(boton.dataset.realCensurar);
+                if (!Number.isInteger(id) || id <= 0) return;
+                const item = realVisible.find(x => Number(x.id) === id && x.type === 'file');
+                if (!item || !/\.pdf$/i.test(item.name || '')) return;
+                window.location.assign(`/drive-prz-v5/files/${encodeURIComponent(id)}/censurador?name=${encodeURIComponent(item.name)}`);
+            }, true);
 
             // Interceptamos únicamente el botón Ver del listado real.
             document.getElementById('filesArea').addEventListener('click', event => {
