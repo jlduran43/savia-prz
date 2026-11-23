@@ -5891,6 +5891,7 @@
                     const available = [
                         { id: 'open', label: folder ? 'Abrir carpeta' : 'Ver archivo' },
                         ...(!folder ? [{ id: 'download', label: 'Descargar' }] : []),
+                        ...(!folder && /\.pdf$/i.test(item.name || '') ? [{ id: 'censurar', label: '◼ Censurar PDF' }] : []),
                         { id: 'share', label: 'Administrar permisos' },
                         ...(folder ? [{ id: 'color', label: 'Cambiar color' }] : []),
                         { id: 'rename', label: 'Cambiar nombre' },
@@ -5964,6 +5965,8 @@
                         document.body.appendChild(a);
                         a.click();
                         a.remove();
+                    } else if (action === 'censurar' && !folder && /\.pdf$/i.test(name || '')) {
+                        window.location.href = `/drive-prz-v5/files/${encodeURIComponent(id)}/censurador?name=${encodeURIComponent(name)}`;
                     } else if (action === 'share') abrirCompartirLaravel(Number(id), type, name);
                     else if (action === 'color' && folder) cambiarColorCarpetaLaravel(Number(id), name);
                     else if (action === 'rename') abrirRenombrarLaravel(Number(id), type, name);
