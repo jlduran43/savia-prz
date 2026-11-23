@@ -3411,6 +3411,17 @@ document.getElementById('przSaviaUserSelect')
           }));
         }
 
+        // Autocompletar correo institucional desde SAVIA PRZ
+      const emailInput = f.elements.namedItem('email');
+
+      if (emailInput) {
+        emailInput.value = String(u.email || '');
+
+        emailInput.dispatchEvent(new Event('input', {
+            bubbles: true
+        }));
+      }
+
         // Mensaje de confirmación
         document.getElementById('przSaviaUserStatus').textContent =
             'Datos cargados desde SAVIA PRZ. Verifica los apellidos antes de guardar.';
