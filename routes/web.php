@@ -2126,6 +2126,7 @@ Route::get('/rrhh/usuarios', function () {
 
     $usuarios = DB::table('users')
         ->leftJoin('cargos', 'users.cargo_id', '=', 'cargos.id')
+        ->leftJoin('users as jefe', 'users.jefe_id', '=', 'jefe.id')
         ->select(
             'users.id',
             'users.name',
@@ -2135,7 +2136,11 @@ Route::get('/rrhh/usuarios', function () {
             'users.email',
             'users.rut',
             'users.cargo_id',
-            'cargos.nombre as cargo'
+            'users.jefe_id',
+            'cargos.nombre as cargo',
+            'jefe.name as jefe_nombre',
+            'jefe.apellido_paterno as jefe_apellido_paterno',
+            'jefe.apellido_materno as jefe_apellido_materno'
         )
         ->where('users.activo', 1)
         ->orderBy('users.name')
@@ -2152,6 +2157,14 @@ Route::get('/rrhh/usuarios', function () {
                 'rut' => $usuario->rut,
                 'cargo_id' => $usuario->cargo_id,
                 'cargo' => $usuario->cargo,
+
+                // Jefatura directa
+                'jefe_id' => $usuario->jefe_id,
+                'jefatura' => trim(
+                    ($usuario->jefe_nombre ?? '') . ' ' .
+                    ($usuario->jefe_apellido_paterno ?? '') . ' ' .
+                    ($usuario->jefe_apellido_materno ?? '')
+                ),
             ];
 
         });

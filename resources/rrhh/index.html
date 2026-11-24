@@ -3412,6 +3412,7 @@ document.getElementById('przSaviaUserSelect')
         }
 
         f.elements.namedItem('cargo').value = String(u.cargo || '');
+        f.elements.namedItem('jefaturaDirecta').value = String(u.jefatura || 'Sin jefatura directa');
 
         // Autocompletar correo institucional desde SAVIA PRZ
       const emailInput = f.elements.namedItem('email');
