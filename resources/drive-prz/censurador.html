@@ -55,8 +55,12 @@ main>.workspace{order:2;min-height:45vh;height:auto;overflow:auto;padding:12px;}
 .snippet-suggestions button:hover,.snippet-suggestions button:focus{background:#315f43}
 .snippet-suggestions button strong{display:block;font-size:12px}
 .snippet-suggestions button small{display:block;color:#bdd4c4;line-height:1.3;font-size:11px;overflow-wrap:anywhere}
+.prz-editor-heading{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.btn-volver-prz{display:inline-flex;align-items:center;justify-content:center;background:#176b45;border:1px solid #42956c;color:#fff;text-decoration:none;border-radius:8px;padding:10px 13px;font-size:12px;font-weight:700;white-space:nowrap;min-height:38px}
+.btn-volver-prz:hover,.btn-volver-prz:focus-visible{background:#26865b;color:#fff}
+@media(max-width:700px){.prz-editor-heading{gap:8px}.btn-volver-prz{padding:8px 10px}}
 </style></head><body>
-<header><div><div class="brand">◼ Censor PDF</div><div class="small">Censura rectangular, circular e irregular · uso local</div></div><div class="buttons"><label class="filebtn" for="file">Abrir PDF</label><input id="file" type="file" accept=".pdf,application/pdf"><button id="undo" disabled>↶ Deshacer</button><button id="redo" disabled>↷ Rehacer</button><button id="clear" class="danger" disabled>Limpiar tachados</button><button id="rotateAllL" disabled title="Girar todas las páginas 90° a la izquierda">↶ Girar todo</button><button id="rotateAllR" disabled title="Girar todas las páginas 90° a la derecha">↷ Girar todo</button><button id="driveSave" class="primary" style="display:none" disabled>💾 Guardar en Drive PRZ</button><button id="manualSave" disabled>💾 Guardar</button><button id="print" disabled>Imprimir</button><button id="save" class="primary" disabled>Descargar PDF censurado</button></div></header>
+<header><div class="prz-editor-heading"><a href="/drive-prz-v5" id="volverDrive" class="btn-volver-prz" title="Regresar al explorador documental">← Volver a Drive PRZ</a><div><div class="brand">◼ Censor PDF</div><div class="small">Censura rectangular, circular e irregular · uso local</div></div></div><div class="buttons"><label class="filebtn" for="file">Abrir PDF</label><input id="file" type="file" accept=".pdf,application/pdf"><button id="undo" disabled>↶ Deshacer</button><button id="redo" disabled>↷ Rehacer</button><button id="clear" class="danger" disabled>Limpiar tachados</button><button id="rotateAllL" disabled title="Girar todas las páginas 90° a la izquierda">↶ Girar todo</button><button id="rotateAllR" disabled title="Girar todas las páginas 90° a la derecha">↷ Girar todo</button><button id="driveSave" class="primary" style="display:none" disabled>💾 Guardar en Drive PRZ</button><button id="manualSave" disabled>💾 Guardar</button><button id="print" disabled>Imprimir</button><button id="save" class="primary" disabled>Descargar PDF censurado</button></div></header>
 <main><aside class="editor-sidebar"><h3>Forma de censura</h3><button class="tool active" data-shape="rect">▰ Rectangular</button><button class="tool" data-shape="circle">● Circular / ovalada</button><button class="tool" data-shape="irregular">✦ Irregular</button><h3>Cuadros de texto</h3><button id="textMode" class="tool">▣ Seleccionar y mover textos</button><label class="fieldlabel">Texto (escribir una sola vez)</label><textarea id="textValue" class="field" placeholder="Escribe aquí el texto que deseas insertar…" autocomplete="off"></textarea>
 <div id="textSuggestions" class="snippet-suggestions" role="listbox" aria-label="Sugerencias de textos guardados" hidden></div>
 <section class="snippet-library" aria-label="Biblioteca de textos frecuentes">
@@ -106,6 +110,17 @@ let originalPdfBytes=null,saveTimer=null,autosaveEnabled=true,storageReady=false
 let pdfjs=null,pdfLib=null,pdf=null,fileName='documento',shape='rect';
  const driveFileId=new URLSearchParams(window.location.search).get('drive_file_id') || window.location.pathname.match(/\/files\/(\d+)\/censurador\/?$/)?.[1];
  const driveMode=!!driveFileId && /^\d+$/.test(driveFileId);
+ // Una copia guardada en el navegador NO equivale a guardar el PDF en Drive.
+ let driveSavedSnapshot=null;
+ const hasPendingDriveChanges=()=>driveMode && !!pdf && driveSavedSnapshot!==null && snap()!==driveSavedSnapshot;
+ document.getElementById('volverDrive').addEventListener('click',e=>{
+   if(busy){e.preventDefault();alert('Hay una operación en curso. Termínala antes de volver a Drive PRZ.');return}
+   if(hasPendingDriveChanges()&&!confirm('¿Volver a Drive PRZ sin guardar?\n\nHay cambios pendientes de guardar en el servidor. El autoguardado del navegador NO actualiza el PDF de Drive PRZ.'))e.preventDefault();
+ });
+ window.addEventListener('beforeunload',e=>{
+   if(!hasPendingDriveChanges())return;
+   e.preventDefault();e.returnValue='';
+ });
 let selectedPages=new Set(), selectionAnchor=null, liveEditBaseline=null, thumbGeneration=0;
 let states=[],marks=[],texts=[],history=[],future=[],selectedId=null,selectedTextId=null,selectedTextPage=null,textMode=false,drag=null,busy=false,ready=false,nextId=1;
 const SNIPPET_STORAGE_KEY='censor_pdf_biblioteca_textos_v1';
@@ -280,6 +295,7 @@ async function loadEditorBytes(data,name){
  selectedPages.clear();selectionAnchor=null;marks=[];texts=[];history=[];future=[];
  selectedId=null;selectedTextId=null;selectedTextPage=null;nextId=1;
  $('#empty').style.display='none';await renderAll(true);updatePageChecks();
+ if(driveMode)driveSavedSnapshot=snap();
 }
 async function openDrivePdf(){
  $('#driveSave').style.display='inline-block';
