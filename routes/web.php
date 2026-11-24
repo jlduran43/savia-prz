@@ -169,7 +169,6 @@ Route::get('/admin/compras/formulario-contenido', function () {
 
 
     );
-
 })
 
 
@@ -239,7 +238,6 @@ Route::get('/exportar-registros', function () {
 
 
     );
-
 });
 
 
@@ -317,7 +315,6 @@ Route::get('/prueba-session/guardar', function () {
 
 
     return 'Sesión guardada. Ahora entra a /prueba-session/leer';
-
 });
 
 
@@ -343,7 +340,6 @@ Route::get('/prueba-session/leer', function () {
 
 
     ];
-
 });
 
 
@@ -397,7 +393,6 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
 
 
         abort(404, 'El archivo no existe en el servidor.');
-
     }
 
 
@@ -415,7 +410,6 @@ Route::get('/documentos/{documento}/descargar', function (Documento $documento) 
 
 
     );
-
 })
 
 
@@ -465,7 +459,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
         abort(404, 'El documento no existe.');
-
     }
 
 
@@ -563,7 +556,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
         ]);
-
     }
 
 
@@ -581,7 +573,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
         abort(415, 'Este tipo de archivo no admite vista previa.');
-
     }
 
 
@@ -603,7 +594,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
         abort(500, 'No fue posible preparar la vista previa.');
-
     }
 
 
@@ -653,7 +643,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
             $writer->save($temporal);
-
         } else {
 
 
@@ -707,15 +696,12 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
                 $writer->save($temporal);
-
             } finally {
 
 
 
                 $excel->disconnectWorksheets();
-
             }
-
         }
 
 
@@ -737,9 +723,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
             );
-
         }
-
     } catch (\Throwable $e) {
 
 
@@ -761,7 +745,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
         );
-
     } finally {
 
 
@@ -771,9 +754,7 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
             unlink($temporal);
-
         }
-
     }
 
 
@@ -815,7 +796,6 @@ Route::get('/documentos/{documento}/ver', function (Documento $documento) {
 
 
     ]);
-
 })
 
 
@@ -905,7 +885,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
 
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-
     };
 
 
@@ -963,7 +942,6 @@ Route::get('/documentos/{documento}/office-original', function (Documento $docum
 
 
     return $response;
-
 })
 
 
@@ -1610,26 +1588,37 @@ Route::middleware(['auth'])
 
 
 
-        
+
         // Censurador PDF: solo documentos propios (controlador valida permisos).
         Route::get('/files/{id}/censurador', [
-            \App\Http\Controllers\DrivePrzCensuradorController::class, 'screen'
+            \App\Http\Controllers\DrivePrzCensuradorController::class,
+            'screen'
         ])->whereNumber('id')->name('files.censurador');
 
         Route::post('/files/{id}/censurar', [
-            \App\Http\Controllers\DrivePrzCensuradorController::class, 'save'
+            \App\Http\Controllers\DrivePrzCensuradorController::class,
+            'save'
         ])->whereNumber('id')->name('files.censurar');
 
         // Historial de versiones anteriores del PDF (solo propietario).
         Route::get('/files/{id}/versiones', [
-            \App\Http\Controllers\DrivePrzCensuradorController::class, 'versions'
+            \App\Http\Controllers\DrivePrzCensuradorController::class,
+            'versions'
         ])->whereNumber('id')->name('files.versiones');
 
         Route::post('/files/{id}/versiones/{version}/restaurar', [
-            \App\Http\Controllers\DrivePrzCensuradorController::class, 'restore'
+            \App\Http\Controllers\DrivePrzCensuradorController::class,
+            'restore'
         ])->whereNumber('id')->whereNumber('version')->name('files.versiones.restaurar');
 
 
+        Route::get('/files/{id}/versiones/{versionId}/preview', [
+            \App\Http\Controllers\DrivePrzCensuradorController::class,
+            'previewVersion'
+        ])
+            ->whereNumber('id')
+            ->whereNumber('versionId')
+            ->name('files.versiones.preview');
         Route::get('/files/{id}/preview', [
 
 
@@ -1683,7 +1672,6 @@ Route::middleware(['auth'])
 
 
             ]);
-
         })->name('logout');
 
 
@@ -1749,7 +1737,6 @@ Route::middleware(['auth'])
 
 
                     ->name('leer');
-
             });
 
 
@@ -1787,7 +1774,6 @@ Route::middleware(['auth'])
 
 
             ->name('renombrar');
-
     });
 
 
@@ -1813,7 +1799,6 @@ Route::middleware(['auth'])
 
 
         );
-
     })
 
 
@@ -1891,7 +1876,6 @@ Route::middleware('auth')->get('/drive-prz-v5/usuario-actual', function () {
 
 
     ]);
-
 });
 
 
@@ -1941,7 +1925,6 @@ Route::middleware('auth')->group(function () {
 
 
     ])->name('drive-prz.enlaces.estado');
-
 });
 
 
@@ -2123,7 +2106,6 @@ Route::middleware('auth')->group(function () {
 
 
         ->name('drive-prz-v5.configuracion.guardar');
-
 });
 
 
@@ -2193,15 +2175,9 @@ Route::get('/rrhh/usuarios', function () {
                 'rut' => $usuario->rut,
 
             ];
-
-
-
         });
 
 
 
     return response()->json($usuarios);
-
-
-
 })->middleware('auth');

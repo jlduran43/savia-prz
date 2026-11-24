@@ -1,5 +1,190 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Censor PDF | Editor avanzado de texto</title>
 <style>
+/* ==================================
+   HISTORIAL DE VERSIONES PDF
+================================== */
+
+.vh-modal {
+    width: min(1050px, 94vw);
+    max-height: 90vh;
+    padding: 0;
+    border: 1px solid #365b47;
+    border-radius: 16px;
+    background: #14271d;
+    color: #eef8f1;
+    overflow: hidden;
+    box-shadow: 0 20px 70px #0008;
+}
+
+.vh-modal[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.vh-modal::backdrop {
+    background: rgba(0, 0, 0, .75);
+    backdrop-filter: blur(3px);
+}
+
+.vh-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #365b47;
+}
+
+.vh-header h2 {
+    margin: 0 0 6px;
+    font-size: 21px;
+}
+
+.vh-header p {
+    margin: 0;
+    color: #a9c9b7;
+    font-size: 14px;
+}
+
+.vh-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fill, minmax(200px, 1fr));
+    align-items: start;
+    gap: 16px;
+    padding: 20px;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+.vh-card {
+    padding: 12px;
+    background: #20392b;
+    border: 1px solid #365b47;
+    border-radius: 12px;
+    transition: border-color .2s;
+}
+
+.vh-card:hover {
+    border-color: #65bd8d;
+}
+
+.vh-thumbnail {
+    height: 230px;
+    padding: 10px;
+    background: #0d1a12;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: zoom-in;
+    overflow: hidden;
+    width: 100%;
+}
+
+.vh-thumbnail canvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.vh-card h3 {
+    margin: 12px 0 5px;
+    font-size: 16px;
+}
+
+.vh-card p {
+    color: #b3ccbd;
+    font-size: 12px;
+    margin: 5px 0;
+}
+
+.vh-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.vh-modal button {
+    padding: 10px 14px;
+    border: 1px solid #456b55;
+    border-radius: 8px;
+    color: white;
+    background: #20392b;
+    cursor: pointer;
+}
+
+.vh-modal button:hover {
+    background: #315641;
+}
+
+.vh-modal button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.vh-modal .vh-primary {
+    background: #287a53;
+    border-color: #459d71;
+}
+
+.vh-modal .vh-primary:hover {
+    background: #359364;
+}
+
+.vh-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid #365b47;
+}
+
+.vh-large {
+    width: min(1200px, 96vw);
+    height: 94vh;
+    max-height: 94vh;
+}
+
+.vh-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 10px;
+    background: #20392b;
+}
+
+.vh-pages {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 24px;
+    background: #0b1710;
+}
+
+.vh-page {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+.vh-page canvas {
+    display: block;
+    margin: 10px auto;
+    background: white;
+    box-shadow: 0 5px 20px #0005;
+}
+
+.vh-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #b3ccbd;
+}
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1511;color:#eef5f0}header{background:#13251c;border-bottom:1px solid #355341;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;flex-wrap:wrap}.brand{font-size:19px;font-weight:800}.small{font-size:12px;color:#a9c0b1}.buttons{display:flex;gap:7px;flex-wrap:wrap}button,.filebtn{font:inherit;font-size:13px;border:1px solid #54725f;background:#213a2c;color:#fff;border-radius:8px;padding:9px 12px;cursor:pointer}button:disabled{opacity:.35;cursor:not-allowed}.primary{background:#32805a;border-color:#6baa85}.danger{background:#392325}.active{box-shadow:inset 0 0 0 2px #77d3a0;background:#305c43}input[type=file]{display:none}main{display:grid;grid-template-columns:238px minmax(0,1fr);min-height:calc(100vh - 72px)}aside{border-right:1px solid #34533f;padding:16px;background:#112018}aside h3{margin:16px 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#a6cbb4}.tool{display:block;width:100%;text-align:left;margin:6px 0}.note{font-size:12px;line-height:1.55;color:#b9c8be}.note strong{color:#fff}.counter{border:1px solid #476b53;padding:12px;border-radius:9px;margin-top:18px}.workspace{padding:28px;min-width:0;overflow:auto}.empty{border:1px dashed #6a8d75;border-radius:16px;background:#14261c;max-width:620px;padding:52px 28px;text-align:center;margin:8vh auto}.empty p{color:#b4c8b8}.page{background:#fff;position:relative;margin:0 auto 26px;box-shadow:0 9px 28px #0008;user-select:none}.page>canvas{display:block;width:100%;height:100%}.overlay{position:absolute;inset:0;touch-action:none;cursor:crosshair}.mark{position:absolute;background:#000;outline:1px solid #111}.mark.circle{border-radius:50%}.mark.irregular{clip-path:polygon(0 9%,17% 2%,33% 8%,49% 0,65% 9%,83% 1%,100% 15%,94% 40%,100% 61%,91% 85%,71% 95%,54% 88%,31% 100%,13% 89%,0 71%,6% 48%)}.mark.selected{outline:3px solid #51c38c} .pagebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 auto 9px;flex-wrap:wrap;color:#dcece1;font-size:12px}.pagebar .controls{display:flex;gap:6px;flex-wrap:wrap}.pagebar button{padding:6px 9px}.pagegroup{margin:0 auto 24px;max-width:max-content}.pagegroup .page{margin-bottom:0}.pageidx{font-weight:700}aside{max-height:calc(100vh - 76px);overflow-y:auto} .field{width:100%;background:#1a3325;border:1px solid #51745e;border-radius:7px;color:white;padding:8px;font:inherit;font-size:13px}textarea.field{min-height:84px;resize:vertical}.fieldlabel{display:block;font-size:12px;color:#bcd6c3;margin:9px 0 4px}.fieldrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pagechecks{max-height:150px;overflow:auto;border:1px solid #41634d;background:#14281c;border-radius:8px;padding:8px}.pagechecks label{display:flex;gap:7px;align-items:center;font-size:12px;margin:5px 0}.textmark{position:absolute;white-space:pre-wrap;overflow:hidden;overflow-wrap:anywhere;line-height:1.2;box-sizing:border-box;cursor:move;border:1px dashed transparent;user-select:none}.textmark.selected{outline:2px solid #5bd394;border-color:#5bd394}.textmark .handle{display:none;position:absolute;right:0;bottom:0;background:#52b980;width:13px;height:13px;cursor:nwse-resize}.textmark.selected .handle{display:block}.textmark .handle{z-index:3;touch-action:none}.textmark .handle.nw{left:-6px;top:-6px;right:auto;bottom:auto;cursor:nwse-resize}.textmark .handle.ne{right:-6px;top:-6px;bottom:auto;cursor:nesw-resize}.textmark .handle.sw{left:-6px;bottom:-6px;right:auto;cursor:nesw-resize}.textmark .handle.se{right:-6px;bottom:-6px;cursor:nwse-resize}.textmark[contenteditable=true]{cursor:text;outline:2px solid #edb754!important}.formatbar{margin:8px 0}.formatbar button[aria-pressed=true]{background:#478462;outline:1px solid #8ddbaf}.textmark{touch-action:none}.page .overlay.textmode{cursor:default}.status{position:fixed;bottom:13px;right:14px;padding:9px 13px;background:#172b20;border:1px solid #446d50;border-radius:9px;font-size:12px;max-width:70vw}.error{color:#ffb8b8}.banner{border:1px solid #8b6744;background:#322519;padding:11px;border-radius:9px;margin:10px 0;font-size:13px}#pages{min-height:1px}@media(max-width:850px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid #355341}.workspace{padding:12px}}
 
 /* Miniaturas y selección múltiple */
@@ -102,6 +287,76 @@ main>.workspace{order:2;min-height:45vh;height:auto;overflow:auto;padding:12px;}
 
 
 </div></aside></main><div id="status" class="status">Inicializando editor…</div>
+<!-- HISTORIAL DE VERSIONES -->
+<dialog id="versionHistoryModal" class="vh-modal">
+
+    <header class="vh-header">
+        <div>
+            <h2>Historial de versiones</h2>
+            <p>Selecciona una versión anterior del documento.</p>
+        </div>
+
+        <button id="closeVersionHistory">✕</button>
+    </header>
+
+    <div id="versionList" class="vh-grid"></div>
+
+    <footer class="vh-footer">
+        <button id="cancelVersionHistory">
+            Cancelar
+        </button>
+    </footer>
+
+</dialog>
+
+
+<!-- PREVISUALIZACIÓN AMPLIADA -->
+<dialog id="versionPreviewModal" class="vh-modal vh-large">
+
+    <header class="vh-header">
+        <div>
+            <h2 id="versionPreviewTitle">
+                Previsualización
+            </h2>
+
+            <p id="versionPreviewDate"></p>
+        </div>
+
+        <button id="closeVersionPreview">✕</button>
+    </header>
+
+    <div class="vh-toolbar">
+
+        <button id="versionZoomOut">−</button>
+
+        <span id="versionZoomLabel">100%</span>
+
+        <button id="versionZoomIn">+</button>
+
+        <span id="versionPageCount"></span>
+
+    </div>
+
+    <div id="versionPreviewPages" class="vh-pages">
+    </div>
+
+    <footer class="vh-footer">
+
+        <button id="backToVersionHistory">
+            Volver al historial
+        </button>
+
+        <button
+            id="restoreSelectedVersion"
+            class="vh-primary"
+        >
+            Restaurar esta versión
+        </button>
+
+    </footer>
+
+</dialog>
+
 <script>
 (function(){
 'use strict';
@@ -177,7 +432,7 @@ async function step(dir){if(busy)return;const from=dir==='undo'?history:future,t
 $('#undo').onclick=()=>step('undo');$('#redo').onclick=()=>step('redo');
 $('#clear').onclick=()=>{if(!marks.length||busy)return;const before=snap();marks=[];selectedId=null;$$('.mark').forEach(e=>e.remove());commit(before)};
 $$('[data-shape]').forEach(b=>b.onclick=()=>{shape=b.dataset.shape;$$('[data-shape]').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
-document.addEventListener('keydown',e=>{const mod=e.ctrlKey||e.metaKey;const inField=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(inField)return;if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();step(e.shiftKey?'redo':'undo')}else if(mod&&e.key.toLowerCase()==='y'){e.preventDefault();step('redo')}else if(['Delete','Backspace'].includes(e.key)&&selectedTextId!==null){e.preventDefault();deleteSelectedText()}else if(['Delete','Backspace'].includes(e.key)&&selectedId!==null){e.preventDefault();const before=snap();marks=marks.filter(m=>m.id!==selectedId);const el=$(`.mark[data-id="${selectedId}"]`);if(el)el.remove();selectedId=null;commit(before)}});
+document.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]'))return;const mod=e.ctrlKey||e.metaKey;const inField=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);if(inField)return;if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();step(e.shiftKey?'redo':'undo')}else if(mod&&e.key.toLowerCase()==='y'){e.preventDefault();step('redo')}else if(['Delete','Backspace'].includes(e.key)&&selectedTextId!==null){e.preventDefault();deleteSelectedText()}else if(['Delete','Backspace'].includes(e.key)&&selectedId!==null){e.preventDefault();const before=snap();marks=marks.filter(m=>m.id!==selectedId);const el=$(`.mark[data-id="${selectedId}"]`);if(el)el.remove();selectedId=null;commit(before)}});
 $('#file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;if(!ready){warn('Todavía no se ha cargado el motor PDF. Revisa tu conexión.');e.target.value='';return}busy=true;refresh();status('Abriendo '+f.name);$('#message').textContent='';try{const data=new Uint8Array(await f.arrayBuffer());const loaded=await pdfjs.getDocument({data:data.slice()}).promise;pdf=loaded;originalPdfBytes=data.slice();fileName=f.name.replace(/\.pdf$/i,'');states=Array.from({length:pdf.numPages},(_,i)=>({num:i+1,rotation:0,deleted:false}));selectedPages.clear();selectionAnchor=null;marks=[];texts=[];history=[];future=[];selectedId=null;selectedTextId=null;nextId=1;$('#empty').style.display='none';await renderAll(true);updatePageChecks();queueAutosave();status(`${f.name} · ${pdf.numPages} páginas cargadas`)}catch(err){console.error(err);warn('No se pudo abrir el PDF: '+err.message);status('Error al abrir el PDF',true)}finally{busy=false;refresh();e.target.value=''}});
 function turnMark(m,clockwise){let {x,y,w,h}=m;if(clockwise){m.x=1-y-h;m.y=x;m.w=h;m.h=w;m.polyRot=((m.polyRot||0)+1)%4}else{m.x=y;m.y=1-x-w;m.w=h;m.h=w;m.polyRot=((m.polyRot||0)+3)%4}}
 async function rotate(num,dir){if(busy)return;const before=snap();states.filter(s=>!s.deleted&&(num===null||s.num===num)).forEach(s=>{s.rotation=(s.rotation+(dir===1?90:270))%360;marks.filter(m=>m.page===s.num).forEach(m=>turnMark(m,dir===1))});commit(before);await renderAll();status(num===null?'Todas las páginas rotadas':`Página ${num} rotada`)}
@@ -333,47 +588,422 @@ $('#driveSave').onclick=async()=>{
  finally{busy=false;refresh()}
 };
 
-// Historial persistente: no confundir con Deshacer, que solo funciona antes de guardar.
-if(driveMode){
- const versionsBtn=$('#driveVersions');
- versionsBtn.style.display='inline-block';
- versionsBtn.onclick=async()=>{
-  if(busy)return;
-  try{
-   const res=await fetch(`/drive-prz-v5/files/${driveFileId}/versiones`,{
-    credentials:'same-origin',headers:{Accept:'application/json'}
-   });
-   if(!res.ok)throw Error('No se pudo consultar el historial (HTTP '+res.status+').');
-   const body=await res.json();
-   const list=body.versions||[];
-   if(!list.length){alert('Todavía no hay versiones anteriores registradas de este PDF.');return;}
-   const selectable=list.filter(v=>v.available);
-   if(!selectable.length){alert('Las versiones registradas ya no están disponibles en el servidor.');return;}
-   const lines=selectable.map((v,i)=>`${i+1}. ${v.created_at} (versión ${v.id})`);
-   const answer=prompt('Elige el número de la versión a restaurar:\n\n'+lines.join('\n')+'\n\nCancelar para volver sin cambios.');
-   if(answer===null)return;
-   const idx=Number(answer);
-   if(!Number.isInteger(idx)||idx<1||idx>selectable.length){alert('Selecciona un número válido de la lista.');return;}
-   const selected=selectable[idx-1];
-   if(hasPendingDriveChanges()&&!confirm('Tienes cambios sin guardar en el editor. Se perderán si restauras. ¿Continuar?'))return;
-   if(!confirm(`¿Restaurar la versión ${selected.id} del ${selected.created_at}?\nLa versión actual quedará como respaldo y la restaurada será la que vean los usuarios de Drive PRZ.`))return;
-   busy=true;refresh();status('Restaurando versión anterior…');
-   try{
-    const resp=await fetch(`/drive-prz-v5/files/${driveFileId}/versiones/${selected.id}/restaurar`,{
-      method:'POST',credentials:'same-origin',headers:{Accept:'application/json',...driveCsrf()}
-    });
-    if(!resp.ok){let msg='HTTP '+resp.status;try{msg=(await resp.json()).message||msg}catch(_){}throw Error(msg)}
-    const current=await fetch(`/drive-prz-v5/files/${driveFileId}/download`,{
-      credentials:'same-origin',headers:{Accept:'application/pdf'}
-    });
-    if(!current.ok)throw Error('Se restauró en el servidor, pero no se pudo recargar el PDF. Vuelve a abrir el editor.');
-    await loadEditorBytes(new Uint8Array(await current.arrayBuffer()),fileName+'.pdf');
-    status('Versión restaurada correctamente en Drive PRZ');
-    alert('Versión restaurada correctamente. La anterior versión actual quedó respaldada.');
-   }finally{busy=false;refresh()}
-  }catch(e){console.error(e);warn('No se pudo restaurar: '+e.message);status('Error al restaurar versión',true)}
- };
+const vhHistory =
+    document.getElementById('versionHistoryModal');
+
+const vhPreview =
+    document.getElementById('versionPreviewModal');
+
+const vhList =
+    document.getElementById('versionList');
+
+const vhPages =
+    document.getElementById('versionPreviewPages');
+
+let vhSelected = null;
+let vhZoom = 1;
+let vhPdf = null;
+let vhRenderId = 0;
+let vhObserver = null;
+
+function vhUrl(versionId) {
+    return `/drive-prz-v5/files/${driveFileId}`
+        + `/versiones/${versionId}/preview`;
 }
+
+function vhButton(label, callback, primary = false) {
+
+    const button = document.createElement('button');
+
+    button.textContent = label;
+
+    if (primary) {
+        button.classList.add('vh-primary');
+    }
+
+    button.onclick = callback;
+
+    return button;
+}
+async function vhThumbnail(version, container) {
+
+    let documentPdf = null;
+
+    try {
+
+        documentPdf = await pdfjs.getDocument({
+            url: vhUrl(version.id),
+            withCredentials: true
+        }).promise;
+
+        const page = await documentPdf.getPage(1);
+
+        const original = page.getViewport({
+            scale: 1
+        });
+
+        const viewport = page.getViewport({
+            scale: Math.min(
+                180 / original.width,
+                210 / original.height
+            )
+        });
+
+        const canvas = document.createElement('canvas');
+
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport
+        }).promise;
+
+        container.replaceChildren(canvas);
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.textContent =
+            'Vista previa no disponible';
+
+    } finally {
+
+        if (documentPdf) {
+            await documentPdf.destroy();
+        }
+
+    }
+
+}
+
+async function vhOpenHistory() {
+
+    if (busy || !ready || vhHistory.open) return;
+    if (vhObserver) {
+        vhObserver.disconnect();
+    }
+
+    vhList.textContent = 'Cargando versiones...';
+
+    vhHistory.showModal();
+
+    try {
+
+        const response = await fetch(
+            `/drive-prz-v5/files/${driveFileId}/versiones`,
+            {
+                headers: {
+                    'Accept': 'application/json'
+                },
+                cache: 'no-store'
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `No se pudo consultar el historial (${response.status})`
+            );
+        }
+
+        const data = await response.json();
+
+        const versions = Array.isArray(data)
+            ? data
+            : (data.versions ?? data.versiones);
+
+        if (!Array.isArray(versions)) {
+            throw new Error('Formato de historial no reconocido');
+        }
+
+        vhList.replaceChildren();
+
+        if (!versions.some(v => v.available !== false && v.available !== 0)) {
+
+            vhList.textContent =
+                'Todavía no hay versiones anteriores registradas.';
+
+            return;
+        }
+
+        vhObserver = new IntersectionObserver(entries => {
+
+            entries.forEach(entry => {
+
+                if (!entry.isIntersecting) return;
+
+                const target = entry.target;
+
+                vhObserver.unobserve(target);
+
+                vhThumbnail(target.versionData, target);
+
+            });
+
+        }, {
+            root: vhList,
+            rootMargin: '80px'
+        });
+
+        versions.filter(v => v.available !== false && v.available !== 0).forEach(version => {
+
+            const card = document.createElement('article');
+            card.className = 'vh-card';
+
+            const thumbnail = document.createElement('button');
+
+            thumbnail.className = 'vh-thumbnail';
+            thumbnail.textContent = 'Cargando miniatura...';
+            thumbnail.versionData = version;
+
+            thumbnail.onclick = () => vhOpenPreview(version);
+
+            const title = document.createElement('h3');
+
+            title.textContent =
+                'Versión ' + (version.version ?? version.id);
+
+            const date = document.createElement('p');
+
+            date.textContent =
+                version.created_at ?? version.fecha ?? '';
+
+            const actions = document.createElement('div');
+
+            actions.className = 'vh-actions';
+
+            actions.append(
+                vhButton(
+                    '⛶ Previsualizar',
+                    () => vhOpenPreview(version)
+                ),
+                vhButton(
+                    'Restaurar',
+                    () => vhRestore(version),
+                    true
+                )
+            );
+
+            card.append(
+                thumbnail,
+                title,
+                date,
+                actions
+            );
+
+            vhList.appendChild(card);
+
+            vhObserver.observe(thumbnail);
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        vhList.textContent = error.message;
+
+    }
+
+}
+
+async function vhOpenPreview(version) {
+
+    vhSelected = version;
+    vhZoom = 1;
+
+    document.getElementById(
+        'versionPreviewTitle'
+    ).textContent =
+        'Versión ' + (version.version ?? version.id);
+
+    document.getElementById(
+        'versionPreviewDate'
+    ).textContent =
+        version.created_at ?? version.fecha ?? '';
+
+    vhPages.textContent = 'Cargando documento...';
+
+    vhPreview.showModal();
+
+    try {
+
+        vhPdf = await pdfjs.getDocument({
+            url: vhUrl(version.id),
+            withCredentials: true
+        }).promise;
+
+        if (!vhPreview.open || vhSelected !== version) {
+            await vhPdf.destroy();
+            vhPdf = null;
+            return;
+        }
+
+        document.getElementById(
+            'versionPageCount'
+        ).textContent =
+            vhPdf.numPages + ' páginas';
+
+        await vhRenderPages();
+
+    } catch (error) {
+
+        console.error(error);
+
+        vhPages.textContent =
+            'No se pudo visualizar el documento.';
+
+    }
+
+}
+
+async function vhRenderPages() {
+
+    if (!vhPdf) return;
+
+    const currentRender = ++vhRenderId;
+    const currentPdf = vhPdf;
+
+    vhPages.replaceChildren();
+
+    document.getElementById(
+        'versionZoomLabel'
+    ).textContent =
+        Math.round(vhZoom * 100) + '%';
+
+    for (
+        let number = 1;
+        number <= currentPdf.numPages;
+        number++
+    ) {
+
+        if (currentRender !== vhRenderId) return;
+
+        const page = await currentPdf.getPage(number);
+
+        if (currentRender !== vhRenderId) return;
+
+        const viewport = page.getViewport({
+            scale: vhZoom
+        });
+
+        const wrapper = document.createElement('div');
+
+        wrapper.className = 'vh-page';
+
+        const label = document.createElement('div');
+
+        label.textContent =
+            `Página ${number} de ${currentPdf.numPages}`;
+
+        const canvas = document.createElement('canvas');
+
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        wrapper.append(label, canvas);
+
+        vhPages.appendChild(wrapper);
+
+        await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport
+        }).promise;
+
+    }
+
+}
+
+document.getElementById('versionZoomIn').onclick =
+    () => {
+
+        vhZoom = Math.min(2, vhZoom + .25);
+
+        vhRenderPages().catch(console.error);
+
+    };
+
+document.getElementById('versionZoomOut').onclick =
+    () => {
+
+        vhZoom = Math.max(.5, vhZoom - .25);
+
+        vhRenderPages().catch(console.error);
+
+    };
+
+document.getElementById('closeVersionHistory').onclick =
+    () => vhHistory.close();
+
+document.getElementById('cancelVersionHistory').onclick =
+    () => vhHistory.close();
+
+document.getElementById('closeVersionPreview').onclick =
+    () => vhPreview.close();
+
+document.getElementById('backToVersionHistory').onclick =
+    () => vhPreview.close();
+
+vhPreview.addEventListener('close', async () => {
+
+    vhRenderId++;
+
+    const previousPdf = vhPdf;
+
+    vhPdf = null;
+    vhSelected = null;
+
+    vhPages.replaceChildren();
+
+    if (previousPdf) {
+        await previousPdf.destroy().catch(console.error);
+    }
+
+});
+
+vhHistory.addEventListener('close', () => {
+
+    vhObserver?.disconnect();
+
+    vhList.replaceChildren();
+
+});
+
+document.getElementById('restoreSelectedVersion').onclick =
+    () => {
+
+        if (vhSelected) {
+            vhRestore(vhSelected);
+        }
+
+    };
+  
+async function vhRestore(selected) {
+ if(busy || !selected || !driveMode)return;
+ if(hasPendingDriveChanges()&&!confirm('Tienes cambios sin guardar en el editor. Se perderán si restauras. ¿Continuar?'))return;
+ if(!confirm(`¿Restaurar la versión ${selected.id} del ${selected.created_at}?\nLa versión actual quedará como respaldo.`))return;
+ busy=true;refresh();
+ if(vhPreview.open)vhPreview.close();
+ if(vhHistory.open)vhHistory.close();
+ status('Restaurando versión anterior…');
+ let restored=false;
+ try {
+  const resp=await fetch(`/drive-prz-v5/files/${driveFileId}/versiones/${selected.id}/restaurar`,{
+   method:'POST',credentials:'same-origin',headers:{Accept:'application/json',...driveCsrf()}
+  });
+  if(!resp.ok){let msg='HTTP '+resp.status;try{msg=(await resp.json()).message||msg}catch(_){}throw Error(msg)}
+  restored=true;
+  const current=await fetch(`/drive-prz-v5/files/${driveFileId}/download`,{credentials:'same-origin',headers:{Accept:'application/pdf'},cache:'no-store'});
+  if(!current.ok)throw Error('No se pudo recargar el PDF.');
+  await loadEditorBytes(new Uint8Array(await current.arrayBuffer()),fileName+'.pdf');
+  status('Versión restaurada correctamente en Drive PRZ');
+  alert('Versión restaurada correctamente.');
+ }catch(e){console.error(e);warn((restored?'Restaurado en el servidor. Vuelve a abrir el editor: ':'No se pudo restaurar: ')+e.message);if(restored){alert('La versión se restauró en el servidor. Se recargará el editor.');location.reload();}}
+ finally{busy=false;refresh()}
+}
+if(driveMode){const versionsBtn=$('#driveVersions');versionsBtn.style.display='inline-block';versionsBtn.onclick=vhOpenHistory;}
 $('#save').onclick=()=>output('download');$('#print').onclick=()=>output('print');loadSnippetsFromBrowser();refresh();init();
 })();
-</script></body></html>
+</script>
+</body></html>

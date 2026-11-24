@@ -18,8 +18,11 @@ class DrivePrzCensuradorController extends Controller
     private function documentoPropio(int $id): Documento
     {
         $documento = Documento::query()->findOrFail($id);
-        abort_unless((int) $documento->subido_por === (int) auth()->id(), 403,
-            'Solo el propietario puede administrar versiones de este PDF.');
+        abort_unless(
+            (int) $documento->subido_por === (int) auth()->id(),
+            403,
+            'Solo el propietario puede administrar versiones de este PDF.'
+        );
         $extension = strtolower(pathinfo((string) $documento->nombre_original, PATHINFO_EXTENSION));
         abort_unless($extension === 'pdf', 415, 'Solo se pueden editar archivos PDF.');
         abort_unless(!empty($documento->ruta_archivo), 404);
@@ -73,8 +76,11 @@ class DrivePrzCensuradorController extends Controller
             DB::transaction(function () use ($id, $anterior, $nuevo, $disco): void {
                 $doc = Documento::query()->whereKey($id)->lockForUpdate()->firstOrFail();
                 abort_unless((int) $doc->subido_por === (int) auth()->id(), 403);
-                abort_unless($doc->ruta_archivo === $anterior, 409,
-                    'El documento cambió mientras lo editabas. Vuelve a abrirlo.');
+                abort_unless(
+                    $doc->ruta_archivo === $anterior,
+                    409,
+                    'El documento cambió mientras lo editabas. Vuelve a abrirlo.'
+                );
                 abort_unless($disco->exists($anterior), 404, 'La versión anterior ya no existe.');
 
                 // Guardar referencia a la versión previa, que permanece en el disco privado.
@@ -104,7 +110,7 @@ class DrivePrzCensuradorController extends Controller
             ->get(['id', 'ruta_archivo', 'created_at']);
         return response()->json([
             'ok' => true,
-            'versions' => $filas->map(fn ($v) => [
+            'versions' => $filas->map(fn($v) => [
                 'id' => $v->id,
                 'created_at' => $v->created_at,
                 'available' => $disco->exists($v->ruta_archivo),
@@ -139,5 +145,39 @@ class DrivePrzCensuradorController extends Controller
             DB::table(self::TABLA_VERSIONES)->where('id', $version)->where('documento_id', $id)->delete();
         });
         return response()->json(['ok' => true, 'message' => 'Versión anterior restaurada en Drive PRZ.']);
+    }
+
+    public function previewVersion(
+        int $id,
+        int $versionId
+    ): Response {
+        $this->documentoPropio($id);
+
+        $version = \Illuminate\Support\Facades\DB::table(
+            'drive_prz_pdf_versiones'
+        )
+            ->where('documento_id', $id)
+            ->where('id', $versionId)
+            ->first();
+
+        abort_unless($version, 404);
+
+        $disk = Storage::disk('documentos_privados');
+
+        abort_unless(
+            $disk->exists($version->ruta_archivo),
+            404
+        );
+
+        return $disk->response(
+            $version->ruta_archivo,
+            'version-' . $versionId . '.pdf',
+            [
+                'Content-Type' => 'application/pdf',
+                'Cache-Control' => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+            'inline'
+        );
     }
 }
