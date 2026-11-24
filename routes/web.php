@@ -1620,6 +1620,16 @@ Route::middleware(['auth'])
             \App\Http\Controllers\DrivePrzCensuradorController::class, 'save'
         ])->whereNumber('id')->name('files.censurar');
 
+        // Historial de versiones anteriores del PDF (solo propietario).
+        Route::get('/files/{id}/versiones', [
+            \App\Http\Controllers\DrivePrzCensuradorController::class, 'versions'
+        ])->whereNumber('id')->name('files.versiones');
+
+        Route::post('/files/{id}/versiones/{version}/restaurar', [
+            \App\Http\Controllers\DrivePrzCensuradorController::class, 'restore'
+        ])->whereNumber('id')->whereNumber('version')->name('files.versiones.restaurar');
+
+
         Route::get('/files/{id}/preview', [
 
 

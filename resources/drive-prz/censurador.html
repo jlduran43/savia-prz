@@ -60,7 +60,7 @@ main>.workspace{order:2;min-height:45vh;height:auto;overflow:auto;padding:12px;}
 .btn-volver-prz:hover,.btn-volver-prz:focus-visible{background:#26865b;color:#fff}
 @media(max-width:700px){.prz-editor-heading{gap:8px}.btn-volver-prz{padding:8px 10px}}
 </style></head><body>
-<header><div class="prz-editor-heading"><a href="/drive-prz-v5" id="volverDrive" class="btn-volver-prz" title="Regresar al explorador documental">← Volver a Drive PRZ</a><div><div class="brand">◼ Censor PDF</div><div class="small">Censura rectangular, circular e irregular · uso local</div></div></div><div class="buttons"><label class="filebtn" for="file">Abrir PDF</label><input id="file" type="file" accept=".pdf,application/pdf"><button id="undo" disabled>↶ Deshacer</button><button id="redo" disabled>↷ Rehacer</button><button id="clear" class="danger" disabled>Limpiar tachados</button><button id="rotateAllL" disabled title="Girar todas las páginas 90° a la izquierda">↶ Girar todo</button><button id="rotateAllR" disabled title="Girar todas las páginas 90° a la derecha">↷ Girar todo</button><button id="driveSave" class="primary" style="display:none" disabled>💾 Guardar en Drive PRZ</button><button id="manualSave" disabled>💾 Guardar</button><button id="print" disabled>Imprimir</button><button id="save" class="primary" disabled>Descargar PDF censurado</button></div></header>
+<header><div class="prz-editor-heading"><a href="/drive-prz-v5" id="volverDrive" class="btn-volver-prz" title="Regresar al explorador documental">← Volver a Drive PRZ</a><div><div class="brand">◼ Censor PDF</div><div class="small">Censura rectangular, circular e irregular · uso local</div></div></div><div class="buttons"><label class="filebtn" for="file">Abrir PDF</label><input id="file" type="file" accept=".pdf,application/pdf"><button id="undo" disabled>↶ Deshacer</button><button id="redo" disabled>↷ Rehacer</button><button id="clear" class="danger" disabled>Limpiar tachados</button><button id="rotateAllL" disabled title="Girar todas las páginas 90° a la izquierda">↶ Girar todo</button><button id="rotateAllR" disabled title="Girar todas las páginas 90° a la derecha">↷ Girar todo</button><button id="driveVersions" type="button" style="display:none" title="Restaurar una versión previa guardada en Drive PRZ">↶ Restaurar versión anterior</button><button id="driveSave" class="primary" style="display:none" disabled>💾 Guardar en Drive PRZ</button><button id="manualSave" disabled>💾 Guardar</button><button id="print" disabled>Imprimir</button><button id="save" class="primary" disabled>Descargar PDF censurado</button></div></header>
 <main><aside class="editor-sidebar"><h3>Forma de censura</h3><button class="tool active" data-shape="rect">▰ Rectangular</button><button class="tool" data-shape="circle">● Circular / ovalada</button><button class="tool" data-shape="irregular">✦ Irregular</button><h3>Cuadros de texto</h3><button id="textMode" class="tool">▣ Seleccionar y mover textos</button><label class="fieldlabel">Texto (escribir una sola vez)</label><textarea id="textValue" class="field" placeholder="Escribe aquí el texto que deseas insertar…" autocomplete="off"></textarea>
 <div id="textSuggestions" class="snippet-suggestions" role="listbox" aria-label="Sugerencias de textos guardados" hidden></div>
 <section class="snippet-library" aria-label="Biblioteca de textos frecuentes">
@@ -332,6 +332,48 @@ $('#driveSave').onclick=async()=>{
  }catch(e){console.error(e);warn('No se pudo guardar en Drive PRZ: '+e.message);status('Error al guardar en Drive',true)}
  finally{busy=false;refresh()}
 };
+
+// Historial persistente: no confundir con Deshacer, que solo funciona antes de guardar.
+if(driveMode){
+ const versionsBtn=$('#driveVersions');
+ versionsBtn.style.display='inline-block';
+ versionsBtn.onclick=async()=>{
+  if(busy)return;
+  try{
+   const res=await fetch(`/drive-prz-v5/files/${driveFileId}/versiones`,{
+    credentials:'same-origin',headers:{Accept:'application/json'}
+   });
+   if(!res.ok)throw Error('No se pudo consultar el historial (HTTP '+res.status+').');
+   const body=await res.json();
+   const list=body.versions||[];
+   if(!list.length){alert('Todavía no hay versiones anteriores registradas de este PDF.');return;}
+   const selectable=list.filter(v=>v.available);
+   if(!selectable.length){alert('Las versiones registradas ya no están disponibles en el servidor.');return;}
+   const lines=selectable.map((v,i)=>`${i+1}. ${v.created_at} (versión ${v.id})`);
+   const answer=prompt('Elige el número de la versión a restaurar:\n\n'+lines.join('\n')+'\n\nCancelar para volver sin cambios.');
+   if(answer===null)return;
+   const idx=Number(answer);
+   if(!Number.isInteger(idx)||idx<1||idx>selectable.length){alert('Selecciona un número válido de la lista.');return;}
+   const selected=selectable[idx-1];
+   if(hasPendingDriveChanges()&&!confirm('Tienes cambios sin guardar en el editor. Se perderán si restauras. ¿Continuar?'))return;
+   if(!confirm(`¿Restaurar la versión ${selected.id} del ${selected.created_at}?\nLa versión actual quedará como respaldo y la restaurada será la que vean los usuarios de Drive PRZ.`))return;
+   busy=true;refresh();status('Restaurando versión anterior…');
+   try{
+    const resp=await fetch(`/drive-prz-v5/files/${driveFileId}/versiones/${selected.id}/restaurar`,{
+      method:'POST',credentials:'same-origin',headers:{Accept:'application/json',...driveCsrf()}
+    });
+    if(!resp.ok){let msg='HTTP '+resp.status;try{msg=(await resp.json()).message||msg}catch(_){}throw Error(msg)}
+    const current=await fetch(`/drive-prz-v5/files/${driveFileId}/download`,{
+      credentials:'same-origin',headers:{Accept:'application/pdf'}
+    });
+    if(!current.ok)throw Error('Se restauró en el servidor, pero no se pudo recargar el PDF. Vuelve a abrir el editor.');
+    await loadEditorBytes(new Uint8Array(await current.arrayBuffer()),fileName+'.pdf');
+    status('Versión restaurada correctamente en Drive PRZ');
+    alert('Versión restaurada correctamente. La anterior versión actual quedó respaldada.');
+   }finally{busy=false;refresh()}
+  }catch(e){console.error(e);warn('No se pudo restaurar: '+e.message);status('Error al restaurar versión',true)}
+ };
+}
 $('#save').onclick=()=>output('download');$('#print').onclick=()=>output('print');loadSnippetsFromBrowser();refresh();init();
 })();
 </script></body></html>
