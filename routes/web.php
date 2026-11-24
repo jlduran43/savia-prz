@@ -2122,62 +2122,40 @@ Route::middleware(['auth'])
 
     ->name('rrhh.directorio');
 
-
-
 Route::get('/rrhh/usuarios', function () {
 
-
-
     $usuarios = DB::table('users')
-
+        ->leftJoin('cargos', 'users.cargo_id', '=', 'cargos.id')
         ->select(
-
-            'id',
-
-            'name',
-
-            'apellido',
-
-            'apellido_paterno',
-
-            'apellido_materno',
-
-            'email',
-
-            'rut'
-
+            'users.id',
+            'users.name',
+            'users.apellido',
+            'users.apellido_paterno',
+            'users.apellido_materno',
+            'users.email',
+            'users.rut',
+            'users.cargo_id',
+            'cargos.nombre as cargo'
         )
-
-        ->where('activo', 1)
-
-        ->orderBy('name')
-
+        ->where('users.activo', 1)
+        ->orderBy('users.name')
         ->get()
-
         ->map(function ($usuario) {
 
-
-
             return [
-
                 'id' => $usuario->id,
-
                 'nombre' => $usuario->name,
-
                 'apellido' => $usuario->apellido,
-
                 'apellido_paterno' => $usuario->apellido_paterno,
-
                 'apellido_materno' => $usuario->apellido_materno,
-
                 'email' => $usuario->email,
-
                 'rut' => $usuario->rut,
-
+                'cargo_id' => $usuario->cargo_id,
+                'cargo' => $usuario->cargo,
             ];
+
         });
 
-
-
     return response()->json($usuarios);
+
 })->middleware('auth');

@@ -3411,6 +3411,8 @@ document.getElementById('przSaviaUserSelect')
           }));
         }
 
+        f.elements.namedItem('cargo').value = String(u.cargo || '');
+
         // Autocompletar correo institucional desde SAVIA PRZ
       const emailInput = f.elements.namedItem('email');
 
