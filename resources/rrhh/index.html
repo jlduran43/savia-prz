@@ -3340,6 +3340,9 @@ function directoryEditOpen(id){
   const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'])f.elements.namedItem(k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
   f.elements.namedItem('inicio').value = przFechaInput(p.inicio);
   f.elements.namedItem('termino').value = przFechaInput(p.termino);
+  $('contratoIndefinido').checked =
+    norm(przTerminoDirectorioPRZ(p.termino)) === 'INDEFINIDO';
+przActualizarContratoIndefinido();
  $('dirEditorTitle').textContent='Ficha · '+[p.apellido1,p.apellido2,p.nombres].filter(Boolean).join(' ');
  $('dirEditForm').dataset.newRecord='false';document.getElementById('przSaviaUserPicker').hidden=true;
  $('dirHonorHistory').hidden=true;$('dirHonorHistory').textContent='';
@@ -3352,7 +3355,11 @@ function directoryEditOpen(id){
  $('dirEditorOverlay').hidden=false;document.body.classList.add('przProfileOpen');window.scrollTo(0,0);przOpenDossier(p);przProfileHeroRender(p);przCristianFuncionesRender(p);przPatricioFuncionesRender(p);przLorenzoFuncionesRender(p);przFranciscoFuncionesRender(p);przDiegoFuncionesRender(p);przScarlettFuncionesRender(p);przCarlaFuncionesRender(p);przVivianaFuncionesRender(p);przMendyFuncionesRender(p);przDavidTerrenoFuncionesRender(p);przElvisTurnoFuncionesRender(p);przDanielFuentesFuncionesRender(p);f.elements.namedItem('formacion').focus();}
 function directoryNewOpen(){
  currentEditorId=null;
- const form=$('dirEditForm');form.reset();form.dataset.newRecord='true';document.getElementById('przSaviaUserPicker').hidden=false;
+ const form=$('dirEditForm');
+ form.reset();
+ $('contratoIndefinido').checked = false;
+  przActualizarContratoIndefinido();
+ form.dataset.newRecord='true';document.getElementById('przSaviaUserPicker').hidden=false;
  $('dirEditorTitle').textContent='Nueva persona · Directorio PRZ';przFranciscoFuncionesRender(null);
  $('dirHonorHistory').hidden=true;$('dirHonorHistory').textContent='';$('dirSiiIdentity').hidden=true;$('dirSiiIdentity').textContent='';$('dirSiiHistory').hidden=true;$('dirSiiHistory').open=false;$('dirSiiHistoryBody').innerHTML='';$('dirHistoryAlerts').hidden=true;$('dirHistoryAlerts').innerHTML='';$('dirHistoryPanel').hidden=true;$('dirHistoryPanel').open=false;
  $('dirHistoryBody').innerHTML='';$('przDossierSummary').hidden=true;
@@ -3498,7 +3505,9 @@ $('dirEditorOverlay').addEventListener('click',e=>{if(e.target===$('dirEditorOve
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('dirEditorOverlay').hidden)directoryEditClose()});
 
 $('dirEditForm').addEventListener('change',async e=>{const p=directoryProfiles.find(x=>x.id===currentEditorId);if(!p||$('dirEditForm').dataset.newRecord==='true'||e.target.type==='file')return;const f=$('dirEditForm');
- for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion']){const raw=f.elements.namedItem(field).value.trim();if(['inicio','termino'].includes(field)&&raw&&!normalizarFechaHistorica(raw)&&norm(raw)!=='INDEFINIDO')continue;p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);if(!p.manual.includes(field))p.manual.push(field)}
+ for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion']){
+  const raw = przValorContractual(f, field);
+  if(['inicio','termino'].includes(field)&&raw&&!normalizarFechaHistorica(raw)&&norm(raw)!=='INDEFINIDO')continue;p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);if(!p.manual.includes(field))p.manual.push(field)}
  p.modalidadInstitucional=f.elements.namedItem('modalidadInstitucional').value;f.elements.namedItem('rut').value=directoryFormatRut(p.rut);przCollectDossier(f,p);p.modificado=new Date().toISOString();await directoryPersist();await przUpdateHonorCurrentPeriod(p);directoryRender();przChecklistRender(p);przHonContractFactsRender(p);przProfileHeroRender(p);if(przERPSelectedId===p.id)przERPSelect(p.id);
 });
 $('dirEditForm').elements.namedItem('rut').addEventListener('input',e=>{const pos=e.target.selectionStart||0;const raw=directoryCanonicalRut(e.target.value);e.target.value=directoryFormatRut(raw);try{e.target.setSelectionRange(e.target.value.length,e.target.value.length)}catch(_){}});
@@ -3520,7 +3529,7 @@ $('dirEditForm').addEventListener('submit',async e=>{
  }
  p.manual=p.manual||[];
  for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion']){
-  const raw=f.elements.namedItem(field).value.trim();
+  const raw = przValorContractual(f, field);
   p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);
   if(!p.manual.includes(field))p.manual.push(field);
  }
