@@ -464,7 +464,14 @@ window.ExcelJS={Workbook:MiniWorkbook}; window.PRZZipReader=Zip;
 .dirEditorFields > label {
     align-self: start;
     align-content: start;
-    justify-content: flex-start;
+    justify-content: stretch;
+}
+
+.dirEditorFields input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.dirEditorFields select,
+.dirEditorFields textarea {
+    width: 100%;
+    box-sizing: border-box;
 }
 </style><style>
 .inlineHelp{border:0;background:transparent;color:#155e9c;font:inherit;font-weight:750;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:3px 0}.inlineHelp:focus-visible,.explClose:focus-visible{outline:3px solid #69aaff;outline-offset:3px}.explOverlay[hidden]{display:none!important}.explOverlay{position:fixed;inset:0;z-index:9999;background:rgba(12,28,49,.66);display:flex;align-items:center;justify-content:center;padding:18px}.explDialog{width:min(680px,100%);max-height:90vh;overflow:auto;border-radius:19px;background:white;box-shadow:0 22px 90px rgba(0,0,0,.28);color:#17283c;outline:none}.explHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:24px 26px 14px;border-bottom:1px solid #e5ebf2}.explHead h2{font-size:22px;margin:5px 0 0}.explEyebrow{font-size:11px;font-weight:800;letter-spacing:1px;color:#52769e}.explClose{border:0;border-radius:9px;background:#eef3f9;font-size:25px;line-height:1;width:36px;height:36px;cursor:pointer}.explContent{padding:20px 26px 12px;font-size:14px;line-height:1.58}.explIntro{margin:0 0 13px}.explFormula{border:1px solid #c8dcef;border-radius:12px;padding:14px 17px;background:#f1f7fd;font-weight:800;font-size:20px;text-align:center;margin:12px 0 17px}.explTable{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13px}.explTable th{text-align:left;background:#f1f5fa;color:#415771}.explTable td,.explTable th{padding:9px 10px;border-bottom:1px solid #e5ebf2;vertical-align:top}.explNote{border-left:3px solid #b28136;background:#fff9ed;padding:12px 14px;border-radius:4px;margin:12px 0}.explFoot{border-top:1px solid #e5ebf2;padding:15px 26px;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.explContent a{color:#155e9c}.explContent h3{margin:16px 0 6px;font-size:15px}@media(max-width:520px){.explHead,.explContent,.explFoot{padding-left:16px;padding-right:16px}.explDialog{max-height:94vh}.explFormula{font-size:17px}}
