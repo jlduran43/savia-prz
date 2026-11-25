@@ -1214,7 +1214,21 @@ function przERPAfterRender(rows){
 <label>Jornada contractual<input name="jornadaContractual" maxlength="110" placeholder="Ej. 40 horas / según contrato"></label>
 <label>Situación administrativa actual<select name="situacionAdministrativa"><option value="">No informada</option><option value="normal">En funciones</option><option value="vacaciones">Vacaciones</option><option value="permiso">Permiso</option><option value="licencia">Licencia (sin detalle médico)</option><option value="otra">Otra situación</option></select></label>
 <label>Fecha de última verificación<input type="date" name="fechaVerificacion" aria-label="Fecha de última verificación institucional"></label>
-<label>Fecha de inicio contractual (si aplica)<input name="inicio" placeholder="DD-MM-AAAA" maxlength="20"></label><label>Fecha de término contractual (si aplica)<input name="termino" placeholder="DD-MM-AAAA o indefinido" maxlength="30"></label><label class="full">Observación interna (no se exporta)<textarea name="observacion" rows="2" maxlength="1000"></textarea></label><div class="przSeniorityFull">
+<div>
+    <label>Fecha de término contractual (si aplica)
+        <input type="date" name="termino">
+    </label>
+
+    <label style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+        <input type="checkbox"
+               id="contratoIndefinido"
+               style="width:18px; height:18px; margin:0;">
+        Contrato indefinido
+    </label>
+</div>
+<label>Fecha de término contractual (si aplica)
+    <input type="date" name="termino">
+</label><label class="full">Observación interna (no se exporta)<textarea name="observacion" rows="2" maxlength="1000"></textarea></label><div class="przSeniorityFull">
 <div class="przSeniorityHeading"><span>Antigüedad del vínculo laboral</span><strong id="przSeniorityCurrent">Por calcular</strong></div>
 <p class="przSeniorityMeta" id="przSeniorityDescription">Se calcula automáticamente desde la fecha de ingreso registrada. Es referencial hasta verificar continuidad y eventuales reconocimientos de servicios.</p>
 </div></div></div>
@@ -3277,8 +3291,55 @@ $('dirSearch').addEventListener('input',directoryRender);
 $('directoryContractFilter').addEventListener('change',()=>{directorySiiFilter='all';directoryRender()});
 $('directoryAreaFilter').addEventListener('change',directoryRender);
 $('dirBody').addEventListener('click',e=>{const button=e.target.closest('button[data-person-id]');if(button)directoryEditOpen(button.dataset.personId)});
-function directoryEditOpen(id){const p=directoryProfiles.find(p=>p.id===id);if(!p)return;currentEditorId=p.id;
- const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'])f.elements.namedItem(k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
+function przFechaInput(value) {
+
+    const fecha = normalizarFechaHistorica(value);
+
+    if (!fecha) return '';
+
+    const partes = fecha.match(
+        /^(\d{2})-(\d{2})-(\d{4})$/
+    );
+
+    if (!partes) return '';
+
+    return `${partes[3]}-${partes[2]}-${partes[1]}`;
+}
+
+function przActualizarContratoIndefinido() {
+
+    const f = $('dirEditForm');
+    const checkbox = $('contratoIndefinido');
+    const termino = f.elements.namedItem('termino');
+
+    termino.disabled = checkbox.checked;
+
+    if (checkbox.checked) {
+        termino.value = '';
+    }
+}
+
+$('contratoIndefinido').addEventListener(
+    'change',
+    przActualizarContratoIndefinido
+);
+
+function przValorContractual(f, field) {
+
+    if (
+        field === 'termino' &&
+        $('contratoIndefinido').checked
+    ) {
+        return 'INDEFINIDO';
+    }
+
+    return f.elements.namedItem(field).value.trim();
+}
+function directoryEditOpen(id){
+  const p=directoryProfiles.find(p=>p.id===id);if(!p)return;currentEditorId=p.id;
+  const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'])f.elements.namedItem(k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
+  f.elements.namedItem('inicio').value = przFechaInput(p.inicio);
+  f.elements.namedItem('termino').value = przFechaInput(p.termino);
  $('dirEditorTitle').textContent='Ficha · '+[p.apellido1,p.apellido2,p.nombres].filter(Boolean).join(' ');
  $('dirEditForm').dataset.newRecord='false';document.getElementById('przSaviaUserPicker').hidden=true;
  $('dirHonorHistory').hidden=true;$('dirHonorHistory').textContent='';
