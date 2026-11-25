@@ -450,6 +450,12 @@ window.ExcelJS={Workbook:MiniWorkbook}; window.PRZZipReader=Zip;
 #przRecuperacionEstado {
     display: none !important;
 }
+
+#grupoJornada[hidden],
+#grupoPartTime[hidden],
+#grupoOtraJornada[hidden] {
+    display: none !important;
+}
 </style><style>
 .inlineHelp{border:0;background:transparent;color:#155e9c;font:inherit;font-weight:750;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:3px 0}.inlineHelp:focus-visible,.explClose:focus-visible{outline:3px solid #69aaff;outline-offset:3px}.explOverlay[hidden]{display:none!important}.explOverlay{position:fixed;inset:0;z-index:9999;background:rgba(12,28,49,.66);display:flex;align-items:center;justify-content:center;padding:18px}.explDialog{width:min(680px,100%);max-height:90vh;overflow:auto;border-radius:19px;background:white;box-shadow:0 22px 90px rgba(0,0,0,.28);color:#17283c;outline:none}.explHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:24px 26px 14px;border-bottom:1px solid #e5ebf2}.explHead h2{font-size:22px;margin:5px 0 0}.explEyebrow{font-size:11px;font-weight:800;letter-spacing:1px;color:#52769e}.explClose{border:0;border-radius:9px;background:#eef3f9;font-size:25px;line-height:1;width:36px;height:36px;cursor:pointer}.explContent{padding:20px 26px 12px;font-size:14px;line-height:1.58}.explIntro{margin:0 0 13px}.explFormula{border:1px solid #c8dcef;border-radius:12px;padding:14px 17px;background:#f1f7fd;font-weight:800;font-size:20px;text-align:center;margin:12px 0 17px}.explTable{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13px}.explTable th{text-align:left;background:#f1f5fa;color:#415771}.explTable td,.explTable th{padding:9px 10px;border-bottom:1px solid #e5ebf2;vertical-align:top}.explNote{border-left:3px solid #b28136;background:#fff9ed;padding:12px 14px;border-radius:4px;margin:12px 0}.explFoot{border-top:1px solid #e5ebf2;padding:15px 26px;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.explContent a{color:#155e9c}.explContent h3{margin:16px 0 6px;font-size:15px}@media(max-width:520px){.explHead,.explContent,.explFoot{padding-left:16px;padding-right:16px}.explDialog{max-height:94vh}.explFormula{font-size:17px}}
 .historicalOnly{margin-top:16px;border:1px solid #d9e5f1;border-radius:12px;padding:12px 15px;background:#f9fbfe}.historicalOnly summary{cursor:pointer;color:#335578;font-weight:700;font-size:13px}.historicalOnly .muted{line-height:1.6}.historicalList{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:7px;color:#465970;font-size:12px}.historicalList div{padding:8px;background:white;border:1px solid #e5ebf2;border-radius:8px}
@@ -1333,14 +1339,63 @@ function przERPAfterRender(rows){
 <button type="button" data-dtab="docs">▣ Documentación <span id="przCountDocs"></span></button>
 </nav>
 <section id="przPersonal3Ficha" class="przPersonal3Ficha" aria-label="Ficha integral y estado de transparencia"></section><div id="przDossierSummary" class="przDossierSummary" aria-live="polite"></div>
-<form id="dirEditForm"><div class="przDossierPanel" data-dpanel="general"><div id="przGeneralAlerts"></div><div class="dirEditorFields"><div class="full" id="przSaviaUserPicker" style="padding:15px 18px;border:1px solid #d4e1f0;border-radius:12px;background:#f5f9ff;margin-bottom:12px"><label for="przSaviaUserSelect" style="display:block;font-weight:700;margin-bottom:7px">Seleccionar usuario registrado en SAVIA PRZ</label><select id="przSaviaUserSelect" style="width:100%;padding:11px;border:1px solid #c5d5e8;border-radius:9px;background:#fff"><option value="">Selecciona un usuario para autocompletar...</option></select><small id="przSaviaUserStatus" style="display:block;margin-top:7px;color:#50647b">Este selector consulta MySQL. Solo completa nombres y apellidos; todavía no guarda la ficha en MySQL.</small></div><label>Primer apellido<input name="apellido1" required maxlength="100"></label><label>Segundo apellido<input name="apellido2" maxlength="100"></label><label class="full">Nombres<input name="nombres" required maxlength="180"></label><label class="full">Modalidad de contratación confirmada por PRZ<select name="modalidadInstitucional"><option value="">Por verificar (se muestran antecedentes disponibles)</option><option value="ct">Código del Trabajo</option><option value="hon">Honorarios</option><option value="ambas">Ambas modalidades (distintos vínculos o períodos)</option><option value="ninguna">Sin vínculo contractual confirmado</option></select><small class="przMissingLabel">La presencia de una boleta SII no acredita por sí sola un contrato. Esta elección no incorpora automáticamente personas a las planillas CPLT.</small></label><label>RUT (solo control interno; no se exporta)<input name="rut" placeholder="12.345.678-9" maxlength="16" autocomplete="off"></label>
+<form id="dirEditForm"><div class="przDossierPanel" data-dpanel="general"><div id="przGeneralAlerts"></div><div class="dirEditorFields"><div class="full" id="przSaviaUserPicker" style="padding:15px 18px;border:1px solid #d4e1f0;border-radius:12px;background:#f5f9ff;margin-bottom:12px"><label for="przSaviaUserSelect" style="display:block;font-weight:700;margin-bottom:7px">Seleccionar usuario registrado en SAVIA PRZ</label><select id="przSaviaUserSelect" style="width:100%;padding:11px;border:1px solid #c5d5e8;border-radius:9px;background:#fff"><option value="">Selecciona un usuario para autocompletar...</option></select><small id="przSaviaUserStatus" style="display:block;margin-top:7px;color:#50647b">Este selector consulta MySQL. Solo completa nombres y apellidos; todavía no guarda la ficha en MySQL.</small></div><label>Primer apellido<input name="apellido1" required maxlength="100"></label><label>Segundo apellido<input name="apellido2" maxlength="100"></label><label class="full">Nombres<input name="nombres" required maxlength="180"></label>
+  <!-- Campo interno para mantener compatibilidad -->
+<input type="hidden" name="modalidadInstitucional">
+
+<!-- Tipo de contrato -->
+<label class="full">
+    Tipo de contrato
+
+    <select name="tipoContrato" id="tipoContrato">
+        <option value="">Seleccione tipo de contrato</option>
+        <option value="indefinido">Indefinido</option>
+        <option value="plazo_fijo">Plazo fijo</option>
+        <option value="honorarios">Honorarios</option>
+    </select>
+</label>
+
+<!-- Jornada laboral -->
+<label class="full" id="grupoJornada" hidden>
+    Jornada laboral
+
+    <select name="tipoJornada" id="tipoJornada">
+        <option value="">Seleccione jornada laboral</option>
+        <option value="full_time">Full time</option>
+        <option value="part_time">Part time</option>
+    </select>
+</label>
+
+<!-- Detalle Part Time -->
+<label class="full" id="grupoPartTime" hidden>
+    Detalle jornada part time
+
+    <select name="detallePartTime" id="detallePartTime">
+        <option value="">Seleccione modalidad</option>
+        <option value="a_llamada">A llamada</option>
+        <option value="30_hrs">30 horas</option>
+        <option value="20_hrs">20 horas</option>
+        <option value="otro">Otro</option>
+    </select>
+</label>
+
+<!-- Otra jornada -->
+<label class="full" id="grupoOtraJornada" hidden>
+    Especificar jornada
+
+    <input type="text"
+           name="otraJornada"
+           id="otraJornada"
+           maxlength="110"
+           placeholder="Ej. 25 horas semanales">
+</label><label>RUT (solo control interno; no se exporta)<input name="rut" placeholder="12.345.678-9" maxlength="16" autocomplete="off"></label>
 <label>Área de desempeño<select name="area"><option value="">Por determinar</option><option value="PRZ general">PRZ general</option><option value="Administración">Administración</option><option value="Operaciones">Operaciones</option><option value="Museo">Museo</option><option value="Marketing">Marketing</option><option value="Otra">Otra / por revisar</option></select></label>
 <label>Fecha de nacimiento (uso interno)<input type="date" name="fechaNacimiento" aria-label="Fecha de nacimiento"></label><label>Correo institucional (uso interno)<input type="email" name="email" maxlength="180" autocomplete="off"></label>
 <label>Teléfono de contacto institucional<input type="tel" name="telefono" maxlength="45" autocomplete="off"></label>
 <label>Estado contractual (registrado y verificado)<select name="estadoVinculo"><option value="">Sin verificar</option><option value="vigente">Vigente (confirmado)</option><option value="terminado">Finalizado (confirmado)</option><option value="suspendido">Suspendido (confirmado)</option><option value="por_verificar">Pendiente de documentación</option></select></label>
 <label class="full">Profesión o formación<input name="formacion" maxlength="250"></label><label class="full">Cargo o función principal<input name="cargo" maxlength="250"></label>
 <label>Jefatura directa<input name="jefaturaDirecta" maxlength="180" placeholder="Nombre de la jefatura (verificada)"></label>
-<label>Jornada contractual<input name="jornadaContractual" maxlength="110" placeholder="Ej. 40 horas / según contrato"></label>
+<input type="hidden" name="jornadaContractual">
 <label>Situación administrativa actual<select name="situacionAdministrativa"><option value="">No informada</option><option value="normal">En funciones</option><option value="vacaciones">Vacaciones</option><option value="permiso">Permiso</option><option value="licencia">Licencia (sin detalle médico)</option><option value="otra">Otra situación</option></select></label>
 <label class="full">
     Fecha de ingreso a la institución
@@ -1850,6 +1905,10 @@ function directoryNewProfile(){
     cargo:'',
     inicio:'',
     termino:'',
+    tipoContrato: '',
+    tipoJornada: '',
+    detallePartTime: '',
+    otraJornada: '',
     fechaIngreso:'',
     fechaDesvinculacion:'',
     observacion:'',
@@ -3466,6 +3525,138 @@ function przFechaInput(value) {
     return `${partes[3]}-${partes[2]}-${partes[1]}`;
 }
 
+function przActualizarTipoContrato() {
+
+    const f = $('dirEditForm');
+
+    const contrato = $('tipoContrato');
+    const jornada = $('tipoJornada');
+    const detalle = $('detallePartTime');
+    const otra = $('otraJornada');
+
+    const grupoJornada = $('grupoJornada');
+    const grupoPartTime = $('grupoPartTime');
+    const grupoOtraJornada = $('grupoOtraJornada');
+
+    const esContratoLaboral =
+        contrato.value === 'indefinido' ||
+        contrato.value === 'plazo_fijo';
+
+    // Mostrar jornada solamente para contratos laborales
+    grupoJornada.hidden = !esContratoLaboral;
+
+    jornada.disabled = !esContratoLaboral;
+
+    if (!esContratoLaboral) {
+        jornada.value = '';
+    }
+
+    // Mostrar opciones de Part Time
+    const esPartTime =
+        esContratoLaboral &&
+        jornada.value === 'part_time';
+
+    grupoPartTime.hidden = !esPartTime;
+
+    detalle.disabled = !esPartTime;
+
+    if (!esPartTime) {
+        detalle.value = '';
+    }
+
+    // Mostrar campo para especificar otra jornada
+    const esOtro =
+        esPartTime &&
+        detalle.value === 'otro';
+
+    grupoOtraJornada.hidden = !esOtro;
+
+    otra.disabled = !esOtro;
+
+    if (!esOtro) {
+        otra.value = '';
+    }
+
+    // Mantener compatibilidad con el sistema existente
+    if (esContratoLaboral) {
+
+        f.elements.namedItem(
+            'modalidadInstitucional'
+        ).value = 'ct';
+
+    } else if (contrato.value === 'honorarios') {
+
+        f.elements.namedItem(
+            'modalidadInstitucional'
+        ).value = 'hon';
+
+    } else {
+
+        f.elements.namedItem(
+            'modalidadInstitucional'
+        ).value = '';
+    }
+
+    // Actualizar descripción de jornada contractual
+    let jornadaTexto = '';
+
+    if (jornada.value === 'full_time') {
+
+        jornadaTexto = 'Full time';
+
+    } else if (esPartTime) {
+
+        const opciones = {
+            a_llamada: 'A llamada',
+            '30_hrs': '30 horas',
+            '20_hrs': '20 horas'
+        };
+
+        const descripcion =
+            esOtro
+                ? otra.value.trim()
+                : opciones[detalle.value];
+
+        jornadaTexto = descripcion
+            ? 'Part time - ' + descripcion
+            : 'Part time';
+    }
+
+    f.elements.namedItem(
+        'jornadaContractual'
+    ).value = jornadaTexto;
+
+    // Sincronizar contrato indefinido
+    $('contratoIndefinido').checked =
+        contrato.value === 'indefinido';
+
+    przActualizarContratoIndefinido();
+
+    if (
+        typeof przActualizarAntiguedadLaboral === 'function'
+    ) {
+        przActualizarAntiguedadLaboral();
+    }
+}
+
+[
+    'tipoContrato',
+    'tipoJornada',
+    'detallePartTime',
+    'otraJornada'
+].forEach(function (campo) {
+
+    const elemento = $(campo);
+
+    if (elemento) {
+
+        elemento.addEventListener(
+            'change',
+            przActualizarTipoContrato
+        );
+    }
+});
+
 function przActualizarContratoIndefinido() {
 
     const f = $('dirEditForm');
@@ -3505,6 +3696,42 @@ function directoryEditOpen(id){
   $('contratoIndefinido').checked =
     norm(przTerminoDirectorioPRZ(p.termino)) === 'INDEFINIDO';
 przActualizarContratoIndefinido();
+
+$('tipoContrato').value =
+    p.tipoContrato ||
+    (
+        p.modalidadInstitucional === 'hon'
+            ? 'honorarios'
+            : (
+                p.modalidadInstitucional === 'ct' &&
+                $('contratoIndefinido').checked
+                    ? 'indefinido'
+                    : ''
+            )
+    );
+
+$('tipoJornada').value = p.tipoJornada || '';
+
+$('detallePartTime').value = p.detallePartTime || '';
+
+$('otraJornada').value = p.otraJornada || '';
+
+// No sobrescribir información antigua
+// si todavía no se ha clasificado el contrato.
+if (p.tipoContrato) {
+
+    przActualizarTipoContrato();
+
+} else {
+
+    $('grupoJornada').hidden =
+        !['indefinido', 'plazo_fijo'].includes(
+            $('tipoContrato').value
+        );
+
+    $('grupoPartTime').hidden = true;
+    $('grupoOtraJornada').hidden = true;
+}
  $('dirEditorTitle').textContent='Ficha · '+[p.apellido1,p.apellido2,p.nombres].filter(Boolean).join(' ');
  $('dirEditForm').dataset.newRecord='false';document.getElementById('przSaviaUserPicker').hidden=true;
  $('dirHonorHistory').hidden=true;$('dirHonorHistory').textContent='';
@@ -3519,6 +3746,11 @@ function directoryNewOpen(){
  currentEditorId=null;
  const form=$('dirEditForm');
  form.reset();
+ $('tipoContrato').value = '';
+ $('tipoJornada').value = '';
+ $('detallePartTime').value = '';
+ $('otraJornada').value = '';
+ przActualizarTipoContrato();
  $('contratoIndefinido').checked = false;
   przActualizarContratoIndefinido();
  form.dataset.newRecord='true';document.getElementById('przSaviaUserPicker').hidden=false;
@@ -3717,6 +3949,26 @@ $('dirEditForm').addEventListener('change',async e=>{
   continue;
   p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);if(!p.manual.includes(field))p.manual.push(field)}
   p.modalidadInstitucional=f.elements.namedItem('modalidadInstitucional').value;
+
+  p.tipoContrato = f.elements.namedItem('tipoContrato').value;
+  p.tipoJornada = f.elements.namedItem('tipoJornada').value;
+  p.detallePartTime = f.elements.namedItem('detallePartTime').value;
+  p.otraJornada = f.elements.namedItem('otraJornada').value;
+
+  p.manual = p.manual || [];
+
+  [
+    'tipoContrato',
+    'tipoJornada',
+    'detallePartTime',
+    'otraJornada'
+  ].forEach(function (campo) {
+
+    if (!p.manual.includes(campo)) {
+
+        p.manual.push(campo);
+    }
+});
   f.elements.namedItem('rut').value=directoryFormatRut(p.rut);
   p.fechaIngreso = f.elements.namedItem('fechaIngreso').value;
   p.fechaDesvinculacion = f.elements.namedItem('fechaDesvinculacion').value;
@@ -3756,11 +4008,28 @@ $('dirEditForm').addEventListener('submit',async e=>{
   if(!p.manual.includes(field))p.manual.push(field);
  }
  p.modalidadInstitucional=f.elements.namedItem('modalidadInstitucional').value;if(p.rut&&directoryProfiles.some(x=>x.id!==p.id&&x.rut===p.rut)){alert('Ya existe otra ficha con ese RUT. Revisa el directorio antes de guardar.');return}
- p.fechaIngreso =
-    f.elements.namedItem('fechaIngreso').value;
+ p.tipoContrato = f.elements.namedItem('tipoContrato').value;
+ p.tipoJornada = f.elements.namedItem('tipoJornada').value;
+ p.detallePartTime = f.elements.namedItem('detallePartTime').value;
+ p.otraJornada = f.elements.namedItem('otraJornada').value;
 
-p.fechaDesvinculacion =
-    f.elements.namedItem('fechaDesvinculacion').value;
+ p.manual = p.manual || [];
+
+ [
+    'tipoContrato',
+    'tipoJornada',
+    'detallePartTime',
+    'otraJornada'
+ ].forEach(function (campo) {
+
+    if (!p.manual.includes(campo)) {
+
+        p.manual.push(campo);
+    }
+});
+ 
+ p.fechaIngreso = f.elements.namedItem('fechaIngreso').value;
+ p.fechaDesvinculacion = f.elements.namedItem('fechaDesvinculacion').value;
 
 p.manual = p.manual || [];
 
