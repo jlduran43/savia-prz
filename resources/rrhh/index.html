@@ -759,24 +759,111 @@ function przSeniorityCalendarSpan(start,end){
  const baseUtc=Date.UTC(next.getFullYear(),next.getMonth(),next.getDate());
  return {years:Math.floor(months/12),months:months%12,days:Math.round((endUtc-baseUtc)/86400000)};
 }
-function przSeniorityDetails(p){
- const mode=p.modalidadInstitucional||'',hasCtEvidence=!!((p.mesesERP||[]).length||(p.mesesHistoricos||[]).length||p.historicoJulio||p.ctExtras?.fechaContrato);
- // Una prestación a honorarios nunca se transforma en antigüedad laboral por su boleta.
- if(mode==='hon'||mode==='ninguna'||(mode!== 'ct'&&mode!=='ambas'&&!hasCtEvidence))return {eligible:false,label:'No corresponde a vínculo laboral acreditado'};
- const recognized=!!(p.fechaAntiguedadReconocida&&p.fundamentoAntiguedad&&przExecParseDate(p.fechaAntiguedadReconocida));
- const startInput=(recognized?p.fechaAntiguedadReconocida:p.inicio)||'',start=przExecParseDate(startInput);
- if(mode==='ambas'&&!start)return {eligible:true,label:'Revisar fecha del vínculo laboral',detail:'Los honorarios no se suman a la antigüedad laboral.'};
- if(!start)return {eligible:true,label:'Fecha de ingreso por verificar',detail:'No hay fecha válida para calcular la antigüedad.'};
- const today=new Date();today.setHours(0,0,0,0);
- if(start>today)return {eligible:true,label:'Inicio aún no ocurrido',detail:'La fecha de inicio informada es posterior a hoy.'};
- let until=today,qualifier='Al '+przExecDisplayDate([today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-'));
- if(p.estadoVinculo==='terminado'){
-  const end=przExecParseDate(p.termino);
-  if(!end)return {eligible:true,label:'Término por verificar',detail:'Para calcular la antigüedad de un vínculo finalizado se requiere la fecha efectiva de término.'};
-  if(end<start)return {eligible:true,label:'Fechas inconsistentes',detail:'La fecha de término es anterior a la de ingreso.'};
-  if(end>today)return {eligible:true,label:'Fecha de término por verificar',detail:'El término declarado es posterior a hoy.'};
-  until=end;qualifier='Hasta el término '+przExecDisplayDate(p.termino);
- }
+function przSeniorityDetails(p) {
+
+    const modalidad = p.modalidadInstitucional || '';
+
+    if (modalidad === 'hon' || modalidad === 'ninguna') {
+        return {
+            eligible: false,
+            label: 'No aplica',
+            detail: 'No corresponde a un vínculo laboral.'
+        };
+    }
+
+    if (modalidad !== 'ct' && modalidad !== 'ambas') {
+        return {
+            eligible: true,
+            label: 'Por verificar',
+            detail: 'Primero informa la modalidad contractual.'
+        };
+    }
+
+    const inicio = przExecParseDate(p.fechaIngreso);
+
+    if (!inicio) {
+        return {
+            eligible: true,
+            label: 'Por calcular',
+            detail: 'Ingresa la fecha de ingreso a la institución.'
+        };
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    if (inicio > hoy) {
+        return {
+            eligible: true,
+            label: 'Fecha incorrecta',
+            detail: 'La fecha de ingreso no puede ser futura.'
+        };
+    }
+
+    let termino = hoy;
+
+    // Si el trabajador ya no pertenece a la institución,
+    // utilizar su fecha efectiva de desvinculación.
+
+    if (p.estadoVinculo === 'terminado') {
+
+        const desvinculacion =
+            przExecParseDate(p.fechaDesvinculacion);
+
+        if (!desvinculacion) {
+            return {
+                eligible: true,
+                label: 'Por verificar',
+                detail: 'Ingresa la fecha de desvinculación efectiva.'
+            };
+        }
+
+        if (desvinculacion < inicio || desvinculacion > hoy) {
+            return {
+                eligible: true,
+                label: 'Fechas incorrectas',
+                detail: 'Revisa la fecha de desvinculación.'
+            };
+        }
+
+        termino = desvinculacion;
+    }
+
+    const resultado =
+        przSeniorityCalendarSpan(inicio, termino);
+
+    if (!resultado) {
+        return {
+            eligible: true,
+            label: 'Por calcular'
+        };
+    }
+
+    const anios = resultado.years;
+    const meses = resultado.months;
+    const dias = resultado.days;
+
+    const texto =
+        `${anios} ${anios === 1 ? 'año' : 'años'}, ` +
+        `${meses} ${meses === 1 ? 'mes' : 'meses'} y ` +
+        `${dias} ${dias === 1 ? 'día' : 'días'}`;
+
+    const formatoFecha = fecha =>
+        `${String(fecha.getDate()).padStart(2, '0')}-` +
+        `${String(fecha.getMonth() + 1).padStart(2, '0')}-` +
+        `${fecha.getFullYear()}`;
+
+    return {
+        eligible: true,
+        label: texto,
+        detail:
+            'Desde el ' + formatoFecha(inicio) +
+            ' hasta el ' + formatoFecha(termino) +
+            '. Cálculo referencial sujeto a la continuidad laboral.',
+        startDate: inicio,
+        cutoff: termino
+    };
+}
  const parts=przSeniorityCalendarSpan(start,until);
  if(!parts)return {eligible:true,label:'Por verificar'};
  const portion=(n,sing,plural)=>n+' '+(n===1?sing:plural);
@@ -1264,6 +1351,12 @@ function przERPAfterRender(rows){
 <label>Jefatura directa<input name="jefaturaDirecta" maxlength="180" placeholder="Nombre de la jefatura (verificada)"></label>
 <label>Jornada contractual<input name="jornadaContractual" maxlength="110" placeholder="Ej. 40 horas / según contrato"></label>
 <label>Situación administrativa actual<select name="situacionAdministrativa"><option value="">No informada</option><option value="normal">En funciones</option><option value="vacaciones">Vacaciones</option><option value="permiso">Permiso</option><option value="licencia">Licencia (sin detalle médico)</option><option value="otra">Otra situación</option></select></label>
+<label class="full">
+    Fecha de ingreso a la institución
+    <input type="date"
+           name="fechaIngreso"
+           id="fechaIngreso">
+</label>
 <div class="przFechaContractual">
     <label>
         Fecha de inicio contractual (si aplica)
@@ -1282,6 +1375,12 @@ function przERPAfterRender(rows){
         Contrato indefinido
     </label>
 </div>
+<label class="full">
+    Fecha de desvinculación efectiva (si aplica)
+    <input type="date"
+           name="fechaDesvinculacion"
+           id="fechaDesvinculacion">
+</label>
 <label class="full">Observación interna (no se exporta)<textarea name="observacion" rows="2" maxlength="1000"></textarea></label><div class="przSeniorityFull">
 <div class="przSeniorityHeading"><span>Antigüedad del vínculo laboral</span><strong id="przSeniorityCurrent">Por calcular</strong></div>
 <p class="przSeniorityMeta" id="przSeniorityDescription">Se calcula automáticamente desde la fecha de ingreso registrada. Es referencial hasta verificar continuidad y eventuales reconocimientos de servicios.</p>
@@ -1749,7 +1848,21 @@ let przHonPublicationDecisions={};
 let przGrossAdjustments={}; // Periodo|RUT => ajustes brutos acreditados y estado de conciliación
 let currentEditorId=null;
 function directoryId(){return (typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():'prz-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}
-function directoryNewProfile(){return {id:directoryId(),rut:'',apellido1:'',apellido2:'',nombres:'',formacion:'',cargo:'',inicio:'',termino:'',observacion:'',modalidadInstitucional:'',area:'',fechaNacimiento:'',correo:'',telefono:'',estadoVinculo:'',jefaturaDirecta:'',jornadaContractual:'',situacionAdministrativa:'',fechaVerificacion:'',foto:'',ctExtras:{},honExtras:{},contratosHonorarios:[],documentos:[],historicoJulio:false,mesesERP:[],mesesHonorarios:[],mesesSII:[],boletasSII:[],mesesHistoricos:[],historialContractual:[],alertasHistoricas:[],formacionDetalle:[],creado:new Date().toISOString(),modificado:new Date().toISOString(),manual:[]}}
+function directoryNewProfile(){
+  return {
+    id:directoryId(),
+    rut:'',
+    apellido1:'',
+    apellido2:'',
+    nombres:'',
+    formacion:'',
+    cargo:'',
+    inicio:'',
+    termino:'',
+    fechaIngreso:'',
+    fechaDesvinculacion:'',
+    observacion:'',
+    modalidadInstitucional:'',area:'',fechaNacimiento:'',correo:'',telefono:'',estadoVinculo:'',jefaturaDirecta:'',jornadaContractual:'',situacionAdministrativa:'',fechaVerificacion:'',foto:'',ctExtras:{},honExtras:{},contratosHonorarios:[],documentos:[],historicoJulio:false,mesesERP:[],mesesHonorarios:[],mesesSII:[],boletasSII:[],mesesHistoricos:[],historialContractual:[],alertasHistoricas:[],formacionDetalle:[],creado:new Date().toISOString(),modificado:new Date().toISOString(),manual:[]}}
 function directoryCanonicalRut(rut){return String(rut??'').toUpperCase().replace(/[^0-9K]/g,'')}
 function directoryFormatRut(rut){const clean=directoryCanonicalRut(rut);if(!clean)return '';const dv=clean.slice(-1),num=clean.slice(0,-1);if(!num)return dv;const grouped=num.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return grouped+'-'+dv;}
 function directoryKey(apellido1,apellido2,nombres){return matchKey([apellido1,apellido2,nombres].join(' '))}
@@ -2143,8 +2256,9 @@ async function directoryPersist(){
  catch(err){directorySaveStatus('Sin guardado: descarga respaldo',true);console.warn('Guardado directorio:',err);return false}
 }
 function directoryValidSnapshot(data){return data&&data.version===DIR_BACKUP_VERSION&&Array.isArray(data.profiles)&&data.profiles.length<=20000}
-function directorySanitize(p){const item=directoryNewProfile();
- for(const k of ['id','rut','apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion','creado','modificado']){
+function directorySanitize(p){
+  const item=directoryNewProfile();
+ for(const k of ['id','rut','apellido1','apellido2','nombres','formacion','cargo','inicio','termino','fechaIngreso','fechaDesvinculacion','observacion','modalidadInstitucional','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion','creado','modificado']){
   if(typeof p[k]==='string')item[k]=p[k].slice(0,k==='observacion'?1000:500)
  }
  if(!item.id||!item.apellido1||!item.nombres)throw Error('El respaldo contiene un registro incompleto');
@@ -3290,6 +3404,7 @@ function przProfilePhotoBind(){
  const avatar=$('przProfileHero').querySelector('.przProfileAvatar.isInteractive');if(avatar){avatar.onclick=open;avatar.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}}}
 }
 function przProfileHeroRender(p){
+  przRenderSeniorityPanel(p);
  const status=przDirState(p),docs=(p.documentos||[]).length;
  $('przProfileHero').innerHTML=`<div class="przProfilePhotoWrap"><div class="przProfileAvatarShell">${przAvatarMarkup(p,'przProfileAvatar',true,'Fotografía de '+przName(p))}<span class="przAvatarEditBadge" aria-hidden="true">✎</span></div></div><div style="flex:1;min-width:220px"><h3>${safe(przName(p))}</h3><p class="przHeroSub">${safe([p.cargo||p.formacion||'Cargo y formación por completar',p.area,({vigente:'Vínculo vigente',terminado:'Vínculo finalizado',suspendido:'Vínculo suspendido',por_verificar:'Vínculo por verificar'})[p.estadoVinculo]].filter(Boolean).join(' · '))} · ${docs} documento(s)</p><div class="przProfileTypes">${przTypeChips(p)}<span class="przExecStatusTag ${przExecContractStatus(p).kind}">${safe(przExecContractStatus(p).label)}</span></div></div><span class="przHeroStatus" ${!status.n?'complete':''}">${status.n?'⚠ '+status.n+' dato(s) por revisar':'✓ Antecedentes base completos'}</span>`;
  przProfilePhotoBind();
@@ -3394,6 +3509,8 @@ function directoryEditOpen(id){
   const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'])f.elements.namedItem(k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
   f.elements.namedItem('inicio').value = przFechaInput(p.inicio);
   f.elements.namedItem('termino').value = przFechaInput(p.termino);
+  f.elements.namedItem('fechaIngreso').value = przFechaInput(p.fechaIngreso);
+  f.elements.namedItem('fechaDesvinculacion').value = przFechaInput(p.fechaDesvinculacion);
   $('contratoIndefinido').checked =
     norm(przTerminoDirectorioPRZ(p.termino)) === 'INDEFINIDO';
 przActualizarContratoIndefinido();
@@ -3552,17 +3669,77 @@ document.getElementById('przSaviaUserSelect')
             'Datos cargados desde SAVIA PRZ. Verifica los apellidos antes de guardar.';
     });
 
+function przActualizarAntiguedadLaboral() {
+
+    const f = $('dirEditForm');
+
+    const p = {
+        ...(directoryProfiles.find(
+            x => x.id === currentEditorId
+        ) || {}),
+
+        fechaIngreso: f.elements.namedItem('fechaIngreso').value,
+
+        fechaDesvinculacion: f.elements.namedItem('fechaDesvinculacion').value,
+
+        estadoVinculo: f.elements.namedItem('estadoVinculo').value,
+
+        modalidadInstitucional: f.elements.namedItem('modalidadInstitucional').value
+    };
+
+    przRenderSeniorityPanel(p);
+}
+
+[
+    'fechaIngreso',
+    'fechaDesvinculacion',
+    'estadoVinculo',
+    'modalidadInstitucional'
+
+].forEach(function (campo) {
+
+    const input =
+        $('dirEditForm').elements.namedItem(campo);
+
+    if (input) {
+
+        input.addEventListener(
+            'change',
+            przActualizarAntiguedadLaboral
+        );
+    }
+});
+
 $('directoryAddPerson').addEventListener('click',directoryNewOpen);
 function directoryEditClose(){$('dirEditorOverlay').hidden=true;document.body.classList.remove('przProfileOpen');currentEditorId=null;}
 $('dirCancel').addEventListener('click',directoryEditClose);$('przBackToDirectory').addEventListener('click',directoryEditClose);
 $('dirEditorOverlay').addEventListener('click',e=>{if(e.target===$('dirEditorOverlay'))directoryEditClose()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('dirEditorOverlay').hidden)directoryEditClose()});
 
-$('dirEditForm').addEventListener('change',async e=>{const p=directoryProfiles.find(x=>x.id===currentEditorId);if(!p||$('dirEditForm').dataset.newRecord==='true'||e.target.type==='file')return;const f=$('dirEditForm');
+$('dirEditForm').addEventListener('change',async e=>{
+  const p=directoryProfiles.find(x=>x.id===currentEditorId);
+  if(!p||$('dirEditForm').dataset.newRecord==='true'||e.target.type==='file')
+  return;const f=$('dirEditForm');
  for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion']){
   const raw = przValorContractual(f, field);
-  if(['inicio','termino'].includes(field)&&raw&&!normalizarFechaHistorica(raw)&&norm(raw)!=='INDEFINIDO')continue;p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);if(!p.manual.includes(field))p.manual.push(field)}
- p.modalidadInstitucional=f.elements.namedItem('modalidadInstitucional').value;f.elements.namedItem('rut').value=directoryFormatRut(p.rut);przCollectDossier(f,p);p.modificado=new Date().toISOString();await directoryPersist();await przUpdateHonorCurrentPeriod(p);directoryRender();przChecklistRender(p);przHonContractFactsRender(p);przProfileHeroRender(p);if(przERPSelectedId===p.id)przERPSelect(p.id);
+  if(['inicio','termino'].includes(field)&&raw&&!normalizarFechaHistorica(raw)&&norm(raw)!=='INDEFINIDO')
+  continue;
+  p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);if(!p.manual.includes(field))p.manual.push(field)}
+  p.modalidadInstitucional=f.elements.namedItem('modalidadInstitucional').value;
+  f.elements.namedItem('rut').value=directoryFormatRut(p.rut);
+  p.fechaIngreso = f.elements.namedItem('fechaIngreso').value;
+  p.fechaDesvinculacion = f.elements.namedItem('fechaDesvinculacion').value;
+  p.manual = p.manual || [];
+
+  if (!p.manual.includes('fechaIngreso')) {
+    p.manual.push('fechaIngreso');
+  }
+
+  if (!p.manual.includes('fechaDesvinculacion')) {
+    p.manual.push('fechaDesvinculacion');
+  }
+
+  przCollectDossier(f,p);p.modificado=new Date().toISOString();await directoryPersist();await przUpdateHonorCurrentPeriod(p);directoryRender();przChecklistRender(p);przHonContractFactsRender(p);przProfileHeroRender(p);if(przERPSelectedId===p.id)przERPSelect(p.id);
 });
 $('dirEditForm').elements.namedItem('rut').addEventListener('input',e=>{const pos=e.target.selectionStart||0;const raw=directoryCanonicalRut(e.target.value);e.target.value=directoryFormatRut(raw);try{e.target.setSelectionRange(e.target.value.length,e.target.value.length)}catch(_){}});
 $('dirEditForm').addEventListener('submit',async e=>{
@@ -3588,6 +3765,22 @@ $('dirEditForm').addEventListener('submit',async e=>{
   if(!p.manual.includes(field))p.manual.push(field);
  }
  p.modalidadInstitucional=f.elements.namedItem('modalidadInstitucional').value;if(p.rut&&directoryProfiles.some(x=>x.id!==p.id&&x.rut===p.rut)){alert('Ya existe otra ficha con ese RUT. Revisa el directorio antes de guardar.');return}
+ p.fechaIngreso =
+    f.elements.namedItem('fechaIngreso').value;
+
+p.fechaDesvinculacion =
+    f.elements.namedItem('fechaDesvinculacion').value;
+
+p.manual = p.manual || [];
+
+if (!p.manual.includes('fechaIngreso')) {
+    p.manual.push('fechaIngreso');
+}
+
+if (!p.manual.includes('fechaDesvinculacion')) {
+    p.manual.push('fechaDesvinculacion');
+}
+ 
  przCollectDossier(f,p);if(adding)directoryProfiles.push(p);p.modificado=new Date().toISOString();await directoryPersist();await przUpdateHonorCurrentPeriod(p);directoryRender();directoryEditClose();
  if(context){for(const a of context.rows)if(a.profileId===p.id){a.profile=p;directoryReconcileIssues(a)}actualizarVistas()}
 });
