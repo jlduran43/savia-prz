@@ -537,7 +537,142 @@ function positionRotationGrip(grip,t,ov){const a=(Number(t.angle)||0)*Math.PI/18
 function redrawPosition(t,page){for(const el of $$('.textmark[data-id="'+t.id+'"]')){const p=+el.dataset.page;if($('#editScope').value==='single'&&p!==page)continue;const v=effectiveText(t,p);el.style.left=v.x*100+'%';el.style.top=v.y*100+'%';el.style.width=v.w*100+'%';el.style.height=v.h*100+'%';el.style.fontSize=(v.size*1.35)+'px';el.style.transform=`rotate(${Number(v.angle)||0}deg)`;el.classList.toggle('rotated',!!Number(v.angle));if(el.nextElementSibling?.classList.contains('text-rotate-grip'))positionRotationGrip(el.nextElementSibling,v,el.parentElement)}}
 function drawText(ctx,t,W,H,pdfWidth){const x=t.x*W,y=t.y*H,w=t.w*W,h=t.h*H,size=t.size*W/pdfWidth,scale=W/pdfWidth,pad=(t.padding??3)*scale;ctx.save();ctx.globalAlpha=(t.opacity??100)/100;if(Number(t.angle)){ctx.translate(x+w/2,y+h/2);ctx.rotate((Number(t.angle)||0)*Math.PI/180);ctx.translate(-x-w/2,-y-h/2);}ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();if(t.bg){ctx.fillStyle=t.bgColor||'#fff';ctx.fillRect(x,y,w,h)}if(t.border){ctx.strokeStyle=t.color;ctx.lineWidth=t.border*scale;ctx.strokeRect(x+ctx.lineWidth/2,y+ctx.lineWidth/2,w-ctx.lineWidth,h-ctx.lineWidth)}ctx.fillStyle=t.color;ctx.font=`${t.italic?'italic ':''}${t.bold?'bold ':''}${size}px "${t.font||'Arial'}",sans-serif`;ctx.textAlign=t.align;ctx.textBaseline='top';const innerW=Math.max(0,w-2*pad),lineHeight=size*1.2,at=t.align==='center'?x+w/2:t.align==='right'?x+w-pad:x+pad;let yy=t.kind==='watermark'?Math.max(y+pad,y+(h-t.content.split('\n').length*lineHeight)/2):y+pad;for(const para of t.content.split('\n')){let line='';const flush=()=>{if(yy+lineHeight>y+h-pad)return false;ctx.fillText(line,at,yy);if(t.underline){const tw=ctx.measureText(line).width,ux=t.align==='center'?at-tw/2:t.align==='right'?at-tw:at;ctx.fillRect(ux,yy+size*1.05,tw,Math.max(1,size*.05))}yy+=lineHeight;return true};for(const word of para.split(/\s+/)){const candidate=line?line+' '+word:word;if(ctx.measureText(candidate).width>innerW&&line){if(!flush()){ctx.restore();return}line=word}else line=candidate}if(!flush()){ctx.restore();return}}ctx.restore()}
 function drawMask(ctx,m,W,H){const x=m.x*W,y=m.y*H,w=m.w*W,h=m.h*H;ctx.fillStyle='#000';if(m.shape==='circle'){ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,2*Math.PI);ctx.fill()}else if(m.shape==='irregular'){ctx.beginPath();polygon(m).forEach(([a,b],i)=>i?ctx.lineTo(x+a*w,y+b*h):ctx.moveTo(x+a*w,y+b*h));ctx.closePath();ctx.fill()}else ctx.fillRect(x,y,w,h)}
-async function exportPdf(){const live=states.filter(s=>!s.deleted);if(!live.length)throw Error('No quedan páginas en el documento.');const out=await pdfLib.PDFDocument.create();for(let i=0;i<live.length;i++){const s=live[i];status(`Exportando página ${i+1} de ${live.length}…`);const page=await pdf.getPage(s.num),view=page.getViewport({scale:1.8,rotation:s.rotation}),size=page.getViewport({scale:1,rotation:s.rotation});const cv=document.createElement('canvas');cv.width=Math.ceil(view.width);cv.height=Math.ceil(view.height);const ctx=cv.getContext('2d',{alpha:false});ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);await page.render({canvasContext:ctx,viewport:view}).promise;texts.filter(t=>textApplies(t,s.num)).forEach(t=>drawText(ctx,effectiveText(t,s.num),cv.width,cv.height,size.width));marks.filter(m=>m.page===s.num).forEach(m=>drawMask(ctx,m,cv.width,cv.height));const blob=await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(Error('No se pudo crear la imagen.')),'image/png'));const png=await out.embedPng(await blob.arrayBuffer());const op=out.addPage([size.width,size.height]);op.drawImage(png,{x:0,y:0,width:size.width,height:size.height});cv.width=cv.height=0}return out.save()}
+
+async function exportPdf() {
+
+    // Calidad de exportación del documento.
+    const EXPORT_DPI = 300;
+    const EXPORT_SCALE = EXPORT_DPI / 72;
+
+    const live = states.filter(s => !s.deleted);
+
+    if (!live.length) {
+        throw Error('No quedan páginas en el documento.');
+    }
+
+    const out = await pdfLib.PDFDocument.create();
+
+    for (let i = 0; i < live.length; i++) {
+
+        const s = live[i];
+
+        status(
+            `Exportando página ${i + 1} de ${live.length} ` +
+            `en alta calidad (${EXPORT_DPI} DPI)…`
+        );
+
+        const page = await pdf.getPage(s.num);
+
+        // Renderizado en alta resolución.
+        const view = page.getViewport({
+            scale: EXPORT_SCALE,
+            rotation: s.rotation
+        });
+
+        // Mantener el tamaño original de la página.
+        const size = page.getViewport({
+            scale: 1,
+            rotation: s.rotation
+        });
+
+        const cv = document.createElement('canvas');
+
+        cv.width = Math.ceil(view.width);
+        cv.height = Math.ceil(view.height);
+
+        try {
+
+            const ctx = cv.getContext('2d', {
+                alpha: false
+            });
+
+            if (!ctx) {
+                throw Error('No se pudo crear el canvas.');
+            }
+
+            ctx.fillStyle = '#ffffff';
+
+            ctx.fillRect(
+                0,
+                0,
+                cv.width,
+                cv.height
+            );
+
+            // Renderizar el PDF original.
+            await page.render({
+                canvasContext: ctx,
+                viewport: view
+            }).promise;
+
+            // Incorporar los textos agregados.
+            texts
+                .filter(t => textApplies(t, s.num))
+                .forEach(t => {
+                    drawText(
+                        ctx,
+                        effectiveText(t, s.num),
+                        cv.width,
+                        cv.height,
+                        size.width
+                    );
+                });
+
+            // Aplicar las censuras.
+            marks
+                .filter(m => m.page === s.num)
+                .forEach(m => {
+                    drawMask(
+                        ctx,
+                        m,
+                        cv.width,
+                        cv.height
+                    );
+                });
+
+            // Exportar en PNG sin pérdida por compresión.
+            const blob = await new Promise((ok, no) => {
+
+                cv.toBlob(
+                    b => b
+                        ? ok(b)
+                        : no(Error('No se pudo crear la imagen.')),
+                    'image/png'
+                );
+
+            });
+
+            const png = await out.embedPng(
+                await blob.arrayBuffer()
+            );
+
+            // Crear la página con sus dimensiones originales.
+            const op = out.addPage([
+                size.width,
+                size.height
+            ]);
+
+            op.drawImage(png, {
+                x: 0,
+                y: 0,
+                width: size.width,
+                height: size.height
+            });
+
+        } finally {
+
+            // Liberar memoria del canvas.
+            cv.width = 0;
+            cv.height = 0;
+
+        }
+
+    }
+
+    return await out.save();
+
+}
+
 async function output(mode){if(busy||!pdf)return;busy=true;refresh();try{const bytes=await exportPdf();const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));if(mode==='download'){const a=document.createElement('a');a.href=url;a.download=fileName+'_CENSURADO_EDITADO.pdf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status('PDF censurado y editado descargado')}else{const w=window.open(url,'_blank');if(!w){warn('El navegador bloqueó la ventana emergente. Permítela e intenta de nuevo.');URL.revokeObjectURL(url)}else{status('PDF listo para imprimir');setTimeout(()=>{try{w.focus();w.print()}catch(e){}},1500);setTimeout(()=>URL.revokeObjectURL(url),180000)}}}catch(err){console.error(err);warn('Error al generar PDF: '+err.message);status('Error al exportar',true)}finally{busy=false;refresh()}}
 
 // Respaldos recuperables: el PDF original se almacena junto con el estado editable.
