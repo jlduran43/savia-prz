@@ -864,15 +864,6 @@ function przSeniorityDetails(p) {
         cutoff: termino
     };
 }
- const parts=przSeniorityCalendarSpan(start,until);
- if(!parts)return {eligible:true,label:'Por verificar'};
- const portion=(n,sing,plural)=>n+' '+(n===1?sing:plural);
- const units=[];if(parts.years)units.push(portion(parts.years,'año','años'));if(parts.months)units.push(portion(parts.months,'mes','meses'));if(parts.days||!units.length)units.push(portion(parts.days,'día','días'));
- const label=units.length>1?units.slice(0,-1).join(', ')+' y '+units.at(-1):units[0];
- const source=recognized?'Fecha reconocida informada por PRZ':'Fecha de ingreso registrada';
- const caution=(!recognized&&p.fechaAntiguedadReconocida?'La fecha reconocida todavía no tiene fundamento acreditado y no se usa para el cálculo. ':'')+(mode==='ct'&&p.ctExtras?.fechaContrato?'Contrato disponible; validar continuidad y eventuales servicios previos.':'Cálculo referencial; validar fecha y continuidad del vínculo.');
- return {eligible:true,label,detail:source+' ('+przExecDisplayDate(startInput)+'). '+qualifier+'. '+caution,startDate:start,cutoff:until};
-}
 function przRenderSeniorityPanel(p){
  const target=$('przSeniorityCurrent'),notes=$('przSeniorityDescription');if(!target||!notes)return;
  const result=przSeniorityDetails(p);
@@ -3502,11 +3493,11 @@ function przValorContractual(f, field) {
         return 'INDEFINIDO';
     }
 
-    return f.elements.namedItem(field).value.trim();
+    return f.elements.namedItem(field==='correo'?'email':field).value.trim();
 }
 function directoryEditOpen(id){
   const p=directoryProfiles.find(p=>p.id===id);if(!p)return;currentEditorId=p.id;
-  const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'])f.elements.namedItem(k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
+  const f=$('dirEditForm');for(const k of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','modalidadInstitucional','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa'])f.elements.namedItem(k==='correo'?'email':k).value=k==='rut'?directoryFormatRut(p[k]):k==='termino'?przTerminoDirectorioPRZ(p[k]):(p[k]||'');
   f.elements.namedItem('inicio').value = przFechaInput(p.inicio);
   f.elements.namedItem('termino').value = przFechaInput(p.termino);
   f.elements.namedItem('fechaIngreso').value = przFechaInput(p.fechaIngreso);
@@ -3720,7 +3711,7 @@ $('dirEditForm').addEventListener('change',async e=>{
   const p=directoryProfiles.find(x=>x.id===currentEditorId);
   if(!p||$('dirEditForm').dataset.newRecord==='true'||e.target.type==='file')
   return;const f=$('dirEditForm');
- for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion']){
+ for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa']){
   const raw = przValorContractual(f, field);
   if(['inicio','termino'].includes(field)&&raw&&!normalizarFechaHistorica(raw)&&norm(raw)!=='INDEFINIDO')
   continue;
@@ -3759,7 +3750,7 @@ $('dirEditForm').addEventListener('submit',async e=>{
   if(input&&field==='termino'&&!normalizarFechaHistorica(input)&&norm(input)!=='INDEFINIDO'){alert('La fecha de término debe tener formato DD-MM-AAAA o indicar INDEFINIDO.');return}
  }
  p.manual=p.manual||[];
- for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion']){
+ for(const field of ['apellido1','apellido2','nombres','formacion','cargo','inicio','termino','observacion','rut','area','fechaNacimiento','correo','telefono','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa']){
   const raw = przValorContractual(f, field);
   p[field]=['inicio','termino'].includes(field)?directoryDate(raw):field==='rut'?directoryCanonicalRut(raw):field==='correo'?raw.toLowerCase():['observacion','telefono','area','fechaNacimiento','estadoVinculo','jefaturaDirecta','jornadaContractual','situacionAdministrativa','fechaVerificacion'].includes(field)?raw:textoMayusculas(raw);
   if(!p.manual.includes(field))p.manual.push(field);
