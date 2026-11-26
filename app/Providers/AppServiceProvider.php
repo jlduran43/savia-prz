@@ -38,5 +38,15 @@ class AppServiceProvider extends ServiceProvider
             return (bool) $user->activo
                 && $rol === 'ADMIN';
         });
+
+        Gate::define('rrhh-gestionar-trabajadores', function (User $user) {
+
+            $rol = $user->rol instanceof \BackedEnum
+                ? $user->rol->value
+                : $user->rol;
+
+            return (bool) $user->activo
+                && $rol === 'ADMIN';
+        });
     }
 }

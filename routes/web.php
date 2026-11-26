@@ -151,7 +151,7 @@ use App\Http\Controllers\RrhhDirectorioController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\RrhhDocumentoController;
 use App\Http\Controllers\DrivePrzEstructuraController;
-
+use App\Http\Controllers\RrhhTrabajadorController;
 
 
 
@@ -2230,4 +2230,49 @@ Route::middleware(['auth', 'can:rrhh-documentacion'])
             '/{trabajadorId}/{documentoId}',
             [RrhhDocumentoController::class, 'destroy']
         );
+    });
+
+/*
+|--------------------------------------------------------------------------
+| RRHH - Gestión de trabajadores
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'can:rrhh-gestionar-trabajadores',
+])
+    ->prefix('rrhh/trabajadores')
+    ->name('rrhh.trabajadores.')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [RrhhTrabajadorController::class, 'index']
+        )->name('index');
+
+        Route::post(
+            '/',
+            [RrhhTrabajadorController::class, 'store']
+        )->name('store');
+
+        Route::get(
+            '/{id}',
+            [RrhhTrabajadorController::class, 'show']
+        )->whereNumber('id')->name('show');
+
+        Route::put(
+            '/{id}',
+            [RrhhTrabajadorController::class, 'update']
+        )->whereNumber('id')->name('update');
+
+        Route::get(
+            '/{id}/contratos',
+            [RrhhTrabajadorController::class, 'contratos']
+        )->whereNumber('id')->name('contratos');
+
+        Route::get(
+            '/{id}/historial',
+            [RrhhTrabajadorController::class, 'historial']
+        )->whereNumber('id')->name('historial');
     });
