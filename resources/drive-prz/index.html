@@ -4108,7 +4108,37 @@
             .modal.prz-pdf-modal .previewbox { height: 72dvh; }
         }
 
-    </style>
+    
+        /* Creación masiva: editor, árbol navegable y configuración de meses. */
+        .modal.prz-bulk-dialog { width: min(1500px, calc(100vw - 32px)); }
+        .prz-bulk-dialog .prz-bulk-layout { grid-template-columns: minmax(0,.85fr) minmax(0,1fr) minmax(0,1.1fr); gap: 14px; }
+        .prz-bulk-dialog .prz-bulk-preview-panel { position: static; padding: 14px; }
+        .prz-bulk-dialog .prz-bulk-config { margin: 0; min-width: 0; padding: 14px; }
+        .prz-bulk-config .prz-bulk-months-content { padding: 0; border: 0; }
+        .prz-bulk-config .monthgrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .prz-year-panel { border: 1px solid #d6e5f4; border-radius: 10px; padding: 12px; margin: 14px 0; background: #fff; }
+        .prz-year-panel h3 { margin: 0 0 8px; font-size: 14px; color: #155e9a; }
+        .prz-year-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+        .prz-year-panel .btn { width: 100%; margin-top: 10px; white-space: normal; }
+        .prz-year-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; margin-top: 10px; }
+        .prz-year-check input { accent-color: var(--blue); }
+        .prz-year-panel p { margin: 8px 0 0; overflow-wrap: anywhere; }
+        .prz-bulk-config #przTodosMeses { width: 100%; margin-top: 12px; white-space: normal; }
+        .prz-tree-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .prz-bulk-dialog .outlinepreview { min-height: 240px; max-height: 48dvh; overflow: auto; }
+        .prz-bulk-dialog .outlinepreview ul { padding-left: 12px; margin: 0; list-style: none; }
+        .prz-bulk-dialog .outlinepreview > ul { padding-left: 0; }
+        .prz-bulk-dialog .outlinepreview li.prz-branch { padding: 0; margin: 2px 0; display: block; }
+        .prz-branch-row { display: flex; align-items: center; gap: 4px; border-radius: 6px; min-width: 0; }
+        .prz-branch-row.active { background: #e1efff; color: #155e9a; }
+        .prz-branch-toggle, .prz-branch-name { border: 0; background: transparent; color: inherit; padding: 6px 3px; text-align: left; }
+        .prz-branch-toggle, .prz-branch-spacer { width: 20px; flex: 0 0 20px; }
+        .prz-branch-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+        .prz-branch-row small { flex-shrink: 0; color: #55718b; font-size: 10px; }
+        @media(max-width: 1050px) { .prz-bulk-dialog .prz-bulk-layout { grid-template-columns: 1fr 1fr; } .prz-bulk-dialog .prz-bulk-editor { grid-column: 1 / -1; } .prz-bulk-dialog .outlineinput { min-height: 140px; } }
+        @media(max-width: 700px) { .prz-bulk-dialog .prz-bulk-layout { grid-template-columns: 1fr; } }
+
+</style>
 
     <style>
         /* Drive PRZ: ocultar el botón de tres puntos
@@ -7357,39 +7387,51 @@
           <p class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta usa
           <kbd>2 espacios</kbd> o <kbd>Tab</kbd> al inicio; también puedes escribir
           <kbd>Proyectos / Informes / 2026</kbd>.</p>
-          <details class="prz-bulk-months prz-bulk-months-collapsible">
-            <summary class="prz-bulk-months-heading"><strong>📅 Agregar meses a una carpeta</strong>
-              <span class="prz-bulk-expand-label">Mostrar opciones</span><span class="prz-bulk-chevron" aria-hidden="true">⌄</span></summary>
+
+            </div>
+            <aside class="prz-bulk-preview-panel" aria-label="Vista previa de carpetas">
+              <div class="prz-bulk-preview-heading"><strong>📁 Vista previa de carpetas</strong><span class="smallmuted">Se actualiza automáticamente</span></div>
+          <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
+          <span>Revisa el árbol antes de confirmar.</span></div>
+          <div class="prz-tree-tools"><button type="button" class="btn" id="przExpandirTodo">Expandir todo</button><button type="button" class="btn" id="przColapsarTodo">Colapsar todo</button></div>
+          <div id="przOutlinePreviewReal" class="outlinepreview" aria-live="polite">
+          <span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div>
+          <div id="przOutlineErrorReal" class="outlineerror" role="alert" hidden></div>
+            </aside>
+          <section class="prz-bulk-months prz-bulk-config">
+            <div class="prz-bulk-months-heading"><strong>📅 Agregar meses</strong></div>
             <div class="prz-bulk-months-content">
               <p class="smallmuted prz-bulk-months-description">Elige la carpeta actual, una carpeta existente o una nueva de tu lista.</p>
             <label class="field" for="przBulkMonthDestination">Carpeta donde crear los meses</label>
             <select id="przBulkMonthDestination" class="textinput" disabled>
               <option value="__prz_destino_actual__">Carpeta actual</option>
             </select>
+            <section class="prz-year-panel" aria-label="Crear rango de años">
+              <h3>📅 Crear carpetas por años</h3>
+              <div class="prz-year-grid">
+                <div><label class="field" for="przYearFrom">Desde</label><input class="textinput" id="przYearFrom" type="number" min="1900" max="9999" step="1" value="${new Date().getFullYear()}"></div>
+                <div><label class="field" for="przYearTo">Hasta</label><input class="textinput" id="przYearTo" type="number" min="1900" max="9999" step="1" value="${new Date().getFullYear()}"></div>
+              </div>
+              <label class="prz-year-check"><input type="checkbox" id="przYearMonths" checked> Crear los 12 meses dentro de cada año</label>
+              <button type="button" class="btn primary" id="przAddYears">Agregar años a vista previa</button>
+              <p id="przYearInfo" class="smallmuted" role="status"></p>
+            </section>
+            <button type="button" class="btn primary" id="przTodosMeses">Agregar 12 meses a todas las carpetas principales</button>
             <div class="monthquick" role="group" aria-label="Seleccionar meses">
               <strong>Seleccionar:</strong>
               <button type="button" class="monthpreset" data-bulk-preset="all">Los 12 meses</button>
               <button type="button" class="monthpreset" data-bulk-preset="first">Enero–junio</button>
               <button type="button" class="monthpreset" data-bulk-preset="last">Julio–diciembre</button>
-              <button type="button" class="monthpreset" data-bulk-preset="none" title="Quita todos los meses agregados de la vista previa, incluso en otras carpetas">Ninguno</button>
+              <button type="button" class="monthpreset" data-bulk-preset="none" title="Quita los meses del destino seleccionado">Ninguno</button>
             </div>
             <div class="monthgrid">${casillasMeses}</div>
             <div class="prz-bulk-months-actions">
-              <button type="button" class="btn" id="przAgregarMesesEstructura" disabled>Actualizar meses en vista previa</button>
+              <button type="button" class="btn" id="przAgregarMesesEstructura" disabled>Aplicar selección</button>
               <button type="button" class="btn" id="przQuitarMesesEstructura" disabled>Quitar meses de esta carpeta</button>
             </div>
             <p id="przBulkMonthsInfo" class="smallmuted" role="status">Los meses seleccionados se agregan automáticamente a la vista previa.</p>
             </div>
-          </details>
-            </div>
-            <aside class="prz-bulk-preview-panel" aria-label="Vista previa de carpetas">
-              <div class="prz-bulk-preview-heading"><strong>📁 Vista previa de carpetas</strong><span class="smallmuted">Se actualiza automáticamente</span></div>
-          <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
-          <span>Revisa el árbol antes de confirmar.</span></div>
-          <div id="przOutlinePreviewReal" class="outlinepreview" aria-live="polite">
-          <span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div>
-          <div id="przOutlineErrorReal" class="outlineerror" role="alert" hidden></div>
-            </aside>
+          </section>
           </div>
         `, `<button type="button" class="btn primary" id="przGuardarEstructuraReal" disabled>Crear carpetas</button>`, true);
                 $('modalMount').querySelector('.modal.large')?.classList.add('prz-bulk-dialog');
@@ -7402,6 +7444,49 @@
                 const info = $('przBulkMonthsInfo');
                 const mesesMarcados = () => checks.filter(c => c.checked).map(c => Number(c.value));
                 let rutasFinales = [], erroresActuales = [], ocupado = false;
+                const plegadas = new Set();
+                let rutasBaseActuales = [];
+                const todos = $('przTodosMeses');
+                const yearFrom = $('przYearFrom'), yearTo = $('przYearTo');
+                const yearMonths = $('przYearMonths'), addYears = $('przAddYears'), yearInfo = $('przYearInfo');
+                function actualizarAniosUI() {
+                    const a = yearFrom.valueAsNumber, b = yearTo.valueAsNumber;
+                    const padre = destinoSelect.value;
+                    const valido = Number.isInteger(a) && Number.isInteger(b) && a >= 1900 && b <= 9999 && b >= a;
+                    const existente = esDestinoExistente(padre);
+                    const cantidad = valido ? b-a+1 : 0;
+                    yearFrom.disabled = yearTo.disabled = yearMonths.disabled = ocupado;
+                    addYears.disabled = ocupado || !valido || existente || cantidad > 100 || !!analizarEstructuraReal(campo.value).errores.length;
+                    yearInfo.textContent = existente ? 'Para generar años en una carpeta existente, ábrela en Drive y vuelve a Crear varias carpetas.' : !valido ? 'Ingresa un rango válido (1900–9999). El año final debe ser igual o mayor al inicial.' : cantidad > 100 ? 'El rango no puede superar 100 años.' : `${cantidad} año(s)${yearMonths.checked ? ' y ' + cantidad*12 + ' meses' : ''} en «${etiquetaDestinoMeses(padre)}». Máximo 100 carpetas por operación.`;
+                }
+                [yearFrom, yearTo, yearMonths].forEach(el => el.addEventListener('input', actualizarAniosUI));
+                addYears.addEventListener('click', () => {
+                    if (ocupado || addYears.disabled) return;
+                    const a = yearFrom.valueAsNumber, b = yearTo.valueAsNumber;
+                    const padre = destinoSelect.value;
+                    const nuevas = [];
+                    const base = new Set(rutasBaseActuales);
+                    const previstas = new Set(rutasFinales);
+                    for (let y=a; y<=b; y++) {
+                        const ruta = padre === DESTINO_ACTUAL_MESES ? String(y) : `${padre}/${y}`;
+                        if (ruta.split('/').length + (yearMonths.checked ? 1 : 0) > 12) {
+                            yearInfo.textContent = 'No se puede superar el máximo de 12 niveles.'; return;
+                        }
+                        nuevas.push(ruta); previstas.add(ruta);
+                        if (yearMonths.checked) for(let m=1;m<=12;m++) previstas.add(`${ruta}/${mesNombre(m)}`);
+                    }
+                    const externos = [...mesesPorRuta].filter(([k]) => esDestinoExistente(k)).reduce((n,[,v])=>n+v.size,0);
+                    if (previstas.size + externos > 100) {
+                        yearInfo.textContent = `La estructura alcanzaría ${previstas.size+externos} carpetas. Reduce el rango o crea en varias operaciones (máximo 100).`; return;
+                    }
+                    const faltantes = nuevas.filter(r => !base.has(r));
+                    if (faltantes.length) campo.value = [campo.value.trimEnd(), ...faltantes].filter(Boolean).join('\n');
+                    if (yearMonths.checked) for (const r of nuevas) mesesPorRuta.set(r,new Set(Array.from({length:12},(_,i)=>i+1)));
+                    if (padre !== DESTINO_ACTUAL_MESES) plegadas.delete(padre);
+                    for (const r of nuevas) plegadas.add(r);
+                    actualizar();
+                    yearInfo.textContent = `${nuevas.length} año(s) configurados en la vista previa. Aún no se han guardado.`;
+                });
 
                 function etiquetaDestinoMeses(ruta) {
                     if (ruta === DESTINO_ACTUAL_MESES) return destino;
@@ -7419,12 +7504,14 @@
                     quitar.disabled = ocupado || !mesesPorRuta.has(ruta);
                     agregar.disabled = ocupado || !checks.some(c => c.checked);
                     const totalMeses = [...mesesPorRuta.values()].reduce((total, grupo) => total + grupo.size, 0);
-                    info.textContent = `${elegidos.size} mes(es) en «${etiquetaDestinoMeses(ruta)}» · ${totalMeses} en total. «Ninguno» limpia todos los meses añadidos a la vista previa, sin borrar carpetas existentes.`;
+                    info.textContent = `${elegidos.size} mes(es) en «${etiquetaDestinoMeses(ruta)}» · ${totalMeses} en total. «Ninguno» quita los meses del destino seleccionado.`;
                 }
 
                 function actualizar() {
                     const resultado = analizarEstructuraReal(campo.value);
                     const rutasBase = resultado.rutas;
+                    rutasBaseActuales = rutasBase;
+                    todos.disabled = ocupado || !!resultado.errores.length || !rutasBase.some(r => !r.includes('/'));
                     const rutaAnterior = destinoSelect.value || DESTINO_ACTUAL_MESES;
                     for (const ruta of [...mesesPorRuta.keys()]) {
                         if (ruta !== DESTINO_ACTUAL_MESES && !esDestinoExistente(ruta) && !rutasBase.includes(ruta)) mesesPorRuta.delete(ruta);
@@ -7470,11 +7557,24 @@
                     errores.hidden = !erroresActuales.length;
                     errores.textContent = erroresActuales.join(' | ');
                     guardar.disabled = ocupado || (!rutasFinales.length && !cantidadMesesExistentes) || !!erroresActuales.length;
-                    const arbol = rutasFinales.map(ruta => {
-                        const partes = ruta.split('/');
-                        const mesAuto = rutasMensuales.has(ruta);
-                        return `<li style="padding-left:${(partes.length - 1) * 14}px"><span class="outlineicon">${mesAuto ? '📅' : '📁'}</span>${esc(partes.at(-1))}${mesAuto ? ' <span class="outlineexists">mes agregado</span>' : ''}</li>`;
+                    const hijos = new Map();
+                    for (const ruta of rutasFinales) {
+                        const padre = ruta.includes('/') ? ruta.slice(0, ruta.lastIndexOf('/')) : '';
+                        if (!hijos.has(padre)) hijos.set(padre, []);
+                        hijos.get(padre).push(ruta);
+                    }
+                    const renderRama = padre => (hijos.get(padre) || []).map(ruta => {
+                        const tieneHijos = hijos.has(ruta), cerrado = plegadas.has(ruta);
+                        const seleccionable = rutasBase.includes(ruta);
+                        const activo = destinoSelect.value === ruta;
+                        const icono = rutasMensuales.has(ruta) ? '📅' : '📁';
+                        return `<li class="prz-branch"><div class="prz-branch-row ${activo ? 'active' : ''}">
+                            ${tieneHijos ? `<button type="button" class="prz-branch-toggle" data-rama="${esc(ruta)}" aria-expanded="${!cerrado}">${cerrado ? '▸' : '▾'}</button>` : '<span class="prz-branch-spacer"></span>'}
+                            ${seleccionable ? `<button type="button" class="prz-branch-name" data-destino="${esc(ruta)}" title="${esc(ruta)}">${icono} ${esc(ruta.split('/').at(-1))}</button>` : `<span class="prz-branch-name">${icono} ${esc(ruta.split('/').at(-1))}</span>`}
+                            ${mesesPorRuta.has(ruta) ? `<small>${mesesPorRuta.get(ruta).size} meses</small>` : ''}</div>
+                            ${tieneHijos && !cerrado ? `<ul>${renderRama(ruta).join('')}</ul>` : ''}</li>`;
                     });
+                    const arbol = renderRama('');
                     for (const [padre, meses] of mesesPorRuta) {
                         if (!esDestinoExistente(padre)) continue;
                         const carpeta = carpetasExistentes.get(padre);
@@ -7484,11 +7584,12 @@
                     }
                     preview.innerHTML = arbol.length ? `<ul>${arbol.join('')}</ul>` : '<span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span>';
                     actualizarMesesUI();
+                    actualizarAniosUI();
                 }
 
                 function aplicarMesesSeleccionados() {
                     const ruta = destinoSelect.value;
-                    if (!ruta) return;
+                    if (!ruta || ocupado) return;
                     const seleccion = mesesMarcados();
                     if (seleccion.length) mesesPorRuta.set(ruta, new Set(seleccion));
                     else mesesPorRuta.delete(ruta);
@@ -7496,14 +7597,33 @@
                 }
 
                 campo.addEventListener('input', actualizar);
-                destinoSelect.addEventListener('change', actualizarMesesUI);
+                destinoSelect.addEventListener('change', actualizar);
+                preview.addEventListener('click', e => {
+                    const rama = e.target.closest('[data-rama]');
+                    const seleccion = e.target.closest('[data-destino]');
+                    if (rama) {
+                        const ruta = rama.dataset.rama;
+                        plegadas.has(ruta) ? plegadas.delete(ruta) : plegadas.add(ruta);
+                        actualizar();
+                    } else if (seleccion && !ocupado && !destinoSelect.disabled) {
+                        destinoSelect.value = seleccion.dataset.destino;
+                        actualizar();
+                    }
+                });
+                $('przExpandirTodo').addEventListener('click', () => { plegadas.clear(); actualizar(); });
+                $('przColapsarTodo').addEventListener('click', () => { rutasFinales.forEach(r => plegadas.add(r)); actualizar(); });
+                todos.addEventListener('click', () => {
+                    if (ocupado) return;
+                    const principales = rutasBaseActuales.filter(r => !r.includes('/'));
+                    for (const ruta of principales) mesesPorRuta.set(ruta, new Set(Array.from({length:12}, (_, i) => i + 1)));
+                    actualizar();
+                });
                 checks.forEach(c => c.addEventListener('change', aplicarMesesSeleccionados));
                 $('modalMount').querySelectorAll('[data-bulk-preset]').forEach(b => b.addEventListener('click', () => {
                     const tipo = b.dataset.bulkPreset;
                     if (tipo === 'none') {
-                        // Los meses de distintos destinos también pueden estar en la vista previa.
-                        // "Ninguno" debe quitarlos todos, no solo los del destino seleccionado.
-                        mesesPorRuta.clear();
+                        // Quita únicamente los meses del destino seleccionado.
+                        mesesPorRuta.delete(destinoSelect.value);
                         checks.forEach(c => { c.checked = false; });
                         actualizar();
                         return;
@@ -7516,6 +7636,7 @@
                 }));
                 agregar.addEventListener('click', aplicarMesesSeleccionados);
                 quitar.addEventListener('click', () => {
+                    if (ocupado) return;
                     mesesPorRuta.delete(destinoSelect.value);
                     actualizar();
                 });
@@ -7528,6 +7649,10 @@
                     actualizar();
                     if ((!rutasFinales.length && ![...mesesPorRuta.keys()].some(esDestinoExistente)) || erroresActuales.length || ocupado) return;
                     ocupado = true;
+                    campo.disabled = true; destinoSelect.disabled = true; todos.disabled = true;
+                    yearFrom.disabled = yearTo.disabled = yearMonths.disabled = addYears.disabled = true;
+                    checks.forEach(c => c.disabled = true);
+                    $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal').forEach(c => c.disabled = true);
                     guardar.disabled = true; guardar.textContent = 'Creando...';
                     agregar.disabled = true; quitar.disabled = true;
                     try {
@@ -7573,7 +7698,7 @@
                         errores.hidden = false; errores.textContent = e.message;
                     } finally {
                         ocupado = false;
-                        if (guardar.isConnected) { guardar.textContent = 'Crear carpetas'; actualizar(); }
+                        if (guardar.isConnected) { campo.disabled = false; checks.forEach(c => c.disabled = false); $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal').forEach(c => c.disabled = false); guardar.textContent = 'Crear carpetas'; actualizar(); }
                     }
                 });
                 actualizar();
