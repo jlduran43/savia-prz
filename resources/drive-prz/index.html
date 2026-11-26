@@ -7401,6 +7401,11 @@
           Primero revisa la vista previa; nada se crea hasta que pulses “Crear carpetas”.</div>
           <div class="prz-bulk-layout">
             <div class="prz-bulk-editor">
+          <label class="field" for="przPlantillaSelect">Desde una estructura predefinida</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+            <select class="textinput" id="przPlantillaSelect" style="flex:1;min-width:0" disabled><option value="">Cargando estructuras...</option></select>
+            <button type="button" class="btn" id="przPlantillaEliminar" disabled>Eliminar</button>
+          </div>
           <div class="outlineexamples"><label class="field" for="przOutlineReal">Escribe o pega tu lista</label>
           <button type="button" id="przEjemploReal">Insertar ejemplo</button></div>
           <div class="prz-editor-tools" role="group" aria-label="Editar estructura">
@@ -7417,6 +7422,16 @@
           <p class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta usa
           <kbd>2 espacios</kbd> o <kbd>Tab</kbd> al inicio; también puedes escribir
           <kbd>Proyectos / Informes / 2026</kbd>.</p>
+          <button type="button" class="btn" id="przPlantillaGuardar">Guardar estructura de carpetas</button>
+          <div id="przPlantillaForm" hidden style="margin-top:8px">
+            <label class="field" for="przPlantillaNombre">Nombre de la estructura</label>
+            <input class="textinput" id="przPlantillaNombre" maxlength="150" placeholder="Ej.: Documentación anual">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button type="button" class="btn primary" id="przPlantillaConfirmar">Guardar plantilla</button>
+              <button type="button" class="btn" id="przPlantillaCancelar">Cancelar</button>
+            </div>
+          </div>
+          <p class="smallmuted" id="przPlantillaEstado" role="status" aria-live="polite"></p>
 
             </div>
             <aside class="prz-bulk-preview-panel" aria-label="Vista previa de carpetas">
@@ -7691,6 +7706,7 @@
                     actualizarMesesUI();
                     actualizarAniosUI();
                     registrarEditor();
+                    controlesPlantilla();
                 }
 
                 function aplicarMesesSeleccionados() {
@@ -7751,10 +7767,82 @@
                     mesesPorRuta.clear();
                     actualizar(); campo.focus();
                 });
+                // Plantillas personales persistentes de estructuras.
+                const plantillaSelect = $('przPlantillaSelect');
+                const plantillaEliminar = $('przPlantillaEliminar');
+                const plantillaGuardar = $('przPlantillaGuardar');
+                const plantillaForm = $('przPlantillaForm');
+                const plantillaNombre = $('przPlantillaNombre');
+                const plantillaConfirmar = $('przPlantillaConfirmar');
+                const plantillaEstado = $('przPlantillaEstado');
+                let plantillas = [], plantillaOcupada = false;
+                const plantillaUrl = `${API}/estructuras`;
+                const estadoPlantilla = texto => { plantillaEstado.textContent = texto; };
+                function controlesPlantilla() {
+                    plantillaSelect.disabled = plantillaOcupada || ocupado;
+                    plantillaEliminar.disabled = plantillaOcupada || ocupado || !plantillaSelect.value;
+                    plantillaGuardar.disabled = plantillaOcupada || ocupado || !rutasFinales.length || !!erroresActuales.length;
+                    plantillaConfirmar.disabled = plantillaOcupada || ocupado;
+                    plantillaNombre.disabled = plantillaOcupada || ocupado;
+                }
+                function listarPlantillas(id = '') {
+                    plantillaSelect.replaceChildren(new Option('Seleccionar estructura', ''));
+                    for (const p of plantillas) plantillaSelect.add(new Option(p.nombre, String(p.id)));
+                    plantillaSelect.value = String(id);
+                }
+                async function operacionPlantilla(fn) {
+                    if (plantillaOcupada || ocupado) return;
+                    plantillaOcupada = true; controlesPlantilla();
+                    try { await fn(); } catch (e) { estadoPlantilla(e.message); }
+                    finally { plantillaOcupada = false; controlesPlantilla(); }
+                }
+                plantillaSelect.addEventListener('change', () => {
+                    const p = plantillas.find(p => String(p.id) === plantillaSelect.value);
+                    controlesPlantilla();
+                    if (!p || ocupado) return;
+                    if ((campo.value.trim() || mesesPorRuta.size) && !window.confirm('¿Reemplazar la estructura actual por esta plantilla?')) {
+                        plantillaSelect.value = ''; controlesPlantilla(); return;
+                    }
+                    campo.value = p.estructura;
+                    mesesPorRuta.clear(); plegadas.clear(); actualizar();
+                    estadoPlantilla('Plantilla cargada. Puedes editarla antes de crear las carpetas.');
+                });
+                plantillaGuardar.addEventListener('click', () => {
+                    if (ocupado) return;
+                    actualizar();
+                    if (!rutasFinales.length || erroresActuales.length) return;
+                    plantillaForm.hidden = false; plantillaNombre.focus();
+                });
+                $('przPlantillaCancelar').addEventListener('click', () => { plantillaForm.hidden = true; });
+                plantillaConfirmar.addEventListener('click', () => operacionPlantilla(async () => {
+                    actualizar();
+                    const nombre = plantillaNombre.value.trim();
+                    const estructura = textoVistaPrevia();
+                    if (!nombre || !estructura || erroresActuales.length) throw new Error('Ingresa un nombre y una estructura válida.');
+                    if ([...mesesPorRuta.keys()].some(esDestinoExistente) && !window.confirm('Los meses destinados a carpetas existentes no se guardarán en la plantilla. ¿Continuar?')) return;
+                    const data = await apiCompartir(plantillaUrl, 'POST', {nombre, estructura});
+                    plantillas.push(data.estructura);
+                    plantillas.sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+                    listarPlantillas(data.estructura.id);
+                    plantillaForm.hidden = true; plantillaNombre.value = '';
+                    estadoPlantilla('Estructura guardada correctamente.');
+                }));
+                plantillaEliminar.addEventListener('click', () => operacionPlantilla(async () => {
+                    const id = plantillaSelect.value;
+                    if (!id || !window.confirm('¿Eliminar esta plantilla? Las carpetas existentes no se eliminarán.')) return;
+                    await apiCompartir(`${plantillaUrl}/${encodeURIComponent(id)}`, 'DELETE', {});
+                    plantillas = plantillas.filter(p => String(p.id) !== id);
+                    listarPlantillas(); estadoPlantilla('Plantilla eliminada.');
+                }));
+                operacionPlantilla(async () => {
+                    plantillas = await apiCompartir(plantillaUrl);
+                    listarPlantillas(); estadoPlantilla('');
+                });
                 guardar.addEventListener('click', async () => {
                     actualizar();
                     if ((!rutasFinales.length && ![...mesesPorRuta.keys()].some(esDestinoExistente)) || erroresActuales.length || ocupado) return;
                     ocupado = true;
+                    controlesPlantilla();
                     const raizGuardado = carpetaRealActual;
                     const rutasGuardado = [...rutasFinales];
                     let creadas = 0, fallo = null;

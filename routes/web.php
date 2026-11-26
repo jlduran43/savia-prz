@@ -149,7 +149,8 @@ use App\Http\Controllers\DrivePrzClipboardController;
 use App\Http\Controllers\RrhhDirectorioController;
 
 use Illuminate\Support\Facades\DB;
-
+use App\Http\Controllers\RrhhDocumentoController;
+use App\Http\Controllers\DrivePrzEstructuraController;
 
 
 
@@ -2162,13 +2163,71 @@ Route::get('/rrhh/usuarios', function () {
                 'jefe_id' => $usuario->jefe_id,
                 'jefatura' => trim(
                     ($usuario->jefe_nombre ?? '') . ' ' .
-                    ($usuario->jefe_apellido_paterno ?? '') . ' ' .
-                    ($usuario->jefe_apellido_materno ?? '')
+                        ($usuario->jefe_apellido_paterno ?? '') . ' ' .
+                        ($usuario->jefe_apellido_materno ?? '')
                 ),
             ];
-
         });
 
     return response()->json($usuarios);
-
 })->middleware('auth');
+
+Route::middleware(['auth'])
+    ->prefix('drive-prz-v5')
+    ->group(function () {
+
+        Route::get(
+            '/estructuras',
+            [DrivePrzEstructuraController::class, 'index']
+        );
+
+        Route::post(
+            '/estructuras',
+            [DrivePrzEstructuraController::class, 'store']
+        );
+
+        Route::delete(
+            '/estructuras/{id}',
+            [DrivePrzEstructuraController::class, 'destroy']
+        )->whereNumber('id');
+    });
+
+Route::middleware(['auth', 'can:rrhh-documentacion'])
+    ->prefix('rrhh-documentos')
+    ->group(function () {
+
+        Route::get(
+            '/trabajadores',
+            [RrhhDocumentoController::class, 'trabajadores']
+        );
+
+        Route::get(
+            '/{trabajadorId}/tipos',
+            [RrhhDocumentoController::class, 'tipos']
+        );
+
+        Route::get(
+            '/{trabajadorId}',
+            [RrhhDocumentoController::class, 'index']
+        );
+
+        Route::post(
+            '/{trabajadorId}',
+            [RrhhDocumentoController::class, 'store']
+        );
+
+        Route::get(
+            '/{trabajadorId}/{documentoId}/preview',
+            [RrhhDocumentoController::class, 'preview']
+        );
+
+        Route::get(
+            '/{trabajadorId}/{documentoId}/download',
+            [RrhhDocumentoController::class, 'download']
+        );
+
+        Route::delete(
+            '/{trabajadorId}/{documentoId}',
+            [RrhhDocumentoController::class, 'destroy']
+        );
+    });

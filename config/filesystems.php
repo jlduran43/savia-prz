@@ -74,8 +74,12 @@ return [
             'throw' => true,
         ],
 
-        
-
+        'rrhh_privado' => [
+            'driver' => 'local',
+            'root' => storage_path('app/rrhh_privado'),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
     ],
 
     /*

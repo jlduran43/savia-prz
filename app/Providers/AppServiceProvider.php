@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,5 +29,14 @@ class AppServiceProvider extends ServiceProvider
                 resource_path('css/filament/login-prz.css')
             ),
         ]);
+
+        Gate::define('rrhh-documentacion', function (User $user) {
+            $rol = $user->rol instanceof \BackedEnum
+                ? $user->rol->value
+                : $user->rol;
+
+            return (bool) $user->activo
+                && $rol === 'ADMIN';
+        });
     }
 }
