@@ -4138,6 +4138,11 @@
         @media(max-width: 1050px) { .prz-bulk-dialog .prz-bulk-layout { grid-template-columns: 1fr 1fr; } .prz-bulk-dialog .prz-bulk-editor { grid-column: 1 / -1; } .prz-bulk-dialog .outlineinput { min-height: 140px; } }
         @media(max-width: 700px) { .prz-bulk-dialog .prz-bulk-layout { grid-template-columns: 1fr; } }
 
+
+.prz-editor-tools { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.prz-editor-tools .btn, .prz-tree-tools [data-editor] { font-size:11px; min-height:32px; padding:6px 9px; }
+#przEditorStatus { min-height:1.4em; margin:4px 0 8px; overflow-wrap:anywhere; }
+
 </style>
 
     <style>
@@ -7335,7 +7340,7 @@
                         errores.push(`Línea ${indice + 1}: usa 2 espacios o un Tab por nivel.`); return;
                     }
                     const nivel = tabs + espacios / 2;
-                    let contenido = linea.trim().replace(/^(?:[-*•]\s+|\d+[.)]\s+)/, '').trim();
+                    let contenido = linea.trim().replace(/^(?:[-*•]\s+)/, '').trim();
                     if (nivel > nivelPrevio + 1 || (nivel && !pila[nivel - 1])) {
                         errores.push(`Línea ${indice + 1}: falta la carpeta del nivel anterior.`); return;
                     }
@@ -7381,6 +7386,15 @@
             <div class="prz-bulk-editor">
           <div class="outlineexamples"><label class="field" for="przOutlineReal">Escribe o pega tu lista</label>
           <button type="button" id="przEjemploReal">Insertar ejemplo</button></div>
+          <div class="prz-editor-tools" role="group" aria-label="Editar estructura">
+            <button type="button" class="btn" data-editor="copy">Copiar todo</button>
+            <button type="button" class="btn" data-editor="selection">Copiar selección</button>
+            <button type="button" class="btn" data-editor="paste">Pegar</button>
+            <button type="button" class="btn" data-editor="duplicate">Duplicar selección</button>
+            <button type="button" class="btn" data-editor="undo">Deshacer</button>
+            <button type="button" class="btn" data-editor="clear">Limpiar</button>
+          </div>
+          <p class="smallmuted" id="przEditorStatus" role="status" aria-live="polite"></p>
           <textarea class="textinput outlineinput" id="przOutlineReal" spellcheck="false"
           placeholder="Personal&#10;  Contratos&#10;    2026&#10;    2027&#10;Proyectos&#10;  Informes"></textarea>
           <p class="outlineaccess">Una línea = una carpeta. Para crear una subcarpeta usa
@@ -7392,7 +7406,7 @@
               <div class="prz-bulk-preview-heading"><strong>📁 Vista previa de carpetas</strong><span class="smallmuted">Se actualiza automáticamente</span></div>
           <div class="outlinestat"><strong id="przOutlineCountReal">0 carpetas</strong>
           <span>Revisa el árbol antes de confirmar.</span></div>
-          <div class="prz-tree-tools"><button type="button" class="btn" id="przExpandirTodo">Expandir todo</button><button type="button" class="btn" id="przColapsarTodo">Colapsar todo</button></div>
+          <div class="prz-tree-tools"><button type="button" class="btn" data-editor="preview">Copiar estructura de vista previa</button><button type="button" class="btn" id="przExpandirTodo">Expandir todo</button><button type="button" class="btn" id="przColapsarTodo">Colapsar todo</button></div>
           <div id="przOutlinePreviewReal" class="outlinepreview" aria-live="polite">
           <span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span></div>
           <div id="przOutlineErrorReal" class="outlineerror" role="alert" hidden></div>
@@ -7448,6 +7462,88 @@
                 const todos = $('przTodosMeses');
                 const yearFrom = $('przYearFrom'), yearTo = $('przYearTo');
                 const yearMonths = $('przYearMonths'), addYears = $('przAddYears'), yearInfo = $('przYearInfo');
+
+                // Editor de estructuras: historial incluye texto y meses automáticos.
+                const editorStatus = $('przEditorStatus');
+                const editorButtons = [...$('modalMount').querySelectorAll('[data-editor]')];
+                const historialEditor = [];
+                const snapshotEditor = () => ({ texto: campo.value, meses: [...mesesPorRuta].map(([k,v]) => [k,[...v]]), inicio: campo.selectionStart, fin: campo.selectionEnd });
+                let anteriorEditor = snapshotEditor();
+                function registrarEditor() {
+                    const nuevo = snapshotEditor();
+                    if (nuevo.texto !== anteriorEditor.texto || JSON.stringify(nuevo.meses) !== JSON.stringify(anteriorEditor.meses)) {
+                        historialEditor.push(anteriorEditor);
+                        if (historialEditor.length > 100) historialEditor.shift();
+                    }
+                    anteriorEditor = nuevo;
+                    editorButtons.find(b=>b.dataset.editor==='undo').disabled = ocupado || !historialEditor.length;
+                }
+                function estadoEditor(texto) { editorStatus.textContent = texto; }
+                async function copiarEditor(texto) {
+                    if (!texto) return estadoEditor('No hay texto para copiar.');
+                    try { await navigator.clipboard.writeText(texto); estadoEditor('Estructura copiada.'); }
+                    catch (_) {
+                        const temp = document.createElement('textarea'); temp.value = texto;
+                        temp.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(temp); temp.select();
+                        let ok = false; try { ok = document.execCommand('copy'); } catch (_) {} finally { temp.remove(); campo.focus(); }
+                        estadoEditor(ok ? 'Estructura copiada.' : 'No se pudo copiar. Selecciona el texto y usa Ctrl+C o Cmd+C.');
+                    }
+                }
+                function textoVistaPrevia() {
+                    const hijos = new Map();
+                    for (const ruta of rutasFinales) {
+                        const padre = ruta.includes('/') ? ruta.slice(0,ruta.lastIndexOf('/')) : '';
+                        if (!hijos.has(padre)) hijos.set(padre, []);
+                        hijos.get(padre).push(ruta);
+                    }
+                    const lineas = [];
+                    function recorrer(padre,nivel) {
+                        for (const ruta of hijos.get(padre)||[]) {
+                            lineas.push('  '.repeat(nivel)+ruta.split('/').at(-1)); recorrer(ruta,nivel+1);
+                        }
+                    }
+                    recorrer('',0);
+                    return lineas.join('\n');
+                }
+                editorButtons.forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
+                editorButtons.forEach(b => b.addEventListener('click', async () => {
+                    if (ocupado) return;
+                    const accion = b.dataset.editor, inicio = campo.selectionStart, fin = campo.selectionEnd;
+                    if (accion === 'copy') return copiarEditor(campo.value);
+                    if (accion === 'selection') return copiarEditor(campo.value.slice(inicio,fin));
+                    if (accion === 'preview') {
+                        if (erroresActuales.length) return estadoEditor('Corrige los errores de la estructura antes de copiar.');
+                        await copiarEditor(textoVistaPrevia());
+                        if ([...mesesPorRuta.keys()].some(esDestinoExistente)) estadoEditor(editorStatus.textContent + ' Los meses destinados a carpetas existentes externas no se incluyen.');
+                        return;
+                    }
+                    if (accion === 'paste') {
+                        try {
+                            const texto = await navigator.clipboard.readText();
+                            if (ocupado || !campo.isConnected) return;
+                            if (!texto) return estadoEditor('El portapapeles está vacío.');
+                            campo.setRangeText(texto.replace(/\r\n?/g,'\n'),inicio,fin,'end');
+                        } catch (_) { campo.focus(); return estadoEditor('El navegador no permite leer el portapapeles. Usa Ctrl+V o Cmd+V.'); }
+                    } else if (accion === 'duplicate') {
+                        if (inicio===fin) return estadoEditor('Selecciona las líneas que quieres duplicar.');
+                        const principio = campo.value.lastIndexOf('\n',inicio-1)+1;
+                        const limite = campo.value.indexOf('\n',fin>inicio && campo.value[fin-1]==='\n'?fin-1:fin);
+                        const final = limite<0?campo.value.length:limite;
+                        const bloque = campo.value.slice(principio,final);
+                        campo.setRangeText('\n'+bloque,final,final,'end');
+                        estadoEditor('Bloque duplicado. Cambia los nombres o el destino para crear carpetas distintas.');
+                    } else if (accion === 'clear') {
+                        if (!confirm('¿Limpiar la estructura completa y los meses de la vista previa?')) return;
+                        campo.value=''; mesesPorRuta.clear(); estadoEditor('Editor limpio. Puedes deshacer esta acción.');
+                    } else if (accion === 'undo') {
+                        const previo=historialEditor.pop(); if (!previo) return;
+                        campo.value=previo.texto; mesesPorRuta.clear(); previo.meses.forEach(([k,v])=>mesesPorRuta.set(k,new Set(v)));
+                        anteriorEditor=snapshotEditor(); campo.setSelectionRange(previo.inicio,previo.fin);
+                        estadoEditor('Cambio deshecho.');
+                    }
+                    actualizar(); campo.focus();
+                }));
+
                 function actualizarAniosUI() {
                     const a = yearFrom.valueAsNumber, b = yearTo.valueAsNumber;
                     const padre = destinoSelect.value;
@@ -7577,6 +7673,7 @@
                     preview.innerHTML = arbol.length ? `<ul>${arbol.join('')}</ul>` : '<span class="smallmuted">Aquí aparecerá el árbol de carpetas.</span>';
                     actualizarMesesUI();
                     actualizarAniosUI();
+                    registrarEditor();
                 }
 
                 function aplicarMesesSeleccionados() {
@@ -7647,7 +7744,7 @@
                     campo.disabled = true; destinoSelect.disabled = true; todos.disabled = true;
                     yearFrom.disabled = yearTo.disabled = yearMonths.disabled = addYears.disabled = true;
                     checks.forEach(c => c.disabled = true);
-                    $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal').forEach(c => c.disabled = true);
+                    $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal, [data-editor]').forEach(c => c.disabled = true);
                     guardar.disabled = true; guardar.textContent = 'Creando...';
                     agregar.disabled = true; quitar.disabled = true;
                     try {
@@ -7706,7 +7803,7 @@
                         fallo = `${e.message} · ${creadas} carpetas nuevas confirmadas. Puedes reintentar la estructura; se reutilizarán las carpetas existentes.`;
                     } finally {
                         ocupado = false;
-                        if (guardar.isConnected) { campo.disabled = false; checks.forEach(c => c.disabled = false); $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal').forEach(c => c.disabled = false); guardar.textContent = 'Crear carpetas'; actualizar(); if (fallo) { errores.hidden = false; errores.textContent = fallo; } }
+                        if (guardar.isConnected) { campo.disabled = false; checks.forEach(c => c.disabled = false); $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal, [data-editor]').forEach(c => c.disabled = false); guardar.textContent = 'Crear carpetas'; actualizar(); if (fallo) { errores.hidden = false; errores.textContent = fallo; } }
                         else if (fallo) toast(fallo);
                     }
                 });
