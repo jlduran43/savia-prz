@@ -377,6 +377,13 @@ let pdfjs=null,pdfLib=null,pdf=null,fileName='documento',shape='rect';
  // Una copia guardada en el navegador NO equivale a guardar el PDF en Drive.
  let driveSavedSnapshot=null;
  const hasPendingDriveChanges=()=>driveMode && !!pdf && driveSavedSnapshot!==null && snap()!==driveSavedSnapshot;
+ // El enlace conserva la carpeta de origen sin alterar la protección de cambios pendientes.
+ const carpetaOrigenDrive = Number(new URLSearchParams(window.location.search).get('carpeta_id'));
+ const urlVolverDrive = new URL('/drive-prz-v5', window.location.origin);
+ if (Number.isSafeInteger(carpetaOrigenDrive) && carpetaOrigenDrive > 0) {
+   urlVolverDrive.searchParams.set('carpeta_id', String(carpetaOrigenDrive));
+ }
+ document.getElementById('volverDrive').href = urlVolverDrive.toString();
  document.getElementById('volverDrive').addEventListener('click',e=>{
    if(busy){e.preventDefault();alert('Hay una operación en curso. Termínala antes de volver a Drive PRZ.');return}
    if(hasPendingDriveChanges()&&!confirm('¿Volver a Drive PRZ sin guardar?\n\nHay cambios pendientes de guardar en el servidor. El autoguardado del navegador NO actualiza el PDF de Drive PRZ.'))e.preventDefault();

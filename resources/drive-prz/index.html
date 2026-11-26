@@ -4494,9 +4494,9 @@
                 });
 
                 if (!respuesta.ok) {
-                    throw new Error(
-                        `Error HTTP ${respuesta.status}`
-                    );
+                    const error = new Error(`Error HTTP ${respuesta.status}`);
+                    error.status = respuesta.status;
+                    throw error;
                 }
 
                 return await respuesta.json();
@@ -5228,7 +5228,18 @@
             document.getElementById('realClearSelection').addEventListener('click', clearRealSelection);
             document.getElementById('realBulkMove').addEventListener('click', abrirMoverSeleccionadosLaravel);
 
-            async function mostrarArchivosReales(carpetaId = null) {
+            // Conservar la carpeta de origen al abrir el censurador.
+            function abrirCensuradorLaravel(id, nombre) {
+                const url = new URL(`${API}/files/${encodeURIComponent(id)}/censurador`, window.location.origin);
+                url.searchParams.set('name', nombre);
+                const carpetaId = Number(carpetaRealActual);
+                if (Number.isSafeInteger(carpetaId) && carpetaId > 0) {
+                    url.searchParams.set('carpeta_id', String(carpetaId));
+                }
+                window.location.assign(url.toString());
+            }
+
+            async function mostrarArchivosReales(carpetaId = null, recuperarOrigen = false) {
 
                 try {
                     const datos = await cargarDocumentosLaravel(carpetaId);
@@ -5280,6 +5291,12 @@
 
                 } catch (error) {
                     console.error('Error al consultar MySQL:', error);
+                    if (recuperarOrigen && carpetaId !== null && [403, 404, 422].includes(error.status)) {
+                        await mostrarArchivosReales(null);
+                        toast('La carpeta de origen no está disponible. Se abrió Mis archivos.');
+                        return;
+                    }
+
 
                     document.getElementById('filesArea').innerHTML = `
             <div class="empty">
@@ -5834,7 +5851,7 @@
                 on('[data-option-real-rename]', () => abrirRenombrarLaravel(id, tipo, nombre));
                 on('[data-option-real-preview]', () => { close(); verArchivoLaravel(id, nombre, realVisible.find(x => x.id === id && x.type === 'file')?.size || 0) });
                 on('[data-option-real-censurar]', () => {
-                    window.location.href = `/drive-prz-v5/files/${encodeURIComponent(id)}/censurador?name=${encodeURIComponent(nombre)}`;
+                    abrirCensuradorLaravel(id, nombre);
                 });
             }
 
@@ -6014,7 +6031,7 @@
                         a.click();
                         a.remove();
                     } else if (action === 'censurar' && !folder && /\.pdf$/i.test(name || '')) {
-                        window.location.href = `/drive-prz-v5/files/${encodeURIComponent(id)}/censurador?name=${encodeURIComponent(name)}`;
+                        abrirCensuradorLaravel(id, name);
                     } else if (action === 'share') abrirCompartirLaravel(Number(id), type, name);
                     else if (action === 'color' && folder) cambiarColorCarpetaLaravel(Number(id), name);
                     else if (action === 'rename') abrirRenombrarLaravel(Number(id), type, name);
@@ -6131,7 +6148,7 @@
                 if (!Number.isInteger(id) || id <= 0) return;
                 const item = realVisible.find(x => Number(x.id) === id && x.type === 'file');
                 if (!item || !/\.pdf$/i.test(item.name || '')) return;
-                window.location.assign(`/drive-prz-v5/files/${encodeURIComponent(id)}/censurador?name=${encodeURIComponent(item.name)}`);
+                abrirCensuradorLaravel(id, item.name);
             }, true);
 
             // Interceptamos únicamente el botón Ver del listado real.
@@ -8851,8 +8868,14 @@
             // Activar exclusivamente los datos reales de SAVIA PRZ.
             window.drivePrzLaravelActivo = true;
 
-            // Cargar documentos desde Laravel y MySQL.
-            mostrarArchivosReales();
+            // Recuperar la carpeta de origen al regresar del censurador.
+            const urlInicioDrive = new URL(window.location.href);
+            const carpetaInicioDrive = Number(urlInicioDrive.searchParams.get('carpeta_id'));
+            if (urlInicioDrive.searchParams.has('carpeta_id')) {
+                urlInicioDrive.searchParams.delete('carpeta_id');
+                window.history.replaceState(window.history.state, '', urlInicioDrive.toString());
+            }
+            mostrarArchivosReales(Number.isSafeInteger(carpetaInicioDrive) && carpetaInicioDrive > 0 ? carpetaInicioDrive : null, true);
 
             // Evitar que la navegación vuelva al prototipo.
             document.getElementById('przApp')
