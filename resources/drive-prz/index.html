@@ -7354,7 +7354,6 @@
                     pila.length = nivel + 1;
                     nivelPrevio = nivel;
                 });
-                if (rutas.size > 100) errores.push('Máximo 100 carpetas por operación.');
                 return { rutas: [...rutas], errores };
             }
 
@@ -7456,8 +7455,8 @@
                     const existente = esDestinoExistente(padre);
                     const cantidad = valido ? b-a+1 : 0;
                     yearFrom.disabled = yearTo.disabled = yearMonths.disabled = ocupado;
-                    addYears.disabled = ocupado || !valido || existente || cantidad > 100 || !!analizarEstructuraReal(campo.value).errores.length;
-                    yearInfo.textContent = existente ? 'Para generar años en una carpeta existente, ábrela en Drive y vuelve a Crear varias carpetas.' : !valido ? 'Ingresa un rango válido (1900–9999). El año final debe ser igual o mayor al inicial.' : cantidad > 100 ? 'El rango no puede superar 100 años.' : `${cantidad} año(s)${yearMonths.checked ? ' y ' + cantidad*12 + ' meses' : ''} en «${etiquetaDestinoMeses(padre)}». Máximo 100 carpetas por operación.`;
+                    addYears.disabled = ocupado || !valido || existente || !!analizarEstructuraReal(campo.value).errores.length;
+                    yearInfo.textContent = existente ? 'Para generar años en una carpeta existente, ábrela en Drive y vuelve a Crear varias carpetas.' : !valido ? 'Ingresa un rango válido (1900–9999). El año final debe ser igual o mayor al inicial.' : `${cantidad} año(s)${yearMonths.checked ? ' y ' + cantidad*12 + ' meses' : ''} en «${etiquetaDestinoMeses(padre)}». Se guardará por lotes automáticamente.`;
                 }
                 [yearFrom, yearTo, yearMonths].forEach(el => el.addEventListener('input', actualizarAniosUI));
                 addYears.addEventListener('click', () => {
@@ -7466,18 +7465,12 @@
                     const padre = destinoSelect.value;
                     const nuevas = [];
                     const base = new Set(rutasBaseActuales);
-                    const previstas = new Set(rutasFinales);
                     for (let y=a; y<=b; y++) {
                         const ruta = padre === DESTINO_ACTUAL_MESES ? String(y) : `${padre}/${y}`;
                         if (ruta.split('/').length + (yearMonths.checked ? 1 : 0) > 12) {
                             yearInfo.textContent = 'No se puede superar el máximo de 12 niveles.'; return;
                         }
-                        nuevas.push(ruta); previstas.add(ruta);
-                        if (yearMonths.checked) for(let m=1;m<=12;m++) previstas.add(`${ruta}/${mesNombre(m)}`);
-                    }
-                    const externos = [...mesesPorRuta].filter(([k]) => esDestinoExistente(k)).reduce((n,[,v])=>n+v.size,0);
-                    if (previstas.size + externos > 100) {
-                        yearInfo.textContent = `La estructura alcanzaría ${previstas.size+externos} carpetas. Reduce el rango o crea en varias operaciones (máximo 100).`; return;
+                        nuevas.push(ruta);
                     }
                     const faltantes = nuevas.filter(r => !base.has(r));
                     if (faltantes.length) campo.value = [campo.value.trimEnd(), ...faltantes].filter(Boolean).join('\n');
@@ -7552,7 +7545,6 @@
                     }
                     rutasFinales = [...rutas];
                     erroresActuales = [...resultado.errores];
-                    if (rutasFinales.length + cantidadMesesExistentes > 100) erroresActuales.push('Máximo 100 carpetas por operación (incluyendo meses).');
                     $('przOutlineCountReal').textContent = `${rutasFinales.length + cantidadMesesExistentes} carpeta${rutasFinales.length + cantidadMesesExistentes === 1 ? '' : 's'}`;
                     errores.hidden = !erroresActuales.length;
                     errores.textContent = erroresActuales.join(' | ');
@@ -7649,6 +7641,9 @@
                     actualizar();
                     if ((!rutasFinales.length && ![...mesesPorRuta.keys()].some(esDestinoExistente)) || erroresActuales.length || ocupado) return;
                     ocupado = true;
+                    const raizGuardado = carpetaRealActual;
+                    const rutasGuardado = [...rutasFinales];
+                    let creadas = 0, fallo = null;
                     campo.disabled = true; destinoSelect.disabled = true; todos.disabled = true;
                     yearFrom.disabled = yearTo.disabled = yearMonths.disabled = addYears.disabled = true;
                     checks.forEach(c => c.disabled = true);
@@ -7658,7 +7653,6 @@
                     try {
                         const cookie = document.cookie.split('; ').find(c => c.startsWith('XSRF-TOKEN='));
                         if (!cookie) throw new Error('Falta token de seguridad. Recarga la página.');
-                        let creadas = 0;
                         // Primero se crean los meses en carpetas existentes, usando el endpoint que
                         // comprueba los meses ya presentes. Nunca se recrea la carpeta padre.
                         for (const [clave, meses] of mesesPorRuta) {
@@ -7678,27 +7672,42 @@
                                 (datosMeses.message || (datosMeses.errors ? Object.values(datosMeses.errors).flat().join(', ') : `HTTP ${respuestaMeses.status}`)));
                             creadas += Number(datosMeses.created ?? 0);
                         }
-                        if (rutasFinales.length) {
+                        // El servidor conserva sus límites por petición; el total no tiene máximo fijo.
+                        const lotes = [];
+                        let lote = [], longitud = 0;
+                        for (const ruta of rutasGuardado) {
+                            if (lote.length && (lote.length >= 100 || longitud + 1 + ruta.length > 15000)) {
+                                lotes.push(lote); lote = []; longitud = 0;
+                            }
+                            longitud += ruta.length + (lote.length ? 1 : 0);
+                            lote.push(ruta);
+                        }
+                        if (lote.length) lotes.push(lote);
+                        let procesadas = 0;
+                        for (const [i, grupo] of lotes.entries()) {
+                            guardar.textContent = `Creando lote ${i + 1}/${lotes.length} (${procesadas}/${rutasGuardado.length})…`;
                             const respuesta = await fetch(ENDPOINTS.estructuras, {
                                 method: 'POST', credentials: 'same-origin',
                                 headers: {
                                     'Content-Type': 'application/json', 'Accept': 'application/json',
                                     'X-XSRF-TOKEN': decodeURIComponent(cookie.substring('XSRF-TOKEN='.length))
                                 },
-                                body: JSON.stringify({ carpeta_padre_id: carpetaRealActual, estructura: rutasFinales.join('\n') })
+                                body: JSON.stringify({ carpeta_padre_id: raizGuardado, estructura: grupo.join('\n') })
                             });
                             const datos = await respuesta.json().catch(() => ({}));
-                            if (!respuesta.ok) throw new Error(datos.message || (datos.errors ? Object.values(datos.errors).flat().join(', ') : `HTTP ${respuesta.status}`));
-                            creadas += Number(datos.created ?? 0);
+                            if (!respuesta.ok || !Number.isFinite(Number(datos.created)) || datos.created == null) throw new Error(`Lote ${i + 1}/${lotes.length}: ` + (datos.message || (datos.errors ? Object.values(datos.errors).flat().join(', ') : `HTTP ${respuesta.status}`)));
+                            creadas += Number(datos.created);
+                            procesadas += grupo.length;
                         }
-                        close();
-                        await mostrarArchivosReales(carpetaRealActual);
+                        if (guardar.isConnected) close();
+                        if (carpetaRealActual === raizGuardado) await mostrarArchivosReales(raizGuardado);
                         toast(`${creadas} carpetas creadas correctamente.`);
                     } catch (e) {
-                        errores.hidden = false; errores.textContent = e.message;
+                        fallo = `${e.message} · ${creadas} carpetas nuevas confirmadas. Puedes reintentar la estructura; se reutilizarán las carpetas existentes.`;
                     } finally {
                         ocupado = false;
-                        if (guardar.isConnected) { campo.disabled = false; checks.forEach(c => c.disabled = false); $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal').forEach(c => c.disabled = false); guardar.textContent = 'Crear carpetas'; actualizar(); }
+                        if (guardar.isConnected) { campo.disabled = false; checks.forEach(c => c.disabled = false); $('modalMount').querySelectorAll('[data-bulk-preset], #przEjemploReal').forEach(c => c.disabled = false); guardar.textContent = 'Crear carpetas'; actualizar(); if (fallo) { errores.hidden = false; errores.textContent = fallo; } }
+                        else if (fallo) toast(fallo);
                     }
                 });
                 actualizar();
