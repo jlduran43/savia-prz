@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RrhhTrabajador extends Model
 {
@@ -20,6 +22,8 @@ class RrhhTrabajador extends Model
         'fecha_nacimiento',
         'telefono',
         'email',
+        'formacion',
+        'observacion',
         'fecha_ingreso',
         'fecha_desvinculacion',
         'activo',
@@ -32,16 +36,62 @@ class RrhhTrabajador extends Model
         'activo' => 'boolean',
     ];
 
-    public function usuario()
+    /*
+    |--------------------------------------------------------------------------
+    | Usuario asociado a SAVIA PRZ
+    |--------------------------------------------------------------------------
+    */
+
+    public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'usuario_id');
+        return $this->belongsTo(
+            User::class,
+            'usuario_id'
+        );
     }
 
-    public function documentos()
+    /*
+    |--------------------------------------------------------------------------
+    | Contratos del trabajador
+    |--------------------------------------------------------------------------
+    */
+
+    public function contratos(): HasMany
     {
         return $this->hasMany(
-            RrhhDocumento::class,
+            RrhhContrato::class,
             'trabajador_id'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Historial laboral
+    |--------------------------------------------------------------------------
+    */
+
+    public function historialLaboral(): HasMany
+    {
+        return $this->hasMany(
+            RrhhHistorialLaboral::class,
+            'trabajador_id'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nombre completo
+    |--------------------------------------------------------------------------
+    */
+
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim(
+            implode(' ', array_filter([
+                $this->nombres,
+                $this->apellido_paterno,
+                $this->apellido_materno,
+            ]))
         );
     }
 }
