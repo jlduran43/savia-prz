@@ -19,7 +19,30 @@ const init = () => {
  groups.forEach((group,i)=>{const p=document.createElement('section');p.className='rw-grid';p.hidden=i!==0;panels.push(p);q('rwFields').append(p);group.forEach(([name,label,type,required,extra])=>{const l=document.createElement('label');l.textContent=label;const el=document.createElement(type==='select'?'select':type==='textarea'?'textarea':'input');el.name=name;el.required=!!required;if(el.tagName==='INPUT')el.type=type;if(typeof extra==='number')el.maxLength=extra;if(name==='numero_dependientes'){el.min='0';el.max='65535';el.step='1';el.placeholder='Ej. 0, 3, 10';}if(type==='select'){el.add(new Option(name==='usuario_id'?'Registro manual (sin usuario)':'Seleccione…',''));for(const [v,t] of extra)el.add(new Option(t,v));}if(['usuario_id','nombres','observacion','jefatura_directa','numero_dependientes'].includes(name))l.className='rw-full';l.append(el);p.append(l);});});
  const summary=document.createElement('pre');summary.className='rw-full';panels[3].prepend(summary);const senior=document.createElement('p');senior.className='rw-full';panels[2].append(senior);
  const el=n=>f.elements.namedItem(n), val=n=>el(n).value.trim(); const msg=t=>q('rwMessage').textContent=t||'';
- function conditional(){const codigo=val('tipo_vinculo')==='codigo_trabajo';const modalidad=el('tipo_contrato');modalidad.disabled=!codigo;modalidad.parentElement.hidden=!codigo;if(!codigo)modalidad.value='';const labor=codigo&&!!val('tipo_contrato');const part=labor&&val('tipo_jornada')==='part_time';const other=part&&val('detalle_part_time')==='otro';for(const [n,show] of [['tipo_jornada',labor],['detalle_part_time',part],['otra_jornada',other],['fecha_termino',val('tipo_contrato')!=='indefinido']]){const e=el(n);e.disabled=!show;e.parentElement.hidden=!show;if(!show)e.value='';}el('fecha_termino').required=val('tipo_contrato')==='plazo_fijo';const start=val('fecha_ingreso');const today=new Date();const local=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');const end=val('fecha_desvinculacion')&&val('fecha_desvinculacion')<local?val('fecha_desvinculacion'):local;senior.textContent=start&&end>=start?'Antigüedad referencial: '+Math.floor((Date.parse(end)-Date.parse(start))/86400000)+' días':'Antigüedad: por calcular';}
+ function conditional()
+ {
+    const codigo=val('tipo_vinculo')==='codigo_trabajo';
+    const modalidad=el('tipo_contrato');
+    modalidad.disabled=!codigo;
+    modalidad.parentElement.hidden=!codigo;
+    if(!codigo)modalidad.value='';
+    const labor=codigo&&!!val('tipo_contrato');
+    const part=labor&&val('tipo_jornada')==='part_time';
+    const other=part&&val('detalle_part_time')==='otro';
+    for(const [n,show] of [['tipo_jornada',labor],['detalle_part_time',part],['otra_jornada',other],['fecha_termino',val('tipo_contrato')!=='indefinido']])
+        {
+            const e=el(n);e.disabled=!show;
+            e.parentElement.hidden=!show;
+            if(!show)
+                e.value='';
+        }
+        el('fecha_termino').required=val('tipo_contrato')==='plazo_fijo';
+        senior.textContent = 'Antigüedad institucional: ' +
+        calcularAntiguedad(
+            val('fecha_ingreso'),
+            val('fecha_desvinculacion')
+        );
+ }
  function showStep(i){step=i;conditional();panels.forEach((p,j)=>p.hidden=j!==i);q('rwNav').replaceChildren(...names.map((n,j)=>{const s=document.createElement('span');s.textContent=(j+1)+'. '+n;if(j===i)s.className='active';return s;}));q('rwBack').hidden=i===0;q('rwNext').hidden=i===3;q('rwSave').hidden=i!==3;if(i===3)summary.textContent=groups.slice(0,3).flat().filter(([n])=>!el(n).disabled&&val(n)).map(([n,l])=>l+': '+(el(n).tagName==='SELECT'?el(n).selectedOptions[0].textContent:val(n))).join('\n');}
  function valid(i){for(const e of panels[i].querySelectorAll('input,select,textarea'))if(!e.disabled&&!e.checkValidity()){showStep(i);e.reportValidity();return false;}return true;}
  async function request(url,opts={}){const headers={'Accept':'application/json',...opts.headers};const meta=document.querySelector('meta[name="csrf-token"]');const cookie=document.cookie.split('; ').find(x=>x.startsWith('XSRF-TOKEN='));if(meta?.content)headers['X-CSRF-TOKEN']=meta.content;else if(cookie)headers['X-XSRF-TOKEN']=decodeURIComponent(cookie.slice(11));const res=await fetch(url,{...opts,headers,credentials:'same-origin',cache:'no-store'});const data=await res.json().catch(()=>null);if(!res.ok||!data||res.redirected){const e=new Error(data?.errors?Object.values(data.errors).flat().join('\n'):res.status===419?'Sesión vencida. Recarga SAVIA PRZ.':res.status===403?'No tienes permiso para gestionar trabajadores.':`Error HTTP ${res.status}. Verifica la sesión y las rutas.`);e.fields=data?.errors||{};throw e;}return data;}
@@ -36,3 +59,92 @@ const init = () => {
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+
+function calcularAntiguedad(fechaIngreso, fechaDesvinculacion = null) {
+
+    if (!fechaIngreso) {
+        return 'No calculada';
+    }
+
+    const inicio = new Date(fechaIngreso + 'T00:00:00');
+    const hoy = new Date();
+
+    hoy.setHours(0, 0, 0, 0);
+
+    if (Number.isNaN(inicio.getTime())) {
+        return 'Fecha incorrecta';
+    }
+
+    if (inicio > hoy) {
+        return 'Pendiente de ingreso';
+    }
+
+    let fin = hoy;
+
+    if (fechaDesvinculacion) {
+        const desvinculacion = new Date(
+            fechaDesvinculacion + 'T00:00:00'
+        );
+
+        if (Number.isNaN(desvinculacion.getTime()) ||
+            desvinculacion < inicio) {
+            return 'Fecha incorrecta';
+        }
+
+        if (desvinculacion <= hoy) {
+            fin = desvinculacion;
+        }
+    }
+
+    function sumarMeses(fecha, cantidad) {
+        const resultado = new Date(fecha.getTime());
+        const dia = resultado.getDate();
+
+        resultado.setDate(1);
+        resultado.setMonth(resultado.getMonth() + cantidad);
+
+        const ultimoDia = new Date(
+            resultado.getFullYear(),
+            resultado.getMonth() + 1,
+            0
+        ).getDate();
+
+        resultado.setDate(Math.min(dia, ultimoDia));
+
+        return resultado;
+    }
+
+    let totalMeses =
+        (fin.getFullYear() - inicio.getFullYear()) * 12 +
+        fin.getMonth() - inicio.getMonth();
+
+    if (sumarMeses(inicio, totalMeses) > fin) {
+        totalMeses--;
+    }
+
+    const anios = Math.floor(totalMeses / 12);
+    const meses = totalMeses % 12;
+
+    const referencia = sumarMeses(inicio, totalMeses);
+
+    const dias = Math.round(
+        (
+            Date.UTC(
+                fin.getFullYear(),
+                fin.getMonth(),
+                fin.getDate()
+            ) -
+            Date.UTC(
+                referencia.getFullYear(),
+                referencia.getMonth(),
+                referencia.getDate()
+            )
+        ) / 86400000
+    );
+
+    return [
+        `${anios} ${anios === 1 ? 'año' : 'años'}`,
+        `${meses} ${meses === 1 ? 'mes' : 'meses'}`,
+        `${dias} ${dias === 1 ? 'día' : 'días'}`
+    ].join(', ');
+}
