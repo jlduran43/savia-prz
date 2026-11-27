@@ -47,7 +47,69 @@ const init = () => {
  function valid(i){for(const e of panels[i].querySelectorAll('input,select,textarea'))if(!e.disabled&&!e.checkValidity()){showStep(i);e.reportValidity();return false;}return true;}
  async function request(url,opts={}){const headers={'Accept':'application/json',...opts.headers};const meta=document.querySelector('meta[name="csrf-token"]');const cookie=document.cookie.split('; ').find(x=>x.startsWith('XSRF-TOKEN='));if(meta?.content)headers['X-CSRF-TOKEN']=meta.content;else if(cookie)headers['X-XSRF-TOKEN']=decodeURIComponent(cookie.slice(11));const res=await fetch(url,{...opts,headers,credentials:'same-origin',cache:'no-store'});const data=await res.json().catch(()=>null);if(!res.ok||!data||res.redirected){const e=new Error(data?.errors?Object.values(data.errors).flat().join('\n'):res.status===419?'Sesión vencida. Recarga SAVIA PRZ.':res.status===403?'No tienes permiso para gestionar trabajadores.':`Error HTTP ${res.status}. Verifica la sesión y las rutas.`);e.fields=data?.errors||{};throw e;}return data;}
  async function loadUsers(){const select=el('usuario_id');select.disabled=true;try{users=await request('/rrhh/usuarios');if(!Array.isArray(users))throw Error('Formato de usuarios inesperado');select.replaceChildren(new Option('Registro manual (sin usuario)',''),...users.map(u=>new Option([u.nombre||u.name,u.apellido_paterno,u.apellido_materno].filter(Boolean).join(' '),String(u.id))));}catch(e){msg('No se pudo cargar usuarios. Puedes registrar manualmente. '+e.message);}finally{select.disabled=false;}}
- el('usuario_id').addEventListener('change',()=>{const u=users.find(x=>String(x.id)===val('usuario_id'));if(!u)return;for(const [n,v] of Object.entries({nombres:u.nombre||u.name,apellido_paterno:u.apellido_paterno||u.apellido,apellido_materno:u.apellido_materno,rut:u.rut,email:u.email,cargo:u.cargo,jefatura_directa:u.jefatura}))el(n).value=v||'';});
+ el('usuario_id').addEventListener('change', () => {
+
+    const usuarioId = val('usuario_id');
+
+    const camposAutocompletados = [
+        'nombres',
+        'apellido_paterno',
+        'apellido_materno',
+        'rut',
+        'email',
+        'cargo',
+        'jefatura_directa'
+    ];
+
+    // Si selecciona Registro manual (sin usuario)
+    if (!usuarioId) {
+
+        camposAutocompletados.forEach(campo => {
+
+            const input = el(campo);
+
+            if (input) {
+                input.value = '';
+            }
+
+        });
+
+        conditional();
+
+        return;
+    }
+
+    // Buscar usuario seleccionado
+    const u = users.find(x =>
+        String(x.id) === usuarioId
+    );
+
+    if (!u) return;
+
+    // Autocompletar datos del usuario
+    const datos = {
+        nombres: u.nombre || u.name,
+        apellido_paterno: u.apellido_paterno || u.apellido,
+        apellido_materno: u.apellido_materno,
+        rut: u.rut,
+        email: u.email,
+        cargo: u.cargo,
+        jefatura_directa: u.jefatura
+    };
+
+    for (const [campo, valor] of Object.entries(datos)) {
+
+        const input = el(campo);
+
+        if (input) {
+            input.value = valor || '';
+        }
+
+    }
+
+    conditional();
+
+});
  f.addEventListener('input',conditional);f.addEventListener('change',conditional);q('rwBack').onclick=()=>showStep(step-1);q('rwNext').onclick=()=>{msg('');if(valid(step))showStep(step+1);};q('rwCancel').onclick=()=>{if(!busy)d.close();};d.addEventListener('cancel',e=>{if(busy)e.preventDefault();});
  f.addEventListener('submit',async e=>{e.preventDefault();if(busy||step!==3)return;conditional();for(let i=0;i<4;i++)if(!valid(i))return;const payload={};for(const [n,v] of new FormData(f))payload[n]=v.trim()||null;if(payload.tipo_vinculo==='honorarios')payload.tipo_contrato='honorarios';delete payload.tipo_vinculo;payload.usuario_id=payload.usuario_id?Number(payload.usuario_id):null;payload.numero_dependientes=payload.numero_dependientes===null?null:Number(payload.numero_dependientes);busy=true;q('rwSave').disabled=q('rwCancel').disabled=q('rwBack').disabled=true;msg('Guardando en MySQL…');try{const data=await request(api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!data.trabajador?.id)throw Error('Respuesta sin identificador. Revisa el listado antes de repetir.');f.hidden=true;await showList(1,'Trabajador guardado correctamente. ID: '+data.trabajador.id);}catch(err){const field=Object.keys(err.fields||{})[0];const i=groups.findIndex(g=>g.some(x=>x[0]===field));if(i>=0)showStep(i);msg(err.message);}finally{busy=false;q('rwSave').disabled=q('rwCancel').disabled=q('rwBack').disabled=false;}});
  function button(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;return b;}
