@@ -26,6 +26,8 @@ class RrhhTrabajador extends Model
         'observacion',
         'fecha_ingreso',
         'fecha_desvinculacion',
+        'dependencia',
+        'cargo_jefe_inmediato',
         'activo',
     ];
 

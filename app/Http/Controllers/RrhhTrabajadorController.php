@@ -208,11 +208,11 @@ class RrhhTrabajadorController extends Controller
             if (
                 empty($usuario->rut) ||
                 $this->normalizarRut($usuario->rut)
-                    !== $datos['rut']
+                !== $datos['rut']
             ) {
                 throw ValidationException::withMessages([
                     'usuario_id' =>
-                        'El RUT del usuario no coincide con el trabajador.',
+                    'El RUT del usuario no coincide con el trabajador.',
                 ]);
             }
         }
@@ -279,6 +279,18 @@ class RrhhTrabajadorController extends Controller
             ],
 
             'jefatura_directa' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'dependencia' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'cargo_jefe_inmediato' => [
                 'nullable',
                 'string',
                 'max:255',
@@ -464,13 +476,13 @@ class RrhhTrabajadorController extends Controller
 
             'usuario:id,nombre,email',
 
-            'contratos' => fn ($query) =>
-                $query->orderByDesc('fecha_inicio')
-                    ->orderByDesc('id'),
+            'contratos' => fn($query) =>
+            $query->orderByDesc('fecha_inicio')
+                ->orderByDesc('id'),
 
-            'historialLaboral' => fn ($query) =>
-                $query->orderByDesc('fecha_efectiva')
-                    ->orderByDesc('id'),
+            'historialLaboral' => fn($query) =>
+            $query->orderByDesc('fecha_efectiva')
+                ->orderByDesc('id'),
 
         ])->findOrFail($id);
 
@@ -522,10 +534,10 @@ class RrhhTrabajadorController extends Controller
                 'registrado_por' => auth()->id(),
 
                 'tipo_movimiento' =>
-                    RrhhHistorialLaboral::INGRESO,
+                RrhhHistorialLaboral::INGRESO,
 
                 'fecha_efectiva' =>
-                    $trabajador->fecha_ingreso,
+                $trabajador->fecha_ingreso,
 
                 'antes' => null,
 
@@ -535,11 +547,13 @@ class RrhhTrabajadorController extends Controller
                     'cargo' => $contrato->cargo,
                     'area' => $contrato->area,
                     'jefatura_directa' => $contrato->jefatura_directa,
+                    'dependencia' => $contrato->dependencia,
+                    'cargo_jefe_inmediato' => $contrato->cargo_jefe_inmediato,
                     'fecha_inicio' => $contrato->fecha_inicio?->toDateString(),
                 ],
 
                 'motivo' =>
-                    'Registro inicial de la ficha laboral en SAVIA PRZ.',
+                'Registro inicial de la ficha laboral en SAVIA PRZ.',
 
             ]);
 
@@ -554,7 +568,7 @@ class RrhhTrabajadorController extends Controller
             'ok' => true,
 
             'message' =>
-                'Trabajador registrado correctamente.',
+            'Trabajador registrado correctamente.',
 
             'trabajador' => $trabajador,
 
@@ -613,7 +627,7 @@ class RrhhTrabajadorController extends Controller
                 'registrado_por' => auth()->id(),
 
                 'tipo_movimiento' =>
-                    RrhhHistorialLaboral::ACTUALIZACION_FICHA,
+                RrhhHistorialLaboral::ACTUALIZACION_FICHA,
 
                 'fecha_efectiva' => now()->toDateString(),
 
@@ -622,7 +636,7 @@ class RrhhTrabajadorController extends Controller
                 'despues' => $cambios,
 
                 'motivo' =>
-                    'Actualización de datos personales.',
+                'Actualización de datos personales.',
 
             ]);
         });
@@ -632,7 +646,7 @@ class RrhhTrabajadorController extends Controller
             'ok' => true,
 
             'message' =>
-                'Ficha actualizada correctamente.',
+            'Ficha actualizada correctamente.',
 
             'trabajador' => $trabajador->fresh(),
 
