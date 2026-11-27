@@ -39,14 +39,9 @@ class AppServiceProvider extends ServiceProvider
                 && $rol === 'ADMIN';
         });
 
+        // Permiso temporal para pruebas de RRHH
         Gate::define('rrhh-gestionar-trabajadores', function (User $user) {
-
-            $rol = $user->rol instanceof \BackedEnum
-                ? $user->rol->value
-                : $user->rol;
-
-            return (bool) $user->activo
-                && $rol === 'ADMIN';
+            return (bool) $user->activo;
         });
     }
 }
